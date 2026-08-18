@@ -146,7 +146,12 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold); outline-o
 }
 
 .login-wrap{
-  min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--navy);
+  min-height:100vh;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--navy);
 }
 .login-card{
   background:#fff; border-radius:14px; padding:34px 32px; width:100%; max-width:360px;

@@ -1,0 +1,141 @@
+// Skema database untuk Sistem BMS - PT Bintang Muara Sejati
+// Menggantikan objek `DB` yang dulu disimpan di window.storage (browser only)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN   // akses semua divisi & pengaturan
+  STAFF   // akses terbatas ke divisi miliknya
+}
+
+enum StatusPembayaran {
+  BELUM
+  SEBAGIAN
+  LUNAS
+}
+
+enum StatusTTD {
+  BELUM_TTD
+  LENGKAP
+}
+
+enum TipeTransaksi {
+  PENJUALAN
+  PENGELUARAN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String   // hash bcrypt
+  nama      String
+  role      Role     @default(STAFF)
+  divisi    String?  // null kalau ADMIN (semua divisi)
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  nama      String
+  alamat    String?
+  telepon   String?
+  npwp      String?
+  divisi    String
+  createdAt DateTime @default(now())
+
+  invoices  Invoice[]
+}
+
+model Armada {
+  id        String   @id @default(cuid())
+  nopol     String
+  jenis     String
+  sopir     String?
+  divisi    String
+  createdAt DateTime @default(now())
+
+  suratJalan SuratJalan[]
+}
+
+model Material {
+  id        String   @id @default(cuid())
+  nama      String
+  satuan    String
+  hargaSatuan Float  @default(0)
+  divisi    String
+  createdAt DateTime @default(now())
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  no          String   @unique
+  divisi      String
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  tanggal     DateTime
+  jatuhTempo  DateTime?
+  status      StatusPembayaran @default(BELUM)
+  catatan     String?
+  createdAt   DateTime @default(now())
+
+  items       InvoiceItem[]
+  pembayaran  Pembayaran[]
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  keterangan  String
+  qty         Float
+  satuan      String?
+  hargaSatuan Float
+}
+
+model Pembayaran {
+  id         String   @id @default(cuid())
+  invoiceId  String
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  tanggal    DateTime
+  nominal    Float
+  metode     String?
+  catatan    String?
+}
+
+model SuratJalan {
+  id          String   @id @default(cuid())
+  no          String   @unique
+  divisi      String
+  armadaId    String?
+  armada      Armada?  @relation(fields: [armadaId], references: [id])
+  tujuan      String
+  tanggal     DateTime
+  statusTTD   StatusTTD @default(BELUM_TTD)
+  isDraft     Boolean  @default(false)
+  detail      Json?    // daftar barang / muatan (fleksibel, mirror bentuk lama)
+  createdAt   DateTime @default(now())
+}
+
+model DivisiTx {
+  id         String   @id @default(cuid())
+  divisi     String
+  tipe       TipeTransaksi
+  keterangan String
+  nominal    Float
+  tanggal    DateTime
+  createdAt  DateTime @default(now())
+}
+
+model PrintCalib {
+  id      String @id @default(cuid())
+  jenis   String @unique // "sj" atau "inv"
+  data    Json
+}

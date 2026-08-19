@@ -8,7 +8,15 @@ const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 const list = ref([]);
 const showModal = ref(false);
 const loading = ref(true);
-const form = ref({ nama: "", satuan: "", hargaSatuan: 0, divisi: DIVISI[0] });
+
+const emptyForm = () => ({
+  nama: "",
+  satuan: "",
+  hargaSatuan: 0,
+  divisi: DIVISI[0],
+});
+
+const form = ref(emptyForm());
 
 function rupiah(n) {
   return "Rp " + Math.round(n || 0).toLocaleString("id-ID");
@@ -16,28 +24,53 @@ function rupiah(n) {
 
 async function load() {
   loading.value = true;
-  list.value = await api.get("/material");
-  loading.value = false;
+
+  try {
+    list.value = await api.get("/material");
+  } catch (e) {
+    toast(e.message || "Gagal memuat data material");
+  } finally {
+    loading.value = false;
+  }
 }
 
 function openModal() {
-  form.value = { nama: "", satuan: "", hargaSatuan: 0, divisi: DIVISI[0] };
+  form.value = emptyForm();
   showModal.value = true;
 }
 
-async function submit() {
-  if (!form.value.nama || !form.value.satuan) return toast("Nama dan satuan wajib diisi");
-  await api.post("/material", form.value);
-  toast("Material ditambahkan");
+function closeModal() {
   showModal.value = false;
-  await load();
+}
+
+async function submit() {
+  if (!form.value.nama || !form.value.satuan) {
+    return toast("Nama dan satuan wajib diisi");
+  }
+
+  try {
+    await api.post("/material", form.value);
+
+    toast("Material berhasil ditambahkan");
+    showModal.value = false;
+
+    await load();
+  } catch (e) {
+    toast(e.message || "Gagal menambahkan material");
+  }
 }
 
 async function remove(id) {
   if (!confirm("Hapus material ini?")) return;
-  await api.delete(`/material/${id}`);
-  toast("Material dihapus");
-  await load();
+
+  try {
+    await api.delete(`/material/${id}`);
+
+    toast("Material berhasil dihapus");
+    await load();
+  } catch (e) {
+    toast(e.message || "Gagal menghapus material");
+  }
 }
 
 onMounted(load);
@@ -47,51 +80,171 @@ onMounted(load);
   <div class="topbar">
     <div>
       <h1>Material</h1>
-      <div class="desc">Daftar barang / material per divisi</div>
+      <div class="desc">
+        Daftar barang dan material operasional per divisi
+      </div>
     </div>
-    <button class="btn btn-primary" @click="openModal">+ Tambah Material</button>
+
+    <button class="btn btn-primary" @click="openModal">
+      + Tambah Material
+    </button>
   </div>
+
   <div class="content">
-    <div v-if="loading" class="empty">Memuat data…</div>
+    <div v-if="loading" class="empty">
+      Memuat data…
+    </div>
+
     <div v-else-if="!list.length" class="empty">
       <div class="big">📦</div>
-      Belum ada material terdaftar.
+      <div>Belum ada material terdaftar.</div>
+
+      <button
+        class="btn btn-primary"
+        style="margin-top:14px;"
+        @click="openModal"
+      >
+        + Tambah Material
+      </button>
     </div>
+
     <div v-else class="card">
+      <div class="section-title">
+        Daftar Material
+        <span class="tag">{{ list.length }} Material</span>
+      </div>
+
       <table>
         <thead>
-          <tr><th>Nama</th><th>Satuan</th><th class="num">Harga Satuan</th><th>Divisi</th><th></th></tr>
+          <tr>
+            <th>Nama Material</th>
+            <th>Satuan</th>
+            <th class="num">Harga Satuan</th>
+            <th>Divisi</th>
+            <th></th>
+          </tr>
         </thead>
+
         <tbody>
           <tr v-for="m in list" :key="m.id">
-            <td>{{ m.nama }}</td>
-            <td>{{ m.satuan }}</td>
-            <td class="num mono">{{ rupiah(m.hargaSatuan) }}</td>
-            <td>{{ m.divisi }}</td>
-            <td><button class="btn btn-sm btn-danger" @click="remove(m.id)">Hapus</button></td>
+            <td>
+              {{ m.nama }}
+            </td>
+
+            <td>
+              {{ m.satuan }}
+            </td>
+
+            <td class="num mono">
+              {{ rupiah(m.hargaSatuan) }}
+            </td>
+
+            <td>
+              {{ m.divisi }}
+            </td>
+
+            <td style="text-align:right;">
+              <button
+                class="btn btn-sm btn-danger"
+                @click="remove(m.id)"
+              >
+                Hapus
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <div v-if="showModal" class="modal-bg" @click.self="showModal = false">
+  <div
+    v-if="showModal"
+    class="modal-bg"
+    @click.self="closeModal"
+  >
     <div class="modal">
-      <button class="modal-close" @click="showModal = false">×</button>
+      <button
+        class="modal-close"
+        @click="closeModal"
+      >
+        ×
+      </button>
+
       <h2>Tambah Material</h2>
-      <div class="row">
-        <div class="field"><label>Nama</label><input v-model="form.nama" /></div>
-        <div class="field"><label>Satuan</label><input v-model="form.satuan" placeholder="m3, ton, unit" /></div>
+
+      <div class="msub">
+        Isi data barang atau material baru
       </div>
+
       <div class="row">
-        <div class="field"><label>Harga Satuan</label><input v-model.number="form.hargaSatuan" type="number" /></div>
-        <div class="field"><label>Divisi</label>
+        <div class="field">
+          <label>Nama Material</label>
+
+          <input
+            v-model="form.nama"
+            placeholder="Contoh: Batu Split"
+          />
+        </div>
+
+        <div class="field">
+          <label>Satuan</label>
+
+          <input
+            v-model="form.satuan"
+            placeholder="m3, ton, unit"
+          />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Harga Satuan</label>
+
+          <input
+            v-model.number="form.hargaSatuan"
+            type="number"
+            min="0"
+            placeholder="0"
+          />
+        </div>
+
+        <div class="field">
+          <label>Divisi</label>
+
           <select v-model="form.divisi">
-            <option v-for="d in DIVISI" :key="d" :value="d">{{ d }}</option>
+            <option
+              v-for="d in DIVISI"
+              :key="d"
+              :value="d"
+            >
+              {{ d }}
+            </option>
           </select>
         </div>
       </div>
-      <button class="btn btn-primary" @click="submit">Simpan</button>
+
+      <div
+        style="
+          display:flex;
+          gap:8px;
+          justify-content:flex-end;
+          margin-top:8px;
+        "
+      >
+        <button
+          class="btn btn-ghost"
+          @click="closeModal"
+        >
+          Batal
+        </button>
+
+        <button
+          class="btn btn-primary"
+          @click="submit"
+        >
+          Simpan Material
+        </button>
+      </div>
     </div>
   </div>
 </template>

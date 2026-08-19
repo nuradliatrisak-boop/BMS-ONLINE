@@ -28,7 +28,10 @@ async function submit() {
 <template>
   <div class="login-wrap">
     <form class="login-card" @submit.prevent="submit">
-      <div class="mark">BMS</div>
+      <div class="mark login-logo">BMS</div>
+        <img src="/bms-logo.jpeg" alt="BMS Logo" />
+      </div>
+      
       <h1>Sistem BMS</h1>
       <div class="sub">PT Bintang Muara Sejati</div>
 

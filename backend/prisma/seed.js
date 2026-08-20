@@ -357,6 +357,217 @@ const customers = [
       ["A01", "AA", "PASIR PUTIH", 1440000, 170000, 0, "HRG LMT DUMP JKT"],
     ],
   },
+    // =========================================================
+  // CUSTOMER TAMBAHAN DARI FOTO SISTEM LAMA
+  // =========================================================
+
+  {
+    kode: "0I032",
+    nama: "BP. ISNAN",
+    alamat: "PONDOK SIBHAGTALLAH, JL. TIPAR TIMUR 4 KALI ABANG RUSUN SEMPER",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["P01", "PT", "PS. PASANG", 1600000, 300000, 0, "HRG COLT/M3 PASANG JKT"],
+    ],
+  },
+
+  {
+    kode: "0J042",
+    nama: "BP. JAMAL / PT. INSHAAT GRAHA UTAMA",
+    alamat: "JL. KEMAYORAN NO.15A JAKARTA",
+    telepon: "081291311713-78880406",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["A01", "AA", "PASIR PUTIH", 1300000, 200000, 0, "HRG LIMIT DUMP JKT"],
+    ],
+  },
+
+  {
+    kode: "0J048",
+    nama: "BP. JULIUS",
+    alamat: "JAKARTA",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BB", "BATU SPLIT", 220000, 200000, 0, "HRG COLT/M3 SPLIT JKT"],
+    ],
+  },
+
+  {
+    kode: "0J051",
+    nama: "BP. JAMMY",
+    alamat: "JAKARTA",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BA", "PASIRBANGKA", 400000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
+      ["B02", "BB", "BATU SPLIT", 420000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+    ],
+  },
+
+  {
+    kode: "0K035",
+    nama: "BP. KACUNG",
+    alamat: "JL. KALI BARU, CILINCING JAKUT",
+    telepon: "085219345493",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["D01", "DD", "BATU BELAH", 2280000, 300000, 0, "HRG COLT BATU JKT"],
+    ],
+  },
+
+  {
+    kode: "0M054",
+    nama: "BP. MALAU",
+    alamat: "TPS. HANURA JL. KRUKUT RT.09/05 TAMANSARI, JAKBAR",
+    telepon: "082166025855",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["E01", "EE", "PASIR COR", 285000, 300000, 0, "HRG COLT/M3 P.COR JKT"],
+    ],
+  },
+
+  {
+    kode: "0M055",
+    nama: "BP. MUIZ BUDIYANTO",
+    alamat: "JAKARTA",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BB", "BATU SPLIT", 0, 0, 0, ""],
+      ["P01", "PT", "PS. PASANG", 0, 0, 0, ""],
+    ],
+  },
+
+  {
+    kode: "0N007",
+    nama: "BP. NYOMAN ARKA",
+    alamat: "JL. KALI BARU BARAT RW.004/RW014",
+    telepon: "082198477336",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B02", "BB", "BATU SPLIT", 2400000, 300000, 0, "HRG LIMIT DUMP SPLIT JKT"],
+      ["B01", "BA", "PASIRBANGKA", 2025000, 300000, 0, "HRG LMT DUMP BANGKA JKT"],
+    ],
+  },
+
+  {
+    kode: "0N033",
+    nama: "IBU NOURA",
+    alamat: "BEKASI",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["I01", "II", "ABU BATU", 385000, 300000, 0, "HRG TRN/M3 ABUBATU JKT"],
+      ["P01", "PJ", "PASIR JAMBI", 285000, 300000, 0, "HRG TR/M3 JAMBI JKT"],
+    ],
+  },
+    // --- Customer tambahan dari foto sistem lama ---
+
+  {
+    kode: "OP042",
+    nama: "BP.PAULUS",
+    alamat: "TANJUNG PRIOK, JAKARTA UTARA",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BB", "BATU SPLIT", 170000, 150000, 0, "HRG COLT/M3 SPLIT JKT"],
+    ],
+  },
+
+  {
+    kode: "OP043",
+    nama: "BP.PATAR",
+    alamat: "JL. MARIN SWADARMA RAYA RT10/03, ULUJAMI KEC. PESANGGRAHAN, JKSEL",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B02", "BB", "BATU SPLIT", 0, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+    ],
+  },
+
+  {
+    kode: "OB023",
+    nama: "BP.BRAM / PULU",
+    alamat: "TANJUNG PRIOK JAKARTA",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["G01", "GG", "BASECOSE", 0, 0, 0, "HRG TRN/M3 BASECOSE JKT"],
+    ],
+  },
+
+  {
+    kode: "OP047",
+    nama: "BP.PUTU",
+    alamat: "POLDA METRO JAYA JL. JEND. SUDIRMAN KAV.55, JAKSEL 082123453374",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BA", "PASIRBANGKA", 0, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
+    ],
+  },
+
+  {
+    kode: "OU001",
+    nama: "BP.USTAD.MARUF",
+    alamat: "MASJID AS-SYAMSUDIN JL. RAWA GABUS, TAMBUN BEKASI",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["C01", "CC", "PASIR URUK", 0, 300000, 0, "HRG COLT/M3 P.URUG JKT"],
+    ],
+  },
+
+  {
+    kode: "OT071",
+    nama: "TITOP,BP./ UD.MAL",
+    alamat: "JL. RAWA SUMUR BARAT NO.16 KAWASAN INDUSTRI PULO GADUNG",
+    telepon: "4609009-88325852-08161614867",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["A02", "AA", "PASIR PUTIH", 240000, 200000, 0, "HRG COLT/M3 JAKUT+TIM+BKS"],
+    ],
+  },
+    // --- Distributor / Customer tambahan ---
+  // BP Alexander dan BP Moreno adalah customer.
+  // PT yang tercantum pada lembar adalah tujuan pengiriman mereka.
+  // Nomor seperti 52/PMP..., 21/PMP..., dst TIDAK diinput.
+
+  {
+    kode: "BP-ALEXANDER",
+    nama: "BP. ALEXANDER",
+    alamat: "Distributor - pengiriman ke PT. Pitaco Mitra Perkasa, PT. Alko Putra Mahkota, PT. Leo Tunggal Mandiri, PT. Alko Saudara Sejati, PT. Cahaya Nusantara Berkarya",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BA", "PASIR BANGKA", 430000, 0, 0, "CD"],
+      ["C01", "CC", "PASIR URUG", 240000, 0, 0, "CD"],
+      ["P01", "PT", "PASIR PASANG CILEGON", 300000, 0, 0, "CD"],
+      ["E01", "EE", "PASIR COR / KALIMANTAN", 350000, 0, 0, "CD"],
+      ["P02", "PJ", "PASIR JAMBI", 330000, 0, 0, "CD"],
+      ["B02", "BB", "BATU SPLIT", 475000, 0, 0, "CD"],
+      ["D01", "DD", "BATU BELAH", 350000, 0, 0, "CD"],
+      ["K01", "KK", "MAKADAM", 350000, 0, 0, "CD"],
+      ["H01", "HH", "SIRDAM", 350000, 0, 0, "CD"],
+      ["I01", "II", "ABU BATU", 385000, 0, 0, "CD"],
+      ["G01", "GG", "BASECOSE B", 375000, 0, 0, "CD"],
+      ["G02", "GG", "BASECOSE A", 450000, 0, 0, "CD"],
+      ["F01", "FF", "SIRTU", 240000, 0, 0, "CD"],
+    ],
+  },
+
+  {
+    kode: "BP-MORENO",
+    nama: "BP. MORENO",
+    alamat: "Distributor - pengiriman ke CV. Areta Jaya, CV. Hotma Marojahan, PT. Harumas PM, PT. Peatalun Jaya, PT. Reza Berkah Abadi, PT. Tiara Sira Jaya, PT. Daliltani Pormesa, PT. Restu Bumantara",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BA", "PASIR BANGKA", 430000, 0, 0, "CD"],
+      ["C01", "CC", "PASIR URUG", 240000, 0, 0, "CD"],
+      ["P01", "PT", "PASIR PASANG CILEGON", 300000, 0, 0, "CD"],
+      ["E01", "EE", "PASIR COR / KALIMANTAN", 350000, 0, 0, "CD"],
+      ["P02", "PJ", "PASIR JAMBI", 330000, 0, 0, "CD"],
+      ["B02", "BB", "BATU SPLIT", 475000, 0, 0, "CD"],
+      ["D01", "DD", "BATU BELAH", 350000, 0, 0, "CD"],
+      ["K01", "KK", "MAKADAM", 350000, 0, 0, "CD"],
+      ["H01", "HH", "SIRDAM", 350000, 0, 0, "CD"],
+      ["I01", "II", "ABU BATU", 385000, 0, 0, "CD"],
+      ["G01", "GG", "BASECOSE B", 375000, 0, 0, "CD"],
+      ["G02", "GG", "BASECOSE A", 450000, 0, 0, "CD"],
+      ["F01", "FF", "SIRTU", 240000, 0, 0, "CD"],
+    ],
+  },
 ];
 
 // =========================================================

@@ -24,6 +24,7 @@ const customers = [
       ["D01", "JM", "COLT JAMBI", 310000, 0, 0, "JAMBI"],
     ],
   },
+
   {
     kode: "TA002",
     nama: "TB. ANEKA JAYA",
@@ -34,6 +35,7 @@ const customers = [
       ["B01", "BS", "BANGKA - COLT", 407000, 0, 0, "JAKARTA"],
     ],
   },
+
   {
     kode: "TA003",
     nama: "TB. AMAT / TB. CENTRAL BANGUNAN",
@@ -44,6 +46,7 @@ const customers = [
       ["B01", "BS", "BANGKA SUPER", 415000, 0, 0, "JAKARTA"],
     ],
   },
+
   {
     kode: "TC054",
     nama: "TB. CAHAYA BARU / SUMUR BATU",
@@ -56,6 +59,7 @@ const customers = [
       ["B02", "BB", "BATU SPLIT", 405000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
     ],
   },
+
   {
     kode: "TF069",
     nama: "FORTUNA TB.",
@@ -67,6 +71,7 @@ const customers = [
       ["B01", "BB", "BATU SPLIT", 210000, 250000, 0, "HRG COLT/M3 SPLIT JKT"],
     ],
   },
+
   {
     kode: "TG065",
     nama: "TB. GLORYA",
@@ -78,6 +83,7 @@ const customers = [
       ["B02", "BS", "BANGKA SUPER", 420000, 300000, 0, "HRG COLT/M3 BANGKA SUPER"],
     ],
   },
+
   {
     kode: "TJ087",
     nama: "TB. JAYA ANUGRAH / MARUNDA",
@@ -92,6 +98,7 @@ const customers = [
       ["B01", "BB", "BATU SPLIT", 205000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
     ],
   },
+
   {
     kode: "TJ095",
     nama: "TB. JAYA ABADI / TAMBUN",
@@ -104,6 +111,7 @@ const customers = [
       ["B02", "BA", "PASIRBANGKA", 285000, 200000, 0, "HRG COLT/M3 BANGKA JKT"],
     ],
   },
+
   {
     kode: "TL092",
     nama: "TB. LESTARI",
@@ -117,6 +125,7 @@ const customers = [
       ["C01", "CC", "PASIR URUK", 220000, 300000, 0, "HRG TRN/M3 URUG JKT"],
     ],
   },
+
   {
     kode: "OM039",
     nama: "BP. MA'MUN",
@@ -126,6 +135,7 @@ const customers = [
       ["B01", "BA", "PASIRBANGKA", 2100000, 300000, 0, "HRG LIMIT DUMP BANGKA JKT"],
     ],
   },
+
   {
     kode: "TM099",
     nama: "TB. MAJU JAYA / SUNTER",
@@ -137,6 +147,7 @@ const customers = [
       ["B02", "BB", "BATU SPLIT", 445000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
     ],
   },
+
   {
     kode: "TN002",
     nama: "TB. NEW JAYA",
@@ -149,6 +160,7 @@ const customers = [
       ["D01", "DD", "BATU BELAH", 330000, 300000, 0, "HRG COLT/M3 BATU JKT"],
     ],
   },
+
   {
     kode: "TP134",
     nama: "TB. PRIMA",
@@ -161,6 +173,7 @@ const customers = [
       ["B02", "BA", "PASIRBANGKA", 375000, 300000, 0, "HRG COLT/M3 P.BANGKA JKT"],
     ],
   },
+
   {
     kode: "TS131",
     nama: "TB. SINAR PELITA",
@@ -172,6 +185,7 @@ const customers = [
       ["B03", "BA", "PASIRBANGKA", 395000, 300000, 0, "HRG COLT/M3 BANGKA TANGERANG"],
     ],
   },
+
   {
     kode: "TS132",
     nama: "TB. SAHABAT / KELAPA GADING",
@@ -183,6 +197,7 @@ const customers = [
       ["B02", "BA", "PASIRBANGKA", 435000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
     ],
   },
+
   {
     kode: "TS154",
     nama: "TB. SINAR MAKMUR / SUNTER",
@@ -194,6 +209,7 @@ const customers = [
       ["B02", "BB", "BATU SPLIT", 440000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
     ],
   },
+
   {
     kode: "TS156",
     nama: "TB. SINAR MAKMUR / PONDOK UNGU",
@@ -206,6 +222,7 @@ const customers = [
       ["C01", "CC", "PASIR URUK", 650000, 160000, 0, "HRG LMT DUMP URUG JKT"],
     ],
   },
+
   {
     kode: "TS189",
     nama: "TB. SURYA MAKMUR",
@@ -215,34 +232,137 @@ const customers = [
       ["B02", "BA", "PASIRBANGKA", 460000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
     ],
   },
-  // --- Customer baru (dari catatan sistem lama, foto nota) ---
-  // Catatan: sebagian foto agak buram, harga di bawah ini best-effort.
-  // Cek & lengkapi lagi lewat menu Customer > Harga kalau ada yang meleset.
+
+  // =========================================================
+  // CUSTOMER BARU DARI FOTO SISTEM LAMA
+  // =========================================================
+
   {
     kode: "TS196",
-    nama: "TB. SUMBER BARU / DP. HERI",
+    nama: "TB. SUMBER BARU / BP. HERI",
     alamat: "Jl. Terusan Menteng Lagoa, Jakarta",
     divisi: DIVISI_CUSTOMER,
     prices: [
       ["D01", "DD", "BATU BELAH", 440000, 300000, 0, "HRG BATU COLT/M3 JKT"],
-      ["M01", "BB", "BATU SPLIT", 440000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
-      ["M02", "PJ", "PASIR JAMBI", 378000, 300000, 0, "HRG COLT/M3 JAMBI CIBUBUR"],
-      ["D04", "BA", "PASIRBANGKA", 410000, 300000, 0, "HRG COLT/M3 BANGKA JAKUT"],
+      ["B01", "BB", "BATU SPLIT", 440000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+      ["B04", "BA", "PASIRBANGKA", 410000, 300000, 0, "HRG COLT/M3 BANGKA JAKUT"],
+      ["M01", "MM", "PS.CILEGON", 310000, 300000, 0, "HRG COLT/M3 CILEGON JKT"],
+      ["M02", "MM", "PS.CILEGON", 360000, 300000, 0, "HRG COLT/M3 CILEGON BOGOR"],
+      ["P01", "PJ", "PASIR JAMBI", 370000, 300000, 0, "HRG COLT/M3 JAMBI CIBUBUR"],
     ],
   },
+
   {
     kode: "TS221",
     nama: "TB. SAHABAT KITA",
-    alamat: "Jl. Boulevard Raya Blok QJ5 No. 18, Kelapa Gading (arah Tanah Merah)",
+    alamat: "Jl. Boulevard Raya Blok QJ5 No. 18 Kelapa Gading (arah Tanah Merah)",
     telepon: "45847056-45845431",
     divisi: DIVISI_CUSTOMER,
     prices: [
       ["B01", "BA", "PASIRBANGKA", 420000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
     ],
   },
+
+  {
+    kode: "TS240",
+    nama: "SUMBER BARU 2, TB.",
+    alamat: "Jl. Kesemek No. 6 (Jaya) Depan Apotik Semper",
+    telepon: "4400736-4406642",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["A01", "AA", "PASIR PUTIH", 210000, 160000, 0, "HRG COLT/M3 JAKUT+TIM+PUS"],
+      ["D01", "DD", "BATU BELAH", 410000, 300000, 0, "HRG COLT/M3 BATU JKT"],
+      ["B02", "BA", "PASIRBANGKA", 420000, 300000, 0, "HRG COLT/M3 P.BANGKA JKT"],
+      ["P01", "PJ", "PASIR JAMBI", 330000, 300000, 0, "HRG COLT/M3 P.JAMBI JKT"],
+      ["I01", "II", "ABU BATU", 385000, 300000, 0, "HRG COLT/M3 ABUBATU JKT"],
+    ],
+  },
+
+  {
+    kode: "TS259",
+    nama: "SUMBER BARU, TB/KO YANTO",
+    alamat: "Jl. Kramat Jaya Sebelum Islamic Center",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["A01", "AA", "PASIR PUTIH", 120000, 250000, 0, "HRG COLT/M3 PASIR PUTIH JKT"],
+      ["F01", "FF", "SIRTU", 120000, 250000, 0, "HRG COLT/M3 SIRTU JKT"],
+      ["B01", "BB", "BATU SPLIT", 195000, 250000, 0, "HRG COLT/M3 SPLIT JKT"],
+      ["B02", "BA", "PASIRBANGKA", 390000, 300000, 0, "HRG COLT/M3 P.BANGKA JKT"],
+      ["C01", "CC", "PASIR URUK", 870000, 250000, 0, "HRG LIMIT DUMP URUG JKT"],
+      ["D01", "DD", "BATU BELAH", 210000, 250000, 0, "HRG COLT/M3 BATU JKT"],
+      ["I01", "II", "ABU BATU", 900000, 160000, 0, "HRG LMT DUMP ABUBATU JKT"],
+      ["M01", "MM", "PS.CILEGON", 210000, 300000, 0, "HRG COLT/M3 CILEGON JKT"],
+    ],
+  },
+
+  {
+    kode: "0A011",
+    nama: "KO'AHI",
+    alamat: "JAKARTA",
+    telepon: "081389200898",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BA", "PASIRBANGKA", 2200000, 300000, 0, "HRG LMT DUMP BANGKA JKT"],
+      ["B02", "BB", "BATU SPLIT", 2500000, 300000, 0, "HRG LIMIT DUMP SPLIT JKT"],
+    ],
+  },
+
+  {
+    kode: "0A025",
+    nama: "BP. APAU (SE)",
+    alamat: "MJM JL.KH.HASYIMASHARI 81 RT02 /01 PD.PUCUNGKARANG TENGAH, TGRG",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B02", "BA", "PASIRBANGKA", 420000, 300000, 0, "HRG COLT/M3 BANGKA TGRNG"],
+      ["B01", "BB", "BATU SPLIT", 450000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+    ],
+  },
+
+  {
+    kode: "00023",
+    nama: "BP. BRAM / PULAU",
+    alamat: "TJ.PRIOK JAKARTA",
+    telepon: "4307757-FAX",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BB", "BATU SPLIT", 175000, 230000, 0, "HRG COLT.D/M3 SPLIT JKT"],
+      ["J01", "JJ", "PASIR HITAM", 175000, 170000, 0, "HRG COLT/M3 PASIR HITAM JKT"],
+      ["C02", "CC", "PASIR URUK", 215000, 300000, 0, "HRG COLT/M3 P.URUG JKT"],
+      ["K01", "KK", "MAKADAM", 0, 0, 0, ""],
+      ["D01", "DD", "BATU BELAH", 275000, 300000, 0, "HRG TRN/M3 BATU DEPOK"],
+      ["P01", "PT", "PS.PASANG", 210000, 300000, 0, "HRG TRN/M3 PASANG JKT"],
+    ],
+  },
+
+  {
+    kode: "00027",
+    nama: "BP. DENNY",
+    alamat: "PERUM. DUTA HARAPAN 7 NO.2 BEKASI UTARA (BP.AGUS=085848445465)",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B02", "BB", "BATU SPLIT", 440000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+      ["B01", "BA", "PASIRBANGKA", 400000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
+      ["M01", "MM", "PS.CILEGON", 315000, 300000, 0, "HRG COLT/M3 CILEGON JKT"],
+      ["C01", "CC", "PASIR URUK", 255000, 300000, 0, "HRG COLT/M3 URUG JKT"],
+    ],
+  },
+
+  {
+    kode: "0H023",
+    nama: "HARYANTO, BP.",
+    alamat: "JL.PANGERAN JAYAKARTA GG.GATEB NO.16 JAKPUS",
+    telepon: "6590185-08161880917",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["A01", "AA", "PASIR PUTIH", 1440000, 170000, 0, "HRG LMT DUMP JKT"],
+    ],
+  },
 ];
 
-// Master kode stock (dibaca dari daftar "LIST" sistem lama)
+// =========================================================
+// MASTER KODE STOCK
+// =========================================================
+
 const stockCodes = [
   ["AA", "PASIR PUTIH"],
   ["BA", "PASIRBANGKA"],
@@ -304,7 +424,15 @@ async function upsertCustomer(item) {
     },
   });
 
-  for (const [destinationCode, stockCode, stockName, hargaM3, sewaTruk, hppTruk, destination] of item.prices) {
+  for (const [
+    destinationCode,
+    stockCode,
+    stockName,
+    hargaM3,
+    sewaTruk,
+    hppTruk,
+    destination,
+  ] of item.prices) {
     await prisma.customerPrice.upsert({
       where: {
         customerId_destinationCode_stockCode: {
@@ -353,7 +481,11 @@ async function main() {
 
   console.log("Akun admin siap:");
   console.log("  username:", admin.username);
-  console.log("  password:", passwordAdmin, "(segera ganti setelah login pertama)");
+  console.log(
+    "  password:",
+    passwordAdmin,
+    "(segera ganti setelah login pertama)"
+  );
 
   // Pertahankan customer contoh lama bila sudah ada, tetapi beri kode master.
   await prisma.customer.upsert({
@@ -381,9 +513,11 @@ async function main() {
       create: { kode, nama },
     });
   }
-  console.log(`${stockCodes.length} master kode stock siap.`);
 
-  console.log(`Selesai. ${customers.length} customer utama + master harga telah disiapkan.`);
+  console.log(`${stockCodes.length} master kode stock siap.`);
+  console.log(
+    `Selesai. ${customers.length} customer utama + master harga telah disiapkan.`
+  );
 }
 
 main()

@@ -50,11 +50,23 @@ model Customer {
   telepon   String?
   npwp      String?
   divisi    String
+  aktif     Boolean  @default(true)
   createdAt DateTime @default(now())
 
   invoices  Invoice[]
   prices    CustomerPrice[]
   rekapPenjualan RekapPenjualan[]
+}
+
+// Master kode jenis barang/stock (AA = Pasir Putih, BB = Batu Split, dst).
+// Dipakai sebagai daftar pilihan (dropdown) saat mengisi harga customer,
+// supaya kode tidak diketik manual dan tidak typo/dobel.
+model StockMaster {
+  id        String   @id @default(cuid())
+  kode      String   @unique
+  nama      String
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
 }
 
 model CustomerPrice {

@@ -67,6 +67,223 @@ const customers = [
       ["B01", "BB", "BATU SPLIT", 210000, 250000, 0, "HRG COLT/M3 SPLIT JKT"],
     ],
   },
+  {
+    kode: "TG065",
+    nama: "TB. GLORYA",
+    alamat: "Jl. Sunter Kirana 11 Blok NG2 No. 1",
+    telepon: "6512326-081383340735",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BB", "BATU SPLIT", 150000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+      ["B02", "BS", "BANGKA SUPER", 420000, 300000, 0, "HRG COLT/M3 BANGKA SUPER"],
+    ],
+  },
+  {
+    kode: "TJ087",
+    nama: "TB. JAYA ANUGRAH / MARUNDA",
+    alamat: "Central Ondeadil Blok EA No. 5, Harapan Indah, Bekasi",
+    telepon: "88992217-08161869530-001322574",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["A01", "AA", "PASIR PUTIH", 250000, 200000, 0, "HRG COLT JAKUT+TIM+PUS"],
+      ["B02", "BA", "PASIRBANGKA", 300000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
+      ["C01", "CC", "PASIR URUK", 950000, 300000, 0, "HRG LIMIT URUG JKT"],
+      ["F01", "FF", "SIRTU", 960000, 300000, 0, "HRG LIMIT DUMP SIRTU JKT"],
+      ["B01", "BB", "BATU SPLIT", 205000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+    ],
+  },
+  {
+    kode: "TJ095",
+    nama: "TB. JAYA ABADI / TAMBUN",
+    alamat: "Jl. Mustika Jaya Kalijambe Ds. Lambang Sari, Grand Wisata Bekasi",
+    telepon: "8252624-0816929947",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["A01", "AA", "PASIR PUTIH", 240000, 200000, 0, "HRG TRN/M3 BEKASI+CIBITUNG"],
+      ["B01", "BB", "BATU SPLIT", 210000, 200000, 0, "HRG COLT/M3 SPLIT JKT"],
+      ["B02", "BA", "PASIRBANGKA", 285000, 200000, 0, "HRG COLT/M3 BANGKA JKT"],
+    ],
+  },
+  {
+    kode: "TL092",
+    nama: "TB. LESTARI",
+    alamat: "Jl. Villa Kapuk Mas Blok BM No. 16",
+    telepon: "5416630-5459131-70616500 / 081287109838-08121081818",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["A02", "AA", "PASIR PUTIH", 230000, 200000, 0, "HRG COLT/M3 JKT"],
+      ["B01", "BB", "BATU SPLIT", 225000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+      ["B02", "BA", "PASIRBANGKA", 390000, 300000, 0, "HRG TRN/M3 P.BANGKA JKT"],
+      ["C01", "CC", "PASIR URUK", 220000, 300000, 0, "HRG TRN/M3 URUG JKT"],
+    ],
+  },
+  {
+    kode: "OM039",
+    nama: "BP. MA'MUN",
+    alamat: "Jl. Kemang Timur 13 No. 27 Gg. Jawara, Kec. Mampang Prapatan, Jaksel",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BA", "PASIRBANGKA", 2100000, 300000, 0, "HRG LIMIT DUMP BANGKA JKT"],
+    ],
+  },
+  {
+    kode: "TM099",
+    nama: "TB. MAJU JAYA / SUNTER",
+    alamat: "Jl. Sunter Kemayoran No. 8",
+    telepon: "6517347 / 081385501351-08121921765",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BS", "BANGKASUPER", 415000, 300000, 0, "HRG COLT BANGKA SUPER JKT"],
+      ["B02", "BB", "BATU SPLIT", 445000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+    ],
+  },
+  {
+    kode: "TN002",
+    nama: "TB. NEW JAYA",
+    alamat: "Jl. Sunter Kemayoran No. 3A",
+    telepon: "081519797968-0817820308",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BS", "BANGKASUPER", 435000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
+      ["B02", "BB", "BATU SPLIT", 440000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+      ["D01", "DD", "BATU BELAH", 330000, 300000, 0, "HRG COLT/M3 BATU JKT"],
+    ],
+  },
+  {
+    kode: "TP134",
+    nama: "TB. PRIMA",
+    alamat: "Jl. Terusan Boulevard Timur Raya No. 1, Kelapa Gading",
+    telepon: "70003097/4612278",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["A01", "AA", "PASIR PUTIH", 230000, 200000, 0, "HRG COLT/M3 JAKUT+TIM+PUS"],
+      ["B01", "BB", "BATU SPLIT", 210000, 170000, 0, "HRG COLT/M3 SPLIT JKT"],
+      ["B02", "BA", "PASIRBANGKA", 375000, 300000, 0, "HRG COLT/M3 P.BANGKA JKT"],
+    ],
+  },
+  {
+    kode: "TS131",
+    nama: "TB. SINAR PELITA",
+    alamat: "Perum. Greenville Blok AO No. 10",
+    telepon: "082113667668",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B02", "BA", "PASIRBANGKA", 380000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
+      ["B03", "BA", "PASIRBANGKA", 395000, 300000, 0, "HRG COLT/M3 BANGKA TANGERANG"],
+    ],
+  },
+  {
+    kode: "TS132",
+    nama: "TB. SAHABAT / KELAPA GADING",
+    alamat: "Jl. Kelapa Gading Timur 5 RT.05/17",
+    telepon: "081292756913-081297184443",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BB", "BATU SPLIT", 440000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+      ["B02", "BA", "PASIRBANGKA", 435000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
+    ],
+  },
+  {
+    kode: "TS154",
+    nama: "TB. SINAR MAKMUR / SUNTER",
+    alamat: "Jl. Sunter Jaya Barat No. 78",
+    telepon: "6505263-08129921999",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BS", "BANGKASUPER", 400000, 300000, 0, "HRG COLT/M3 BANGKA SUPER"],
+      ["B02", "BB", "BATU SPLIT", 440000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+    ],
+  },
+  {
+    kode: "TS156",
+    nama: "TB. SINAR MAKMUR / PONDOK UNGU",
+    alamat: "Jl. Kali Abang Tengah No. 70, Pondok Ungu, Bekasi",
+    telepon: "88970450",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BB", "BATU SPLIT", 450000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+      ["B02", "BA", "PASIRBANGKA", 395000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
+      ["C01", "CC", "PASIR URUK", 650000, 160000, 0, "HRG LMT DUMP URUG JKT"],
+    ],
+  },
+  {
+    kode: "TS189",
+    nama: "TB. SURYA MAKMUR",
+    alamat: "Jl. Pangeran Jayakarta No. 340",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B02", "BA", "PASIRBANGKA", 460000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
+    ],
+  },
+  // --- Customer baru (dari catatan sistem lama, foto nota) ---
+  // Catatan: sebagian foto agak buram, harga di bawah ini best-effort.
+  // Cek & lengkapi lagi lewat menu Customer > Harga kalau ada yang meleset.
+  {
+    kode: "TS196",
+    nama: "TB. SUMBER BARU / DP. HERI",
+    alamat: "Jl. Terusan Menteng Lagoa, Jakarta",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["D01", "DD", "BATU BELAH", 440000, 300000, 0, "HRG BATU COLT/M3 JKT"],
+      ["M01", "BB", "BATU SPLIT", 440000, 300000, 0, "HRG COLT/M3 SPLIT JKT"],
+      ["M02", "PJ", "PASIR JAMBI", 378000, 300000, 0, "HRG COLT/M3 JAMBI CIBUBUR"],
+      ["D04", "BA", "PASIRBANGKA", 410000, 300000, 0, "HRG COLT/M3 BANGKA JAKUT"],
+    ],
+  },
+  {
+    kode: "TS221",
+    nama: "TB. SAHABAT KITA",
+    alamat: "Jl. Boulevard Raya Blok QJ5 No. 18, Kelapa Gading (arah Tanah Merah)",
+    telepon: "45847056-45845431",
+    divisi: DIVISI_CUSTOMER,
+    prices: [
+      ["B01", "BA", "PASIRBANGKA", 420000, 300000, 0, "HRG COLT/M3 BANGKA JKT"],
+    ],
+  },
+];
+
+// Master kode stock (dibaca dari daftar "LIST" sistem lama)
+const stockCodes = [
+  ["AA", "PASIR PUTIH"],
+  ["BA", "PASIRBANGKA"],
+  ["BB", "BATU SPLIT"],
+  ["BR", "BANGKA PAP"],
+  ["BS", "BANGKA SUPER"],
+  ["CC", "PASIR URUK"],
+  ["DB", "PS. CUCI CELUP"],
+  ["DD", "BATU BELAH"],
+  ["EE", "PASIR COR"],
+  ["FF", "SIRTU"],
+  ["GG", "BASECOSE"],
+  ["HH", "SIRDAM"],
+  ["II", "ABU BATU"],
+  ["JJ", "PASIR HITAM"],
+  ["KK", "MAKADAM"],
+  ["LL", "PASIR TAYAN"],
+  ["LS", "LAMPUNG SUPER"],
+  ["MC", "EXTRA BETON HITAM"],
+  ["ML", "PS. MALIMPING"],
+  ["MM", "PS. CILEGON"],
+  ["NN", "LIMESTONE"],
+  ["OO", "PS. RANGKAS"],
+  ["PA", "PASIR AYAK"],
+  ["PB", "PS. BELITUNG"],
+  ["PC", "PS. CIWANDAN"],
+  ["PG", "KROCO"],
+  ["PI", "PUING"],
+  ["PJ", "PASIR JAMBI"],
+  ["PK", "P. KALIMANTAN"],
+  ["PL", "PS. LINGKAR"],
+  ["PP", "PS. PURWAKARTA"],
+  ["PS", "RANGKAS CUCI"],
+  ["PT", "PS. PASANG"],
+  ["PW", "PS. TL BAWANG"],
+  ["SH", "PASIR SUBANG"],
+  ["SM", "SEMEN"],
+  ["SS", "SKRINING"],
+  ["TM", "TANAH MERAH"],
+  ["TR", "RENTAL MOBIL"],
+  ["TU", "TANAH URUG"],
 ];
 
 async function upsertCustomer(item) {
@@ -156,6 +373,15 @@ async function main() {
     const customer = await upsertCustomer(item);
     console.log(`Customer ${customer.kode} siap: ${customer.nama}`);
   }
+
+  for (const [kode, nama] of stockCodes) {
+    await prisma.stockMaster.upsert({
+      where: { kode },
+      update: { nama },
+      create: { kode, nama },
+    });
+  }
+  console.log(`${stockCodes.length} master kode stock siap.`);
 
   console.log(`Selesai. ${customers.length} customer utama + master harga telah disiapkan.`);
 }

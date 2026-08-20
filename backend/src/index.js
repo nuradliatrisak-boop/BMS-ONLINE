@@ -12,6 +12,8 @@ import divisiTxRoutes from "./routes/divisiTx.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import userRoutes from "./routes/users.js";
 import rekapPenjualanRoutes from "./routes/rekapPenjualan.js";
+import stockMasterRoutes from "./routes/stockMaster.js";
+import printCalibRoutes from "./routes/printCalib.js";
 
 import { requireAuth } from "./middleware/auth.js";
 
@@ -46,6 +48,8 @@ app.use("/api/divisi-tx", requireAuth, divisiTxRoutes);
 app.use("/api/dashboard", requireAuth, dashboardRoutes);
 app.use("/api/users", requireAuth, userRoutes);
 app.use("/api/rekap-penjualan", requireAuth, rekapPenjualanRoutes);
+app.use("/api/stock-master", requireAuth, stockMasterRoutes);
+app.use("/api/print-calib", requireAuth, printCalibRoutes);
 
 // Penanganan error terpusat
 app.use((err, req, res, next) => {

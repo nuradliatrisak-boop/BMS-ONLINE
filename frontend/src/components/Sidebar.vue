@@ -113,6 +113,15 @@ function doLogout() {
         <span class="ic">🔐</span>
         <span>Kelola Staf</span>
       </router-link>
+
+      <router-link
+        v-if="auth.isAdmin"
+        to="/kalibrasi-cetak"
+        @click="closeSidebar"
+      >
+        <span class="ic">🖨️</span>
+        <span>Kalibrasi Cetak</span>
+      </router-link>
     </nav>
 
     <div class="sidebar-foot">

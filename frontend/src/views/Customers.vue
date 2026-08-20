@@ -6,13 +6,20 @@ import { toast } from "../services/toast.js";
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
 const customers = ref([]);
+const stockMasterList = ref([]);
 const showModal = ref(false);
 const showPriceModal = ref(false);
 const loading = ref(true);
 const saving = ref(false);
 const search = ref("");
 const filterDivisi = ref("Semua");
+const showInactive = ref(false);
 const selectedCustomer = ref(null);
+
+// Kode stock baru (quick add di dalam modal harga)
+const showNewStock = ref(false);
+const newStock = ref({ kode: "", nama: "" });
+const showStockManager = ref(false);
 
 const emptyForm = () => ({
   kode: "",
@@ -38,13 +45,14 @@ const form = ref(emptyForm());
 const filteredCustomers = computed(() => {
   const keyword = search.value.trim().toLowerCase();
   return customers.value.filter((c) => {
+    const matchAktif = showInactive.value || c.aktif !== false;
     const matchDivisi = filterDivisi.value === "Semua" || c.divisi === filterDivisi.value;
     const matchSearch = !keyword ||
       c.kode?.toLowerCase().includes(keyword) ||
       c.nama?.toLowerCase().includes(keyword) ||
       c.telepon?.toLowerCase().includes(keyword) ||
       c.alamat?.toLowerCase().includes(keyword);
-    return matchDivisi && matchSearch;
+    return matchAktif && matchDivisi && matchSearch;
   });
 });
 
@@ -64,9 +72,24 @@ async function load() {
   }
 }
 
-function openModal() {
+async function loadStockMaster() {
+  try {
+    stockMasterList.value = await api.get("/stock-master?all=1");
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function openModal() {
   form.value = emptyForm();
   showModal.value = true;
+  // Kode digenerate otomatis, tidak perlu diketik manual (biar tidak dobel/typo)
+  try {
+    const res = await api.get("/customers/next-kode");
+    form.value.kode = res.kode;
+  } catch (e) {
+    toast("Gagal menyiapkan kode otomatis, coba lagi");
+  }
 }
 
 function closeModal() {
@@ -74,7 +97,6 @@ function closeModal() {
 }
 
 async function submit() {
-  if (!form.value.kode.trim()) return toast("Kode customer wajib diisi");
   if (!form.value.nama.trim()) return toast("Nama customer wajib diisi");
 
   saving.value = true;
@@ -88,9 +110,28 @@ async function submit() {
     closeModal();
     await load();
   } catch (e) {
+    // Kalau kode ternyata sudah kepakai (misal ada yang nambah bersamaan), generate ulang.
+    if (e?.message?.includes("Kode customer")) {
+      try {
+        const res = await api.get("/customers/next-kode");
+        form.value.kode = res.kode;
+      } catch {}
+    }
     toast(e?.message || "Gagal menambahkan customer");
   } finally {
     saving.value = false;
+  }
+}
+
+async function toggleAktif(customer) {
+  const aksi = customer.aktif === false ? "aktifkan" : "nonaktifkan";
+  if (!confirm(`Yakin mau ${aksi} customer ${customer.nama}?`)) return;
+  try {
+    await api.patch(`/customers/${customer.id}/nonaktifkan`);
+    toast(`Customer berhasil di-${aksi}`);
+    await load();
+  } catch (e) {
+    toast(e?.message || `Gagal ${aksi} customer`);
   }
 }
 
@@ -105,7 +146,53 @@ function openPriceModal(customer) {
     hppTruk: 0,
     destination: "",
   };
+  showNewStock.value = false;
+  showStockManager.value = false;
   showPriceModal.value = true;
+}
+
+// Waktu kode stock dipilih dari dropdown, otomatis isi nama stock-nya juga
+function onStockCodeChange() {
+  const found = stockMasterList.value.find((s) => s.kode === priceForm.value.stockCode);
+  priceForm.value.stockName = found ? found.nama : "";
+}
+
+async function saveNewStock() {
+  if (!newStock.value.kode.trim() || !newStock.value.nama.trim()) {
+    return toast("Kode dan nama stock wajib diisi");
+  }
+  try {
+    const created = await api.post("/stock-master", newStock.value);
+    toast("Kode stock baru berhasil ditambahkan");
+    await loadStockMaster();
+    priceForm.value.stockCode = created.kode;
+    priceForm.value.stockName = created.nama;
+    newStock.value = { kode: "", nama: "" };
+    showNewStock.value = false;
+  } catch (e) {
+    toast(e?.message || "Gagal menambahkan kode stock");
+  }
+}
+
+async function updateStock(item) {
+  try {
+    await api.put(`/stock-master/${item.id}`, { kode: item.kode, nama: item.nama });
+    toast("Kode stock berhasil diperbarui");
+    await loadStockMaster();
+  } catch (e) {
+    toast(e?.message || "Gagal memperbarui kode stock");
+  }
+}
+
+async function deleteStock(item) {
+  if (!confirm(`Hapus kode stock ${item.kode} - ${item.nama} dari daftar?`)) return;
+  try {
+    await api.delete(`/stock-master/${item.id}`);
+    toast("Kode stock berhasil dihapus");
+    await loadStockMaster();
+  } catch (e) {
+    toast(e?.message || "Gagal menghapus kode stock");
+  }
 }
 
 function closePriceModal() {
@@ -167,7 +254,10 @@ function resetFilter() {
   filterDivisi.value = "Semua";
 }
 
-onMounted(load);
+onMounted(() => {
+  load();
+  loadStockMaster();
+});
 </script>
 
 <template>
@@ -215,6 +305,7 @@ onMounted(load);
         </select>
       </div>
       <button v-if="search || filterDivisi !== 'Semua'" class="btn btn-ghost filter-reset" @click="resetFilter">Reset</button>
+      <label class="show-inactive"><input type="checkbox" v-model="showInactive" /> Tampilkan yang nonaktif</label>
     </div>
 
     <div v-if="loading" class="empty"><div class="big">◌</div>Memuat data customer...</div>
@@ -248,15 +339,19 @@ onMounted(load);
             </tr>
           </thead>
           <tbody>
-            <tr v-for="c in filteredCustomers" :key="c.id">
+            <tr v-for="c in filteredCustomers" :key="c.id" :class="{ 'row-inactive': c.aktif === false }">
               <td><span class="customer-code mono">{{ c.kode }}</span></td>
-              <td><div class="customer-name">{{ c.nama }}</div></td>
+              <td>
+                <div class="customer-name">{{ c.nama }}</div>
+                <span v-if="c.aktif === false" class="inactive-badge">Nonaktif</span>
+              </td>
               <td><span class="division-badge">{{ c.divisi }}</span></td>
               <td><button class="price-count" @click="openPriceModal(c)">{{ c.prices?.length || 0 }} harga</button></td>
               <td><span class="contact-text">{{ c.telepon || "-" }}</span></td>
               <td><div class="address-text">{{ c.alamat || "-" }}</div></td>
               <td class="action-cell">
                 <button class="btn btn-sm btn-ghost" @click="openPriceModal(c)">Harga</button>
+                <button class="btn btn-sm btn-ghost" @click="toggleAktif(c)">{{ c.aktif === false ? "Aktifkan" : "Nonaktifkan" }}</button>
                 <button class="btn btn-sm btn-danger" @click="remove(c.id)">Hapus</button>
               </td>
             </tr>
@@ -271,14 +366,14 @@ onMounted(load);
       <button class="modal-close" type="button" @click="closeModal">×</button>
       <div class="modal-heading">
         <div class="modal-icon">＋</div>
-        <div><h2>Tambah Customer</h2><div class="msub">Kode customer dipakai sebagai identitas master seperti sistem lama.</div></div>
+        <div><h2>Tambah Customer</h2><div class="msub">Kode customer digenerate otomatis, tidak perlu diketik manual.</div></div>
       </div>
 
       <div class="form-section-title">Informasi Master</div>
       <div class="row">
         <div class="field">
-          <label>Kode Customer <span class="required">*</span></label>
-          <input v-model="form.kode" placeholder="Contoh: TA001" />
+          <label>Kode Customer</label>
+          <input v-model="form.kode" readonly class="input-readonly" title="Digenerate otomatis" />
         </div>
         <div class="field">
           <label>Nama Customer <span class="required">*</span></label>
@@ -328,9 +423,38 @@ onMounted(load);
       <div class="form-section-title" style="margin-top:18px">Tambah Harga</div>
       <div class="row">
         <div class="field"><label>Kode Tujuan</label><input v-model="priceForm.destinationCode" placeholder="A01 / B01" /></div>
-        <div class="field"><label>Kode Stock</label><input v-model="priceForm.stockCode" placeholder="AA / BB / BS" /></div>
+        <div class="field">
+          <label>Kode Stock</label>
+          <select v-model="priceForm.stockCode" @change="onStockCodeChange">
+            <option value="" disabled>Pilih kode stock...</option>
+            <option v-for="s in stockMasterList.filter(x => x.aktif !== false)" :key="s.id" :value="s.kode">{{ s.kode }} — {{ s.nama }}</option>
+          </select>
+          <div class="stock-actions">
+            <button type="button" class="link-btn" @click="showNewStock = !showNewStock">+ Kode stock belum ada di daftar?</button>
+            <button type="button" class="link-btn" @click="showStockManager = !showStockManager">Kelola kode stock</button>
+          </div>
+        </div>
       </div>
-      <div class="field"><label>Nama Stock / Jenis</label><input v-model="priceForm.stockName" placeholder="BATU SPLIT / BANGKA SUPER" /></div>
+
+      <div v-if="showNewStock" class="inline-add-box">
+        <div class="row">
+          <div class="field"><label>Kode Baru</label><input v-model="newStock.kode" placeholder="Contoh: XY" style="text-transform:uppercase" /></div>
+          <div class="field"><label>Nama Stock</label><input v-model="newStock.nama" placeholder="Contoh: PASIR MERAH" /></div>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" @click="saveNewStock">Simpan Kode Stock</button>
+      </div>
+
+      <div v-if="showStockManager" class="inline-add-box stock-manager">
+        <div class="msub" style="margin-bottom:8px">Edit nama atau hapus kode stock yang sudah ada.</div>
+        <div class="stock-manage-row" v-for="s in stockMasterList" :key="s.id">
+          <input v-model="s.kode" class="stock-kode-input" style="text-transform:uppercase" />
+          <input v-model="s.nama" class="stock-nama-input" />
+          <button type="button" class="btn btn-sm btn-ghost" @click="updateStock(s)">Simpan</button>
+          <button type="button" class="btn btn-sm btn-danger" @click="deleteStock(s)">Hapus</button>
+        </div>
+      </div>
+
+      <div class="field"><label>Nama Stock / Jenis</label><input v-model="priceForm.stockName" placeholder="Terisi otomatis dari kode stock, atau isi manual" /></div>
       <div class="row">
         <div class="field"><label>Harga</label><input v-model.number="priceForm.hargaM3" type="number" min="0" /></div>
         <div class="field"><label>Sewa Truck</label><input v-model.number="priceForm.sewaTruk" type="number" min="0" /></div>
@@ -384,6 +508,17 @@ onMounted(load);
 .price-values { display:flex; flex-direction:column; align-items:flex-end; gap:3px; font-size:10px; color:var(--ink-soft); white-space:nowrap; }
 .price-values strong { color:var(--ink); font-family:"JetBrains Mono",monospace; }
 .price-empty { padding:20px; }
+.show-inactive { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); white-space:nowrap; margin-left:auto; }
+.row-inactive { opacity:.55; }
+.inactive-badge { display:inline-block; margin-top:3px; padding:2px 7px; border-radius:20px; background:#fde3e3; color:#b23b3b; font-size:9.5px; font-weight:700; }
+.input-readonly { background:#f0f2f5; color:var(--ink-soft); font-weight:700; }
+.stock-actions { display:flex; gap:12px; margin-top:5px; }
+.link-btn { background:none; border:none; padding:0; color:var(--bms-blue-dark); font-size:11px; font-weight:600; cursor:pointer; text-decoration:underline; }
+.inline-add-box { background:#f7f9fc; border:1px dashed var(--line); border-radius:9px; padding:12px; margin:8px 0 14px; }
+.stock-manager { max-height:220px; overflow:auto; }
+.stock-manage-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.stock-kode-input { width:60px; flex-shrink:0; }
+.stock-nama-input { flex:1; }
 @media (max-width:700px) {
   .customer-toolbar { flex-direction:column; align-items:stretch; }
   .customer-search,.customer-filter { width:100%; min-width:0; }

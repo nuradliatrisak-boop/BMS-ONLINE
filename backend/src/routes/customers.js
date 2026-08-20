@@ -26,6 +26,23 @@ router.get("/", async (req, res, next) => {
   }
 });
 
+// Menyarankan kode customer berikutnya secara otomatis (format TSxxx),
+// meneruskan urutan yang sudah dipakai sistem lama supaya tidak dobel/typo.
+router.get("/next-kode", async (req, res, next) => {
+  try {
+    const all = await prisma.customer.findMany({ select: { kode: true } });
+    let max = 0;
+    for (const c of all) {
+      const m = /(\d+)\s*$/.exec(c.kode || "");
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    }
+    const next = String(max + 1).padStart(3, "0");
+    res.json({ kode: `TS${next}` });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get("/:id/prices", async (req, res, next) => {
   try {
     const prices = await prisma.customerPrice.findMany({
@@ -175,11 +192,39 @@ router.delete("/:id/prices/:priceId", async (req, res, next) => {
   }
 });
 
+// Nonaktifkan / aktifkan kembali customer. Dipakai sebagai pengganti hapus
+// untuk customer yang sudah pernah dipakai di invoice/rekap penjualan
+// (data lama tidak boleh hilang, jadi tidak benar-benar dihapus dari database).
+router.patch("/:id/nonaktifkan", async (req, res, next) => {
+  try {
+    const current = await prisma.customer.findUnique({ where: { id: req.params.id } });
+    if (!current) return res.status(404).json({ error: "Customer tidak ditemukan" });
+
+    const customer = await prisma.customer.update({
+      where: { id: req.params.id },
+      data: { aktif: !current.aktif },
+      include: customerInclude,
+    });
+    res.json(customer);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.delete("/:id", async (req, res, next) => {
   try {
     await prisma.customer.delete({ where: { id: req.params.id } });
     res.status(204).end();
   } catch (e) {
+    // P2003 / P2014: dilindungi foreign key karena customer ini sudah
+    // dipakai di Invoice atau RekapPenjualan. Jangan hapus paksa, kasih
+    // pesan yang jelas supaya user pakai tombol Nonaktifkan sebagai ganti.
+    if (e.code === "P2003" || e.code === "P2014") {
+      return res.status(409).json({
+        error:
+          "Customer ini sudah pernah dipakai di Invoice/Rekap Penjualan, jadi tidak bisa dihapus (supaya riwayat transaksi lama tidak rusak). Gunakan tombol Nonaktifkan sebagai gantinya.",
+      });
+    }
     next(e);
   }
 });

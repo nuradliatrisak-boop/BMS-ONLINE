@@ -28,10 +28,10 @@ async function submit() {
 <template>
   <div class="login-wrap">
     <form class="login-card" @submit.prevent="submit">
-      <div class="mark login-logo">BMS</div>
+      <div class="mark login-logo">
         <img src="/bms-logo.jpeg" alt="BMS Logo" />
       </div>
-      
+
       <h1>Sistem BMS</h1>
       <div class="sub">PT Bintang Muara Sejati</div>
 
@@ -39,13 +39,29 @@ async function submit() {
 
       <div class="field">
         <label>Username</label>
-        <input v-model="username" type="text" autocomplete="username" required />
+        <input
+          v-model="username"
+          type="text"
+          autocomplete="username"
+          required
+        />
       </div>
+
       <div class="field">
         <label>Password</label>
-        <input v-model="password" type="password" autocomplete="current-password" required />
+        <input
+          v-model="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        />
       </div>
-      <button class="btn btn-primary" style="width:100%; justify-content:center;" :disabled="loading">
+
+      <button
+        class="btn btn-primary"
+        style="width:100%; justify-content:center;"
+        :disabled="loading"
+      >
         {{ loading ? "Memproses…" : "Masuk" }}
       </button>
     </form>

@@ -44,6 +44,7 @@ model User {
 
 model Customer {
   id        String   @id @default(cuid())
+  kode      String   @unique
   nama      String
   alamat    String?
   telepon   String?
@@ -52,6 +53,46 @@ model Customer {
   createdAt DateTime @default(now())
 
   invoices  Invoice[]
+  prices    CustomerPrice[]
+  rekapPenjualan RekapPenjualan[]
+}
+
+model CustomerPrice {
+  id              String   @id @default(cuid())
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  destinationCode String
+  stockCode       String
+  stockName       String
+  hargaM3         Float    @default(0)
+  sewaTruk        Float    @default(0)
+  hppTruk         Float    @default(0)
+  destination     String?
+  discount        String?
+  createdAt       DateTime @default(now())
+
+  @@unique([customerId, destinationCode, stockCode])
+}
+
+model RekapPenjualan {
+  id            String   @id @default(cuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  tanggal       DateTime
+  noSuratJalan  String
+  noPolisi      String
+  jenisBarang   String
+  panjang       Float    @default(0)
+  lebar         Float    @default(0)
+  tinggi        Float    @default(0)
+  jumlah        Float    @default(0)
+  harga         Float    @default(0)
+  total         Float    @default(0)
+  catatan       String?
+  createdAt     DateTime @default(now())
+
+  @@index([customerId, tanggal])
+  @@index([noSuratJalan])
 }
 
 model Armada {

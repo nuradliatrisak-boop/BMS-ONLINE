@@ -11,6 +11,7 @@ import suratJalanRoutes from "./routes/suratJalan.js";
 import divisiTxRoutes from "./routes/divisiTx.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import userRoutes from "./routes/users.js";
+import rekapPenjualanRoutes from "./routes/rekapPenjualan.js";
 
 import { requireAuth } from "./middleware/auth.js";
 
@@ -44,6 +45,7 @@ app.use("/api/surat-jalan", requireAuth, suratJalanRoutes);
 app.use("/api/divisi-tx", requireAuth, divisiTxRoutes);
 app.use("/api/dashboard", requireAuth, dashboardRoutes);
 app.use("/api/users", requireAuth, userRoutes);
+app.use("/api/rekap-penjualan", requireAuth, rekapPenjualanRoutes);
 
 // Penanganan error terpusat
 app.use((err, req, res, next) => {

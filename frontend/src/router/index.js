@@ -11,6 +11,7 @@ import InvoiceDetail from "../views/InvoiceDetail.vue";
 import SuratJalan from "../views/SuratJalan.vue";
 import DivisiLaporan from "../views/DivisiLaporan.vue";
 import Users from "../views/Users.vue";
+import RekapPenjualan from "../views/RekapPenjualan.vue";
 
 const routes = [
   { path: "/login", name: "login", component: Login, meta: { public: true } },
@@ -22,6 +23,7 @@ const routes = [
   { path: "/invoices/:id", name: "invoice-detail", component: InvoiceDetail },
   { path: "/surat-jalan", name: "surat-jalan", component: SuratJalan },
   { path: "/laporan-divisi", name: "laporan-divisi", component: DivisiLaporan },
+  { path: "/rekap-penjualan", name: "rekap-penjualan", component: RekapPenjualan },
   { path: "/users", name: "users", component: Users, meta: { adminOnly: true } },
 ];
 

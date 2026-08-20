@@ -95,6 +95,11 @@ function doLogout() {
         <span>Surat Jalan</span>
       </router-link>
 
+      <router-link to="/rekap-penjualan" @click="closeSidebar">
+        <span class="ic">🧾</span>
+        <span>Rekap Penjualan</span>
+      </router-link>
+
       <router-link to="/laporan-divisi" @click="closeSidebar">
         <span class="ic">📈</span>
         <span>Laporan Divisi</span>

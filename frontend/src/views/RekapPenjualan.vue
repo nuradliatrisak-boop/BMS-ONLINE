@@ -12,7 +12,11 @@ const showModal = ref(false);
 
 const filter = ref({
   customerId: "",
+  customerSearch: "",
+  mode: "bulan", // "bulan" atau "rentang"
   bulan: new Date().toISOString().slice(0, 7),
+  dari: "",
+  sampai: "",
 });
 
 const headerForm = ref({
@@ -36,6 +40,16 @@ const form = ref({
 });
 
 const selectedCustomer = computed(() => customers.value.find((c) => c.id === filter.value.customerId));
+
+// Daftar customer yang tampil di dropdown, dipersempit sesuai kata kunci
+// pencarian nama/kode customer yang diketik user.
+const filteredCustomerOptions = computed(() => {
+  const q = filter.value.customerSearch.trim().toLowerCase();
+  if (!q) return customers.value;
+  return customers.value.filter(
+    (c) => c.nama.toLowerCase().includes(q) || c.kode.toLowerCase().includes(q)
+  );
+});
 const formCustomer = computed(() => customers.value.find((c) => c.id === form.value.customerId));
 const priceOptions = computed(() => formCustomer.value?.prices || []);
 
@@ -73,7 +87,12 @@ async function load() {
   try {
     const params = new URLSearchParams();
     if (filter.value.customerId) params.set("customerId", filter.value.customerId);
-    if (filter.value.bulan) params.set("bulan", filter.value.bulan);
+    if (filter.value.mode === "bulan" && filter.value.bulan) {
+      params.set("bulan", filter.value.bulan);
+    } else if (filter.value.mode === "rentang") {
+      if (filter.value.dari) params.set("from", filter.value.dari);
+      if (filter.value.sampai) params.set("to", filter.value.sampai);
+    }
     const data = await api.get(`/rekap-penjualan?${params.toString()}`);
     rows.value = data.rows || [];
     summary.value = data.summary || { count: 0, jumlah: 0, total: 0 };
@@ -143,9 +162,68 @@ function printReport() {
   window.print();
 }
 
-watch([() => filter.value.customerId, () => filter.value.bulan], load);
+async function exportExcel() {
+  if (!rows.value.length) {
+    return toast("Tidak ada data untuk diexport");
+  }
+  const XLSX = await import("xlsx");
+  const data = rows.value.map((r, i) => ({
+    No: i + 1,
+    Tanggal: formatTanggal(r.tanggal),
+    "No Surat Jalan": r.noSuratJalan,
+    "No Polisi": r.noPolisi,
+    "Jenis Barang": r.jenisBarang,
+    P: r.panjang,
+    L: r.lebar,
+    T: r.tinggi,
+    Jumlah: r.jumlah,
+    Harga: r.harga,
+    Total: r.total,
+    Catatan: r.catatan || "",
+  }));
+  data.push({
+    No: "",
+    Tanggal: "",
+    "No Surat Jalan": "",
+    "No Polisi": "",
+    "Jenis Barang": "TOTAL",
+    P: "",
+    L: "",
+    T: "",
+    Jumlah: summary.value.jumlah,
+    Harga: "",
+    Total: summary.value.total,
+    Catatan: "",
+  });
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Rekap Penjualan");
+  const namaCustomer = selectedCustomer.value?.nama?.replace(/[^a-z0-9]+/gi, "-") || "semua-customer";
+  const label =
+    filter.value.mode === "bulan" ? filter.value.bulan : `${filter.value.dari || "awal"}_${filter.value.sampai || "akhir"}`;
+  XLSX.writeFile(wb, `rekap-penjualan-${namaCustomer}-${label}.xlsx`);
+}
+
+watch(
+  [
+    () => filter.value.customerId,
+    () => filter.value.bulan,
+    () => filter.value.mode,
+    () => filter.value.dari,
+    () => filter.value.sampai,
+  ],
+  load
+);
 watch(selectedCustomer, (customer) => {
   if (customer) headerForm.value.tujuan = customer.alamat || "";
+});
+watch(() => filter.value.customerSearch, () => {
+  if (
+    filter.value.customerId &&
+    !filteredCustomerOptions.value.some((c) => c.id === filter.value.customerId)
+  ) {
+    filter.value.customerId = "";
+  }
 });
 
 onMounted(async () => {
@@ -165,7 +243,8 @@ onMounted(async () => {
       <div class="desc">Rekap tagihan customer dengan format tabel seperti lembar rekap BMS.</div>
     </div>
     <div class="top-actions">
-      <button class="btn btn-ghost" @click="printReport">🖨 Cetak Rekap</button>
+      <button class="btn btn-ghost" @click="printReport">🖨 Cetak Rekap / PDF</button>
+      <button class="btn btn-ghost" @click="exportExcel">⬇ Export Excel</button>
       <button class="btn btn-primary" @click="openModal">＋ Tambah Baris</button>
     </div>
   </div>
@@ -174,13 +253,36 @@ onMounted(async () => {
     <div class="card filter-card">
       <div class="row">
         <div class="field">
+          <label>Cari Customer <span class="opt">(nama / kode)</span></label>
+          <input
+            v-model="filter.customerSearch"
+            placeholder="Ketik nama customer..."
+          />
+        </div>
+        <div class="field">
           <label>Customer</label>
           <select v-model="filter.customerId">
             <option value="">Semua Customer</option>
-            <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.kode }} — {{ c.nama }}</option>
+            <option v-for="c in filteredCustomerOptions" :key="c.id" :value="c.id">{{ c.kode }} — {{ c.nama }}</option>
           </select>
         </div>
-        <div class="field"><label>Bulan</label><input v-model="filter.bulan" type="month" /></div>
+        <div class="field">
+          <label>Durasi</label>
+          <select v-model="filter.mode">
+            <option value="bulan">Per Bulan</option>
+            <option value="rentang">Rentang Tanggal</option>
+          </select>
+        </div>
+        <div class="field" v-if="filter.mode === 'bulan'">
+          <label>Bulan</label>
+          <input v-model="filter.bulan" type="month" />
+        </div>
+        <template v-else>
+          <div class="field"><label>Dari Tanggal</label><input v-model="filter.dari" type="date" /></div>
+          <div class="field"><label>Sampai Tanggal</label><input v-model="filter.sampai" type="date" /></div>
+        </template>
+      </div>
+      <div class="row">
         <div class="field"><label>No. Invoice Rekapan</label><input v-model="headerForm.noInvoice" /></div>
         <div class="field"><label>PIC / Kepada</label><input v-model="headerForm.pic" placeholder="Contoh: Bp. Ali" /></div>
       </div>
@@ -321,6 +423,7 @@ onMounted(async () => {
 .top-actions { display:flex; gap:8px; }
 .filter-card { margin-bottom:16px; }
 .rekap-summary { margin-bottom:16px; }
+.opt { font-weight:400; color:var(--ink-soft); font-size:11px; }
 .table-wrap { width:100%; overflow-x:auto; }
 .rekap-table { min-width:1100px; }
 .rekap-table th,.rekap-table td { white-space:nowrap; }

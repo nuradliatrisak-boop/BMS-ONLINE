@@ -56,6 +56,7 @@ model Customer {
   invoices  Invoice[]
   prices    CustomerPrice[]
   rekapPenjualan RekapPenjualan[]
+  suratJalan SuratJalan[]
 }
 
 // Master kode jenis barang/stock (AA = Pasir Putih, BB = Batu Split, dst).
@@ -135,6 +136,7 @@ model Invoice {
   customer    Customer @relation(fields: [customerId], references: [id])
   tanggal     DateTime
   jatuhTempo  DateTime?
+  halaman     Int      @default(1)
   status      StatusPembayaran @default(BELUM)
   catatan     String?
   createdAt   DateTime @default(now())
@@ -144,13 +146,15 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          String   @id @default(cuid())
-  invoiceId   String
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  keterangan  String
-  qty         Float
-  satuan      String?
-  hargaSatuan Float
+  id           String   @id @default(cuid())
+  invoiceId    String
+  invoice      Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  suratJalanId String?  @unique
+  suratJalan   SuratJalan? @relation(fields: [suratJalanId], references: [id])
+  keterangan   String
+  qty          Float
+  satuan       String?
+  hargaSatuan  Float
 }
 
 model Pembayaran {
@@ -167,14 +171,28 @@ model SuratJalan {
   id          String   @id @default(cuid())
   no          String   @unique
   divisi      String
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
   armadaId    String?
   armada      Armada?  @relation(fields: [armadaId], references: [id])
   tujuan      String
+  jenisBarang String?
+  noPolisi    String?
+  sopir       String?
+  panjang     Float    @default(0)
+  lebar       Float    @default(0)
+  tinggi      Float    @default(0)
+  m3          Float    @default(0)
+  jam         String?
   tanggal     DateTime
   statusTTD   StatusTTD @default(BELUM_TTD)
   isDraft     Boolean  @default(false)
   detail      Json?    // daftar barang / muatan (fleksibel, mirror bentuk lama)
   createdAt   DateTime @default(now())
+
+  invoiceItems InvoiceItem[]
+
+  @@index([customerId])
 }
 
 model DivisiTx {
@@ -191,4 +209,12 @@ model PrintCalib {
   id      String @id @default(cuid())
   jenis   String @unique // "sj" atau "inv"
   data    Json
+}
+
+// Pengaturan umum aplikasi (key-value), mis. nama penandatangan
+// yang tampil di kolom "Hormat kami," pada cetakan Surat Jalan & Invoice.
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
 }

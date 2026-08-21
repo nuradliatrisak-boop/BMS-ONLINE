@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
+import { printInvoice } from "../services/print.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -10,11 +11,25 @@ const router = useRouter();
 const invoice = ref(null);
 const loading = ref(true);
 const showModal = ref(false);
+const showEditModal = ref(false);
+const showAddItemModal = ref(false);
+const savingEdit = ref(false);
+const savingAddItem = ref(false);
+const belumDitagihRows = ref([]);
+const loadingBelumDitagih = ref(false);
+const itemEdits = ref({}); // { [itemId]: { hargaSatuan, qty } }
 
 const form = ref({
   tanggal: new Date().toISOString().slice(0, 10),
   nominal: 0,
   metode: "",
+  catatan: "",
+});
+
+const editForm = ref({
+  tanggal: "",
+  jatuhTempo: "",
+  halaman: 1,
   catatan: "",
 });
 
@@ -129,6 +144,10 @@ async function load() {
   try {
     loading.value = true;
     invoice.value = await api.get(`/invoices/${route.params.id}`);
+    itemEdits.value = {};
+    for (const it of invoice.value.items) {
+      itemEdits.value[it.id] = { hargaSatuan: it.hargaSatuan, qty: it.qty };
+    }
   } catch (e) {
     toast(e?.message || "Gagal memuat invoice");
   } finally {
@@ -138,8 +157,120 @@ async function load() {
 
 function cetakInvoice() {
   if (!invoice.value) return;
+  printInvoice(invoice.value);
+}
 
-  window.print();
+function openEditModal() {
+  if (!invoice.value) return;
+  editForm.value = {
+    tanggal: invoice.value.tanggal ? new Date(invoice.value.tanggal).toISOString().slice(0, 10) : "",
+    jatuhTempo: invoice.value.jatuhTempo
+      ? new Date(invoice.value.jatuhTempo).toISOString().slice(0, 10)
+      : "",
+    halaman: invoice.value.halaman || 1,
+    catatan: invoice.value.catatan || "",
+  };
+  showEditModal.value = true;
+}
+
+async function submitEditInvoice() {
+  savingEdit.value = true;
+  try {
+    invoice.value = await api.put(`/invoices/${route.params.id}`, {
+      customerId: invoice.value.customerId,
+      tanggal: editForm.value.tanggal,
+      jatuhTempo: editForm.value.jatuhTempo || null,
+      halaman: Number(editForm.value.halaman) || 1,
+      catatan: editForm.value.catatan || null,
+    });
+    toast("Invoice berhasil diperbarui");
+    showEditModal.value = false;
+  } catch (e) {
+    toast(e?.message || "Gagal memperbarui invoice");
+  } finally {
+    savingEdit.value = false;
+  }
+}
+
+async function hapusInvoice() {
+  if (!invoice.value) return;
+  if (!confirm(`Hapus invoice ${invoice.value.no}? Surat jalan yang dipakai akan kembali berstatus belum ditagih.`)) return;
+  try {
+    await api.delete(`/invoices/${route.params.id}`);
+    toast("Invoice berhasil dihapus");
+    router.push({ name: "invoices" });
+  } catch (e) {
+    toast(e?.message || "Gagal menghapus invoice");
+  }
+}
+
+async function openAddItemModal() {
+  showAddItemModal.value = true;
+  loadingBelumDitagih.value = true;
+  try {
+    const list = await api.get(
+      `/surat-jalan/belum-ditagih?customerId=${invoice.value.customerId}`
+    );
+    belumDitagihRows.value = list.map((sj) => ({
+      suratJalanId: sj.id,
+      sj,
+      checked: false,
+      hargaSatuan: 0,
+    }));
+  } catch (e) {
+    toast(e?.message || "Gagal memuat surat jalan yang belum ditagih");
+  } finally {
+    loadingBelumDitagih.value = false;
+  }
+}
+
+async function submitAddItems() {
+  const picked = belumDitagihRows.value.filter((r) => r.checked);
+  if (!picked.length) {
+    return toast("Pilih minimal 1 surat jalan");
+  }
+  savingAddItem.value = true;
+  try {
+    for (const r of picked) {
+      await api.post(`/invoices/${route.params.id}/items`, {
+        suratJalanId: r.suratJalanId,
+        hargaSatuan: Number(r.hargaSatuan) || 0,
+      });
+    }
+    toast("Item berhasil ditambahkan");
+    showAddItemModal.value = false;
+    await load();
+  } catch (e) {
+    toast(e?.message || "Gagal menambahkan item");
+  } finally {
+    savingAddItem.value = false;
+  }
+}
+
+async function updateItemHarga(item) {
+  const edit = itemEdits.value[item.id];
+  if (!edit) return;
+  try {
+    invoice.value = await api.put(`/invoices/${route.params.id}/items/${item.id}`, {
+      hargaSatuan: Number(edit.hargaSatuan) || 0,
+      qty: Number(edit.qty) || 0,
+    });
+    itemEdits.value[item.id] = { hargaSatuan: edit.hargaSatuan, qty: edit.qty };
+    toast("Harga item diperbarui");
+  } catch (e) {
+    toast(e?.message || "Gagal memperbarui harga item");
+  }
+}
+
+async function hapusItem(item) {
+  if (!confirm("Hapus baris item ini dari invoice?")) return;
+  try {
+    invoice.value = await api.delete(`/invoices/${route.params.id}/items/${item.id}`);
+    toast("Item dihapus");
+    await load();
+  } catch (e) {
+    toast(e?.message || "Gagal menghapus item");
+  }
 }
 
 async function submitPembayaran() {
@@ -192,13 +323,29 @@ onMounted(load);
         </div>
       </div>
 
-      <div style="display:flex; gap:8px;">
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button
           class="btn btn-gold"
           @click="cetakInvoice"
           :disabled="!invoice"
         >
           🖨 Cetak Invoice
+        </button>
+
+        <button
+          class="btn btn-ghost"
+          @click="openEditModal"
+          :disabled="!invoice"
+        >
+          Edit
+        </button>
+
+        <button
+          class="btn btn-danger"
+          @click="hapusInvoice"
+          :disabled="!invoice"
+        >
+          Hapus
         </button>
 
         <button
@@ -226,6 +373,14 @@ onMounted(load);
             >
               {{ invoice.status }}
             </span>
+
+            <button
+              class="btn btn-sm btn-ghost"
+              style="margin-left:auto"
+              @click="openAddItemModal"
+            >
+              + Tambah Item
+            </button>
           </div>
 
           <table>
@@ -235,6 +390,7 @@ onMounted(load);
                 <th class="num">Qty</th>
                 <th class="num">Harga</th>
                 <th class="num">Subtotal</th>
+                <th class="action-col">Aksi</th>
               </tr>
             </thead>
 
@@ -243,18 +399,32 @@ onMounted(load);
                 v-for="it in invoice.items"
                 :key="it.id"
               >
-                <td>{{ it.keterangan }}</td>
+                <td>
+                  {{ it.keterangan }}
+                  <div v-if="it.suratJalan" class="item-sj-sub">SJ: {{ it.suratJalan.no }}</div>
+                </td>
 
                 <td class="num mono">
                   {{ it.qty }} {{ it.satuan }}
                 </td>
 
-                <td class="num mono">
-                  {{ rupiah(it.hargaSatuan) }}
+                <td class="num">
+                  <input
+                    v-if="itemEdits[it.id]"
+                    v-model.number="itemEdits[it.id].hargaSatuan"
+                    type="number"
+                    min="0"
+                    class="item-harga-input"
+                  />
                 </td>
 
                 <td class="num mono">
                   {{ rupiah(it.qty * it.hargaSatuan) }}
+                </td>
+
+                <td class="item-actions">
+                  <button class="btn btn-sm btn-ghost" @click="updateItemHarga(it)">Update</button>
+                  <button class="btn btn-sm btn-danger" @click="hapusItem(it)">Hapus</button>
                 </td>
               </tr>
             </tbody>
@@ -351,6 +521,80 @@ onMounted(load);
             :disabled="invoice.status === 'LUNAS'"
           >
             + Catat Pembayaran
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL EDIT INVOICE -->
+    <div v-if="showEditModal" class="modal-bg" @click.self="showEditModal = false">
+      <div class="modal">
+        <button class="modal-close" @click="showEditModal = false">×</button>
+        <h2>Edit Invoice {{ invoice?.no }}</h2>
+
+        <div class="row">
+          <div class="field">
+            <label>Tanggal</label>
+            <input v-model="editForm.tanggal" type="date" />
+          </div>
+          <div class="field">
+            <label>Jatuh Tempo</label>
+            <input v-model="editForm.jatuhTempo" type="date" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Halaman</label>
+          <input v-model.number="editForm.halaman" type="number" min="1" />
+        </div>
+        <div class="field">
+          <label>Catatan</label>
+          <textarea v-model="editForm.catatan" rows="3"></textarea>
+        </div>
+
+        <button class="btn btn-primary" :disabled="savingEdit" @click="submitEditInvoice">
+          {{ savingEdit ? "Menyimpan..." : "Simpan Perubahan" }}
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL TAMBAH ITEM DARI SURAT JALAN -->
+    <div v-if="showAddItemModal" class="modal-bg" @click.self="showAddItemModal = false">
+      <div class="modal" style="max-width:720px">
+        <button class="modal-close" @click="showAddItemModal = false">×</button>
+        <h2>Tambah Item dari Surat Jalan</h2>
+        <div class="msub">Surat jalan customer ini yang belum ditagih di invoice manapun.</div>
+
+        <div v-if="loadingBelumDitagih" class="empty small">Memuat surat jalan…</div>
+        <div v-else-if="!belumDitagihRows.length" class="empty small">
+          Tidak ada surat jalan yang belum ditagih untuk customer ini.
+        </div>
+        <div v-else class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>No SJ</th>
+                <th>Jenis Barang</th>
+                <th class="num">M3</th>
+                <th class="num">Harga / M3</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in belumDitagihRows" :key="r.suratJalanId">
+                <td><input type="checkbox" v-model="r.checked" /></td>
+                <td class="mono">{{ r.sj.no }}</td>
+                <td>{{ r.sj.jenisBarang || "-" }}</td>
+                <td class="num mono">{{ Number(r.sj.m3 || 0).toFixed(3) }}</td>
+                <td class="num"><input v-model.number="r.hargaSatuan" type="number" min="0" class="item-harga-input" /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" :disabled="savingAddItem" @click="showAddItemModal = false">Batal</button>
+          <button class="btn btn-primary" :disabled="savingAddItem" @click="submitAddItems">
+            {{ savingAddItem ? "Menyimpan..." : "Tambahkan Item Terpilih" }}
           </button>
         </div>
       </div>
@@ -666,6 +910,13 @@ onMounted(load);
     </div>
   </div>
 </template>
+
+<style scoped>
+.item-sj-sub { font-size: 10.5px; color: var(--ink-soft); }
+.item-harga-input { width: 110px; text-align: right; }
+.item-actions { display: flex; gap: 6px; white-space: nowrap; }
+.empty.small { padding: 18px; font-size: 12px; }
+</style>
 
 <style>
 /* ==============================

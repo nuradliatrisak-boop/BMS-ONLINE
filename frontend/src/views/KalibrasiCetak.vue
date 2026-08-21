@@ -12,6 +12,8 @@ const sj = ref(null);
 const inv = ref(null);
 
 const sjFieldLabels = {
+  apDari: "A/P Dari",
+  penerima: "Penerima",
   no: "Nomor SJ",
   tanggalJam: "Tanggal / Jam",
   tujuan: "Tujuan",
@@ -20,6 +22,7 @@ const sjFieldLabels = {
   ukuranBak: "Ukuran Bak (P L T)",
   m3: "M3",
   sopirNama: "Nama Sopir",
+  hormatKamiNama: "Nama Penandatangan (Hormat kami)",
 };
 
 async function load() {
@@ -67,9 +70,10 @@ function cetakContohSJ() {
     tujuan: "JAKARTA UTARA - CONTOH TUJUAN",
     jenisBarang: "BATU SPLIT (CONTOH)",
     noPolisi: "B 1234 CD",
-    p: 4,
-    l: 2,
-    t: 1.5,
+    customer: { kode: "TS001", nama: "CONTOH CUSTOMER" },
+    panjang: 4,
+    lebar: 2,
+    tinggi: 1.5,
     m3: 12,
     sopir: "CONTOH NAMA SOPIR",
   });
@@ -78,9 +82,10 @@ function cetakContohSJ() {
 function cetakContohInvoice() {
   printInvoice({
     no: "INV-CONTOH-001",
+    halaman: 1,
     tanggal: new Date(),
     divisi: "Supplier",
-    customer: { nama: "TB. CONTOH PELANGGAN", alamat: "Jl. Contoh No. 1, Jakarta", npwp: "-" },
+    customer: { kode: "TS001", nama: "TB. CONTOH PELANGGAN", alamat: "Jl. Contoh No. 1, Jakarta", npwp: "-" },
     catatan: "Ini contoh invoice untuk kalibrasi cetak.",
     dibayar: 0,
     sisaTagihan: 3000000,
@@ -96,9 +101,9 @@ function cetakContohInvoice() {
           no: "SJ-CONTOH-001",
           sopir: "CONTOH NAMA SOPIR",
           tujuan: "JAKARTA UTARA",
-          p: 4,
-          l: 2,
-          t: 1.5,
+          panjang: 4,
+          lebar: 2,
+          tinggi: 1.5,
           m3: 12,
         },
       },

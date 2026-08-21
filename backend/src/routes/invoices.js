@@ -62,40 +62,99 @@ async function generateNomorInvoice(tx, tanggal) {
   return `${prefix}-${String(nomorUrut).padStart(4, "0")}`;
 }
 
+// Include lengkap dipakai di semua endpoint supaya cetak invoice (yang
+// butuh data Surat Jalan per baris: tgl kirim, no SJ, sopir, alamat kirim,
+// P L T, M3) selalu tersedia tanpa request tambahan.
+const includeLengkap = {
+  customer: true,
+  pembayaran: true,
+  items: {
+    include: {
+      suratJalan: {
+        include: { armada: true, customer: true },
+      },
+    },
+    orderBy: { id: "asc" },
+  },
+};
+
+function ringkas(inv) {
+  const total = hitungTotal(inv.items);
+  const dibayar = inv.pembayaran.reduce((s, p) => s + p.nominal, 0);
+
+  return {
+    ...inv,
+    total,
+    dibayar,
+    sisaTagihan: total - dibayar,
+  };
+}
+
+// Buat data 1 item invoice. Kalau suratJalanId diisi, keterangan/qty/satuan
+// otomatis ikut data Surat Jalan tsb (kecuali dikirim manual), hargaSatuan
+// tetap harus dikirim dari frontend (auto-suggest dari harga customer, atau
+// diketik manual, lalu masih bisa diubah lewat tombol "Update Harga").
+async function buildItemData(tx, it) {
+  let keterangan = it.keterangan;
+  let qty = it.qty;
+  let satuan = it.satuan;
+
+  if (it.suratJalanId) {
+    const sj = await tx.suratJalan.findUnique({
+      where: { id: it.suratJalanId },
+    });
+
+    if (!sj) {
+      throw Object.assign(new Error("Surat jalan tidak ditemukan"), {
+        status: 400,
+      });
+    }
+
+    keterangan = keterangan || sj.jenisBarang || sj.tujuan;
+    qty = qty ?? sj.m3;
+    satuan = satuan || "m3";
+  }
+
+  return {
+    suratJalanId: it.suratJalanId || null,
+    keterangan,
+    qty: Number(qty) || 0,
+    satuan: satuan || null,
+    hargaSatuan: Number(it.hargaSatuan) || 0,
+  };
+}
+
 // ============================================================
 // DAFTAR INVOICE
 // ============================================================
 
 router.get("/", async (req, res, next) => {
   try {
+    const { customerId, dari, sampai, status, divisi } = req.query;
+
+    const where = {
+      ...scopeDivisi(req),
+      ...(customerId ? { customerId } : {}),
+      ...(status ? { status } : {}),
+      ...(divisi ? { divisi } : {}),
+    };
+
+    if (dari || sampai) {
+      where.tanggal = {
+        ...(dari ? { gte: new Date(dari) } : {}),
+        ...(sampai ? { lte: new Date(`${sampai}T23:59:59`) } : {}),
+      };
+    }
+
     const invoices = await prisma.invoice.findMany({
-      where: scopeDivisi(req),
-      include: {
-        customer: true,
-        items: true,
-        pembayaran: true,
-      },
+      where,
+      include: includeLengkap,
       orderBy: {
         tanggal: "desc",
       },
     });
 
-    const hasil = invoices.map((inv) => {
-      const total = hitungTotal(inv.items);
-      const dibayar = inv.pembayaran.reduce(
-        (s, p) => s + p.nominal,
-        0
-      );
-
-      return {
-        ...inv,
-        total,
-        dibayar,
-        sisaTagihan: total - dibayar,
-      };
-    });
-
-    res.json(hasil);
+    res.json(invoices.map(ringkas));
   } catch (e) {
     next(e);
   }
@@ -111,11 +170,7 @@ router.get("/:id", async (req, res, next) => {
       where: {
         id: req.params.id,
       },
-      include: {
-        customer: true,
-        items: true,
-        pembayaran: true,
-      },
+      include: includeLengkap,
     });
 
     if (!inv) {
@@ -124,19 +179,7 @@ router.get("/:id", async (req, res, next) => {
       });
     }
 
-    const total = hitungTotal(inv.items);
-
-    const dibayar = inv.pembayaran.reduce(
-      (s, p) => s + p.nominal,
-      0
-    );
-
-    res.json({
-      ...inv,
-      total,
-      dibayar,
-      sisaTagihan: total - dibayar,
-    });
+    res.json(ringkas(inv));
   } catch (e) {
     next(e);
   }
@@ -155,6 +198,7 @@ router.post("/", async (req, res, next) => {
       tanggal,
       jatuhTempo,
       catatan,
+      halaman,
       items,
     } = req.body;
 
@@ -172,6 +216,9 @@ router.post("/", async (req, res, next) => {
 
     const invoice = await prisma.$transaction(async (tx) => {
       const no = await generateNomorInvoice(tx, tanggal);
+      const itemsData = await Promise.all(
+        items.map((it) => buildItemData(tx, it))
+      );
 
       return tx.invoice.create({
         data: {
@@ -182,32 +229,25 @@ router.post("/", async (req, res, next) => {
           jatuhTempo: jatuhTempo
             ? new Date(jatuhTempo)
             : null,
+          halaman: Number(halaman) || 1,
           catatan,
 
           items: {
-            create: items.map((it) => ({
-              keterangan: it.keterangan,
-              qty: Number(it.qty),
-              satuan: it.satuan,
-              hargaSatuan: Number(it.hargaSatuan),
-            })),
+            create: itemsData,
           },
         },
 
-        include: {
-          items: true,
-          customer: true,
-        },
+        include: includeLengkap,
       });
     });
 
-    res.status(201).json(invoice);
+    res.status(201).json(ringkas(invoice));
   } catch (e) {
     // Kalau terjadi bentrok nomor invoice
     if (e.code === "P2002") {
       return res.status(409).json({
         error:
-          "Nomor invoice sudah dipakai, silakan coba lagi",
+          "Nomor invoice sudah dipakai (atau salah satu surat jalan sudah tertagih di invoice lain), silakan coba lagi",
       });
     }
 
@@ -216,7 +256,7 @@ router.post("/", async (req, res, next) => {
 });
 
 // ============================================================
-// UPDATE INVOICE
+// UPDATE INVOICE (header)
 // ============================================================
 
 router.put("/:id", async (req, res, next) => {
@@ -226,9 +266,10 @@ router.put("/:id", async (req, res, next) => {
       tanggal,
       jatuhTempo,
       catatan,
+      halaman,
     } = req.body;
 
-    const invoice = await prisma.invoice.update({
+    await prisma.invoice.update({
       where: {
         id: req.params.id,
       },
@@ -241,11 +282,89 @@ router.put("/:id", async (req, res, next) => {
         jatuhTempo: jatuhTempo
           ? new Date(jatuhTempo)
           : null,
+        halaman: halaman !== undefined ? Number(halaman) || 1 : undefined,
         catatan,
       },
     });
 
-    res.json(invoice);
+    const inv = await prisma.invoice.findUnique({
+      where: { id: req.params.id },
+      include: includeLengkap,
+    });
+
+    res.json(ringkas(inv));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ============================================================
+// ITEM INVOICE: tambah, ubah harga/qty, hapus
+// ============================================================
+
+router.post("/:id/items", async (req, res, next) => {
+  try {
+    const itemData = await prisma.$transaction((tx) =>
+      buildItemData(tx, req.body)
+    );
+
+    await prisma.invoiceItem.create({
+      data: { ...itemData, invoiceId: req.params.id },
+    });
+
+    const inv = await prisma.invoice.findUnique({
+      where: { id: req.params.id },
+      include: includeLengkap,
+    });
+
+    res.status(201).json(ringkas(inv));
+  } catch (e) {
+    if (e.code === "P2002") {
+      return res.status(409).json({
+        error: "Surat jalan ini sudah dipakai di invoice lain",
+      });
+    }
+    next(e);
+  }
+});
+
+// Dipakai tombol "Update Harga": ubah harga satuan / qty satu baris item
+router.put("/:id/items/:itemId", async (req, res, next) => {
+  try {
+    const { hargaSatuan, qty, keterangan } = req.body;
+
+    await prisma.invoiceItem.update({
+      where: { id: req.params.itemId },
+      data: {
+        ...(hargaSatuan !== undefined ? { hargaSatuan: Number(hargaSatuan) } : {}),
+        ...(qty !== undefined ? { qty: Number(qty) } : {}),
+        ...(keterangan !== undefined ? { keterangan } : {}),
+      },
+    });
+
+    const inv = await prisma.invoice.findUnique({
+      where: { id: req.params.id },
+      include: includeLengkap,
+    });
+
+    res.json(ringkas(inv));
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.delete("/:id/items/:itemId", async (req, res, next) => {
+  try {
+    await prisma.invoiceItem.delete({
+      where: { id: req.params.itemId },
+    });
+
+    const inv = await prisma.invoice.findUnique({
+      where: { id: req.params.id },
+      include: includeLengkap,
+    });
+
+    res.json(ringkas(inv));
   } catch (e) {
     next(e);
   }
@@ -303,10 +422,7 @@ router.post("/:id/pembayaran", async (req, res, next) => {
         id: req.params.id,
       },
 
-      include: {
-        items: true,
-        pembayaran: true,
-      },
+      include: includeLengkap,
     });
 
     const total = hitungTotal(inv.items);
@@ -330,19 +446,10 @@ router.post("/:id/pembayaran", async (req, res, next) => {
         status,
       },
 
-      include: {
-        items: true,
-        pembayaran: true,
-        customer: true,
-      },
+      include: includeLengkap,
     });
 
-    res.status(201).json({
-      ...updated,
-      total,
-      dibayar,
-      sisaTagihan: total - dibayar,
-    });
+    res.status(201).json(ringkas(updated));
   } catch (e) {
     next(e);
   }

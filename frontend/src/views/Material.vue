@@ -8,6 +8,7 @@ const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 const list = ref([]);
 const showModal = ref(false);
 const loading = ref(true);
+const editingId = ref(null);
 
 const emptyForm = () => ({
   nama: "",
@@ -35,7 +36,19 @@ async function load() {
 }
 
 function openModal() {
+  editingId.value = null;
   form.value = emptyForm();
+  showModal.value = true;
+}
+
+function openEdit(m) {
+  editingId.value = m.id;
+  form.value = {
+    nama: m.nama,
+    satuan: m.satuan,
+    hargaSatuan: m.hargaSatuan,
+    divisi: m.divisi,
+  };
   showModal.value = true;
 }
 
@@ -49,14 +62,19 @@ async function submit() {
   }
 
   try {
-    await api.post("/material", form.value);
+    if (editingId.value) {
+      await api.put(`/material/${editingId.value}`, form.value);
+      toast("Material berhasil diperbarui");
+    } else {
+      await api.post("/material", form.value);
+      toast("Material berhasil ditambahkan");
+    }
 
-    toast("Material berhasil ditambahkan");
     showModal.value = false;
 
     await load();
   } catch (e) {
-    toast(e.message || "Gagal menambahkan material");
+    toast(e.message || "Gagal menyimpan material");
   }
 }
 
@@ -145,6 +163,14 @@ onMounted(load);
 
             <td style="text-align:right;">
               <button
+                class="btn btn-sm btn-ghost"
+                style="margin-right:6px;"
+                @click="openEdit(m)"
+              >
+                Edit
+              </button>
+
+              <button
                 class="btn btn-sm btn-danger"
                 @click="remove(m.id)"
               >
@@ -170,10 +196,10 @@ onMounted(load);
         ×
       </button>
 
-      <h2>Tambah Material</h2>
+      <h2>{{ editingId ? "Edit Material" : "Tambah Material" }}</h2>
 
       <div class="msub">
-        Isi data barang atau material baru
+        {{ editingId ? "Perbarui data barang atau material" : "Isi data barang atau material baru" }}
       </div>
 
       <div class="row">
@@ -242,7 +268,7 @@ onMounted(load);
           class="btn btn-primary"
           @click="submit"
         >
-          Simpan Material
+          {{ editingId ? "Simpan Perubahan" : "Simpan Material" }}
         </button>
       </div>
     </div>

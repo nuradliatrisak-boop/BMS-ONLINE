@@ -14,6 +14,7 @@ import userRoutes from "./routes/users.js";
 import rekapPenjualanRoutes from "./routes/rekapPenjualan.js";
 import stockMasterRoutes from "./routes/stockMaster.js";
 import printCalibRoutes from "./routes/printCalib.js";
+import settingsRoutes from "./routes/settings.js";
 
 import { requireAuth } from "./middleware/auth.js";
 
@@ -50,6 +51,7 @@ app.use("/api/users", requireAuth, userRoutes);
 app.use("/api/rekap-penjualan", requireAuth, rekapPenjualanRoutes);
 app.use("/api/stock-master", requireAuth, stockMasterRoutes);
 app.use("/api/print-calib", requireAuth, printCalibRoutes);
+app.use("/api/settings", requireAuth, settingsRoutes);
 
 // Penanganan error terpusat
 app.use((err, req, res, next) => {

@@ -45,13 +45,73 @@ async function createNomorSuratJalan() {
   return `${prefix}-${String(nomorUrut).padStart(4, "0")}`;
 }
 
+// Hitung M3 dari Panjang x Lebar x Tinggi (dibulatkan 3 desimal, ikut cara
+// hitung di kertas fisik: mis. 3.58 x 1.75 x 0.82 = 5.137)
+function hitungM3(p, l, t) {
+  const nilai = Number(p || 0) * Number(l || 0) * Number(t || 0);
+  return Math.round(nilai * 1000) / 1000;
+}
+
+// Field yang dipakai bersama saat create/update
+function buildDataFields(body, { forCreate }) {
+  const {
+    armadaId,
+    customerId,
+    tujuan,
+    jenisBarang,
+    noPolisi,
+    sopir,
+    panjang,
+    lebar,
+    tinggi,
+    tanggal,
+    jam,
+    isDraft,
+    detail,
+  } = body;
+
+  const p = panjang ?? 0;
+  const l = lebar ?? 0;
+  const t = tinggi ?? 0;
+
+  const data = {
+    armadaId: armadaId || null,
+    customerId: customerId || null,
+    tujuan,
+    jenisBarang: jenisBarang || null,
+    noPolisi: noPolisi || null,
+    sopir: sopir || null,
+    panjang: Number(p) || 0,
+    lebar: Number(l) || 0,
+    tinggi: Number(t) || 0,
+    m3: hitungM3(p, l, t),
+    jam: jam || null,
+    detail: detail ?? null,
+  };
+
+  if (tanggal) {
+    data.tanggal = new Date(tanggal);
+  } else if (forCreate) {
+    data.tanggal = new Date();
+  }
+
+  if (typeof isDraft !== "undefined") {
+    data.isDraft = !!isDraft;
+  }
+
+  return data;
+}
+
+const includeRelasi = {
+  armada: true,
+  customer: true,
+};
+
 router.get("/", async (req, res, next) => {
   try {
     const list = await prisma.suratJalan.findMany({
       where: scopeDivisi(req),
-      include: {
-        armada: true,
-      },
+      include: includeRelasi,
       orderBy: {
         tanggal: "desc",
       },
@@ -63,16 +123,55 @@ router.get("/", async (req, res, next) => {
   }
 });
 
+// Daftar Surat Jalan milik seorang customer yang BELUM dipakai di invoice
+// manapun (belum ada InvoiceItem yang menunjuk ke SJ ini). Dipakai di form
+// "Buat Invoice Baru" supaya user tinggal centang, bukan ketik manual.
+router.get("/belum-ditagih", async (req, res, next) => {
+  try {
+    const { customerId, divisi } = req.query;
+
+    if (!customerId) {
+      return res.status(400).json({ error: "customerId wajib diisi" });
+    }
+
+    const list = await prisma.suratJalan.findMany({
+      where: {
+        ...scopeDivisi(req),
+        customerId,
+        isDraft: false,
+        invoiceItems: { none: {} },
+        ...(divisi ? { divisi } : {}),
+      },
+      include: includeRelasi,
+      orderBy: { tanggal: "asc" },
+    });
+
+    res.json(list);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.get("/:id", async (req, res, next) => {
+  try {
+    const sj = await prisma.suratJalan.findUnique({
+      where: { id: req.params.id },
+      include: includeRelasi,
+    });
+
+    if (!sj) {
+      return res.status(404).json({ error: "Surat jalan tidak ditemukan" });
+    }
+
+    res.json(sj);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.post("/", async (req, res, next) => {
   try {
-    const {
-      divisi,
-      armadaId,
-      tujuan,
-      tanggal,
-      isDraft,
-      detail,
-    } = req.body;
+    const { divisi, tujuan, tanggal } = req.body;
 
     if (!divisi || !tujuan || !tanggal) {
       return res.status(400).json({
@@ -97,15 +196,9 @@ router.post("/", async (req, res, next) => {
           data: {
             no,
             divisi,
-            armadaId: armadaId || null,
-            tujuan,
-            tanggal: new Date(tanggal),
-            isDraft: !!isDraft,
-            detail: detail || null,
+            ...buildDataFields(req.body, { forCreate: true }),
           },
-          include: {
-            armada: true,
-          },
+          include: includeRelasi,
         });
 
         break;
@@ -137,30 +230,12 @@ router.post("/", async (req, res, next) => {
 
 router.put("/:id", async (req, res, next) => {
   try {
-    const {
-      armadaId,
-      tujuan,
-      tanggal,
-      isDraft,
-      detail,
-    } = req.body;
-
     const sj = await prisma.suratJalan.update({
       where: {
         id: req.params.id,
       },
-      data: {
-        armadaId: armadaId || null,
-        tujuan,
-        tanggal: tanggal
-          ? new Date(tanggal)
-          : undefined,
-        isDraft,
-        detail,
-      },
-      include: {
-        armada: true,
-      },
+      data: buildDataFields(req.body, { forCreate: false }),
+      include: includeRelasi,
     });
 
     res.json(sj);
@@ -179,9 +254,7 @@ router.patch("/:id/ttd", async (req, res, next) => {
       data: {
         statusTTD: "LENGKAP",
       },
-      include: {
-        armada: true,
-      },
+      include: includeRelasi,
     });
 
     res.json(sj);
@@ -200,6 +273,13 @@ router.delete("/:id", async (req, res, next) => {
 
     res.status(204).end();
   } catch (e) {
+    if (e.code === "P2003" || e.code === "P2014") {
+      return res.status(409).json({
+        error:
+          "Surat jalan ini sudah dipakai di sebuah Invoice, jadi tidak bisa dihapus. Hapus dulu baris item-nya di invoice terkait.",
+      });
+    }
+
     next(e);
   }
 });

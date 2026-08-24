@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Menu - BMS Gudang</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="topbar">
+  <h1>BMS - Input Gudang</h1>
+  <div class="userbar" id="userbar"></div>
+</div>
+
+<div class="wrap">
+  <a class="menu-link" href="surat-jalan.html">
+    Input Surat Jalan
+    <div class="desc">Buat surat jalan baru (nomor dibuat otomatis)</div>
+  </a>
+
+  <a class="menu-link" href="invoice.html">
+    Buat Invoice
+    <div class="desc">Tagihkan surat jalan yang sudah dikirim ke customer</div>
+  </a>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  var user = requireLogin();
+  if (!user) return;
+
+  var bar = document.getElementById("userbar");
+  var namaText = document.createTextNode(
+    "Login sebagai: " + user.nama + " (" + user.role + ") "
+  );
+  bar.appendChild(namaText);
+
+  var logoutLink = document.createElement("a");
+  logoutLink.href = "#";
+  logoutLink.textContent = "[ Keluar ]";
+  logoutLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    logout();
+  });
+  bar.appendChild(logoutLink);
+})();
+</script>
+</body>
+</html>

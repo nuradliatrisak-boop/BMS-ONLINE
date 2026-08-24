@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Input Surat Jalan - BMS Gudang</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="topbar">
+  <h1>Input Surat Jalan</h1>
+  <div class="userbar" id="userbar"></div>
+</div>
+
+<div class="wrap">
+  <a href="menu.html" class="btn secondary" style="margin-bottom:12px;">&laquo; Kembali ke Menu</a>
+
+  <div class="card">
+    <div id="msg" class="msg" style="display:none;"></div>
+
+    <form id="sjForm">
+      <label for="divisi">Divisi</label>
+      <select id="divisi"></select>
+
+      <label for="customerId">Customer</label>
+      <select id="customerId">
+        <option value="">-- Pilih Customer --</option>
+      </select>
+      <div class="hint" id="tujuanPreview"></div>
+
+      <table class="row2"><tr>
+        <td>
+          <label for="tanggal">Tanggal</label>
+          <input type="date" id="tanggal">
+        </td>
+        <td>
+          <label for="jam">Jam</label>
+          <input type="time" id="jam">
+        </td>
+      </tr></table>
+
+      <label for="jenisBarang">Jenis Barang</label>
+      <input type="text" id="jenisBarang" placeholder="Misal: Pasir Putih">
+
+      <label for="armadaId">Armada (opsional)</label>
+      <select id="armadaId">
+        <option value="">-- Pilih Armada (opsional) --</option>
+      </select>
+
+      <table class="row2"><tr>
+        <td>
+          <label for="noPolisi">No. Polisi</label>
+          <input type="text" id="noPolisi">
+        </td>
+        <td>
+          <label for="sopir">Sopir</label>
+          <input type="text" id="sopir">
+        </td>
+      </tr></table>
+
+      <label>Ukuran Muatan (P x L x T)</label>
+      <table class="row2"><tr>
+        <td><input type="number" step="0.001" id="panjang" placeholder="Panjang"></td>
+        <td><input type="number" step="0.001" id="lebar" placeholder="Lebar"></td>
+        <td><input type="number" step="0.001" id="tinggi" placeholder="Tinggi"></td>
+      </tr></table>
+      <div class="hint" id="m3Preview">M3: 0</div>
+
+      <button type="submit" class="btn block" id="btnSubmit">Simpan Surat Jalan</button>
+    </form>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  var user = requireLogin();
+  if (!user) return;
+
+  var DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
+  var customers = [];
+  var armadaList = [];
+
+  var bar = document.getElementById("userbar");
+  bar.appendChild(document.createTextNode("Login sebagai: " + user.nama + " (" + user.role + ")"));
+
+  var msg = document.getElementById("msg");
+  var divisiSel = document.getElementById("divisi");
+  var customerSel = document.getElementById("customerId");
+  var armadaSel = document.getElementById("armadaId");
+  var tujuanPreview = document.getElementById("tujuanPreview");
+  var m3Preview = document.getElementById("m3Preview");
+
+  // Isi pilihan divisi
+  for (var i = 0; i < DIVISI.length; i++) {
+    var opt = document.createElement("option");
+    opt.value = DIVISI[i];
+    opt.textContent = DIVISI[i];
+    divisiSel.appendChild(opt);
+  }
+  // Kalau staf terikat 1 divisi, langsung pilih itu
+  if (user.divisi && DIVISI.indexOf(user.divisi) !== -1) {
+    divisiSel.value = user.divisi;
+  }
+
+  document.getElementById("tanggal").value = todayStr();
+  document.getElementById("jam").value = nowTimeStr();
+
+  function updateTujuanPreview() {
+    var c = null;
+    for (var i = 0; i < customers.length; i++) {
+      if (customers[i].id === customerSel.value) { c = customers[i]; break; }
+    }
+    tujuanPreview.textContent = c && c.alamat ? ("Tujuan (dari alamat customer): " + c.alamat) : "Tujuan otomatis mengikuti alamat customer terpilih";
+  }
+
+  function updateM3Preview() {
+    var p = Number(document.getElementById("panjang").value || 0);
+    var l = Number(document.getElementById("lebar").value || 0);
+    var t = Number(document.getElementById("tinggi").value || 0);
+    var m3 = Math.round(p * l * t * 1000) / 1000;
+    m3Preview.textContent = "M3: " + m3;
+  }
+
+  customerSel.addEventListener("change", updateTujuanPreview);
+  document.getElementById("panjang").addEventListener("input", updateM3Preview);
+  document.getElementById("lebar").addEventListener("input", updateM3Preview);
+  document.getElementById("tinggi").addEventListener("input", updateM3Preview);
+
+  armadaSel.addEventListener("change", function () {
+    var a = null;
+    for (var i = 0; i < armadaList.length; i++) {
+      if (armadaList[i].id === armadaSel.value) { a = armadaList[i]; break; }
+    }
+    if (a) {
+      var noPolisiEl = document.getElementById("noPolisi");
+      var sopirEl = document.getElementById("sopir");
+      if (!noPolisiEl.value) noPolisiEl.value = a.nopol;
+      if (!sopirEl.value && a.sopir) sopirEl.value = a.sopir;
+    }
+  });
+
+  function loadMaster() {
+    hideMsg(msg);
+    return Promise.all([api.get("/customers"), api.get("/armada")])
+      .then(function (results) {
+        customers = results[0];
+        armadaList = results[1];
+
+        for (var i = 0; i < customers.length; i++) {
+          var o = document.createElement("option");
+          o.value = customers[i].id;
+          o.textContent = customers[i].nama;
+          customerSel.appendChild(o);
+        }
+        for (var j = 0; j < armadaList.length; j++) {
+          var o2 = document.createElement("option");
+          o2.value = armadaList[j].id;
+          o2.textContent = armadaList[j].nopol + (armadaList[j].sopir ? (" - " + armadaList[j].sopir) : "");
+          armadaSel.appendChild(o2);
+        }
+      })
+      .catch(function (err) {
+        showMsg(msg, err.message || "Gagal memuat data customer/armada", "err");
+      });
+  }
+
+  loadMaster();
+
+  var form = document.getElementById("sjForm");
+  var btn = document.getElementById("btnSubmit");
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    hideMsg(msg);
+
+    var payload = {
+      divisi: divisiSel.value,
+      customerId: customerSel.value || null,
+      armadaId: armadaSel.value || null,
+      jenisBarang: document.getElementById("jenisBarang").value.trim(),
+      noPolisi: document.getElementById("noPolisi").value.trim(),
+      sopir: document.getElementById("sopir").value.trim(),
+      panjang: Number(document.getElementById("panjang").value || 0),
+      lebar: Number(document.getElementById("lebar").value || 0),
+      tinggi: Number(document.getElementById("tinggi").value || 0),
+      tanggal: document.getElementById("tanggal").value,
+      jam: document.getElementById("jam").value,
+      isDraft: false
+    };
+
+    var c = null;
+    for (var i = 0; i < customers.length; i++) {
+      if (customers[i].id === customerSel.value) { c = customers[i]; break; }
+    }
+    payload.tujuan = c && c.alamat ? c.alamat : "";
+
+    if (!payload.divisi) { showMsg(msg, "Divisi wajib dipilih", "err"); return; }
+    if (!payload.tujuan) { showMsg(msg, "Customer wajib dipilih (tujuan diambil dari alamat customer)", "err"); return; }
+    if (!payload.tanggal) { showMsg(msg, "Tanggal wajib diisi", "err"); return; }
+
+    btn.disabled = true;
+    btn.textContent = "Menyimpan...";
+
+    api.post("/surat-jalan", payload)
+      .then(function (data) {
+        showMsg(msg, "Surat Jalan tersimpan: " + data.no, "ok");
+        form.reset();
+        document.getElementById("tanggal").value = todayStr();
+        document.getElementById("jam").value = nowTimeStr();
+        m3Preview.textContent = "M3: 0";
+        tujuanPreview.textContent = "Tujuan otomatis mengikuti alamat customer terpilih";
+        if (user.divisi && DIVISI.indexOf(user.divisi) !== -1) {
+          divisiSel.value = user.divisi;
+        }
+      })
+      .catch(function (err) {
+        showMsg(msg, err.message || "Gagal menyimpan surat jalan", "err");
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = "Simpan Surat Jalan";
+      });
+  });
+})();
+</script>
+</body>
+</html>

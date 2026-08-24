@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Login - BMS Gudang</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="topbar">
+  <h1>BMS - Input Gudang</h1>
+  <div class="sub">Halaman sederhana untuk PC lama (Surat Jalan &amp; Invoice)</div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h2>Login</h2>
+    <div id="msg" class="msg err" style="display:none;"></div>
+
+    <form id="loginForm">
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username">
+
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password">
+
+      <button type="submit" class="btn block" id="btnLogin">Masuk</button>
+    </form>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  // Kalau sudah login, langsung ke menu
+  if (getToken()) {
+    window.location.href = "menu.html";
+    return;
+  }
+
+  var form = document.getElementById("loginForm");
+  var msg = document.getElementById("msg");
+  var btn = document.getElementById("btnLogin");
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    hideMsg(msg);
+
+    var username = document.getElementById("username").value.trim();
+    var password = document.getElementById("password").value;
+
+    if (!username || !password) {
+      showMsg(msg, "Username dan password wajib diisi", "err");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Memproses...";
+
+    api.post("/auth/login", { username: username, password: password })
+      .then(function (data) {
+        setSession(data.token, data.user);
+        window.location.href = "menu.html";
+      })
+      .catch(function (err) {
+        showMsg(msg, err.message || "Login gagal", "err");
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = "Masuk";
+      });
+  });
+})();
+</script>
+</body>
+</html>

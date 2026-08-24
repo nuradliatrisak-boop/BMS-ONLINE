@@ -1,0 +1,184 @@
+/* Gaya sederhana, sengaja tanpa CSS modern (grid/flex-gap dsb)
+   supaya tetap tampil rapi di Firefox 52 ESR / Windows XP. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #eef1f4;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #222;
+}
+
+.topbar {
+  background: #1e3a5f;
+  color: #fff;
+  padding: 12px 16px;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.topbar .sub {
+  font-size: 12px;
+  color: #cdd8e6;
+  margin-top: 2px;
+}
+
+.wrap {
+  max-width: 640px;
+  margin: 16px auto;
+  padding: 0 12px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 16px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: bold;
+  margin: 10px 0 4px;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="password"],
+select,
+textarea {
+  width: 100%;
+  padding: 7px;
+  font-size: 14px;
+  border: 1px solid #999;
+  border-radius: 3px;
+  background: #fff;
+}
+
+textarea { resize: vertical; }
+
+.row2 {
+  width: 100%;
+}
+
+.row2 td {
+  vertical-align: top;
+  padding: 0 6px;
+}
+
+.row2 td:first-child { padding-left: 0; }
+.row2 td:last-child { padding-right: 0; }
+
+.btn {
+  display: inline-block;
+  padding: 9px 16px;
+  font-size: 14px;
+  border: 1px solid #1e3a5f;
+  background: #1e3a5f;
+  color: #fff;
+  border-radius: 3px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:hover { background: #16304f; }
+
+.btn.secondary {
+  background: #fff;
+  color: #1e3a5f;
+}
+
+.btn.block {
+  width: 100%;
+  text-align: center;
+  margin-top: 14px;
+  padding: 11px 16px;
+  font-size: 15px;
+}
+
+.msg {
+  padding: 8px 10px;
+  border-radius: 3px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.msg.err { background: #fde5e5; border: 1px solid #e39b9b; color: #8a1f1f; }
+.msg.ok { background: #e4f6e4; border: 1px solid #9ecb9e; color: #1f6b1f; }
+
+.menu-link {
+  display: block;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 12px;
+  text-decoration: none;
+  color: #1e3a5f;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.menu-link .desc {
+  font-weight: normal;
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.sj-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sj-table th, .sj-table td {
+  border: 1px solid #ddd;
+  padding: 6px;
+  text-align: left;
+}
+
+.sj-table th { background: #f2f4f7; }
+
+.total-box {
+  text-align: right;
+  font-size: 15px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.userbar {
+  display: block;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.userbar a { color: #cdd8e6; }
+
+.hint {
+  font-size: 11px;
+  color: #888;
+  margin-top: 3px;
+}
+
+.loading {
+  font-size: 13px;
+  color: #666;
+  padding: 8px 0;
+}

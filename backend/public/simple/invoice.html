@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Buat Invoice - BMS Gudang</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="topbar">
+  <h1>Buat Invoice</h1>
+  <div class="userbar" id="userbar"></div>
+</div>
+
+<div class="wrap">
+  <a href="menu.html" class="btn secondary" style="margin-bottom:12px;">&laquo; Kembali ke Menu</a>
+
+  <div class="card">
+    <div id="msg" class="msg" style="display:none;"></div>
+
+    <form id="invHeaderForm">
+      <label for="divisi">Divisi</label>
+      <select id="divisi"></select>
+
+      <label for="customerId">Customer</label>
+      <select id="customerId">
+        <option value="">-- Pilih Customer --</option>
+      </select>
+
+      <table class="row2"><tr>
+        <td>
+          <label for="tanggal">Tanggal Invoice</label>
+          <input type="date" id="tanggal">
+        </td>
+        <td>
+          <label for="jatuhTempo">Jatuh Tempo (opsional)</label>
+          <input type="date" id="jatuhTempo">
+        </td>
+      </tr></table>
+
+      <label for="catatan">Catatan (opsional)</label>
+      <textarea id="catatan" rows="2"></textarea>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Surat Jalan Belum Ditagih</h2>
+    <div id="sjLoading" class="loading">Pilih customer dulu untuk melihat daftar surat jalan.</div>
+    <div id="sjTableWrap" style="display:none; overflow-x:auto;">
+      <table class="sj-table" id="sjTable">
+        <thead>
+          <tr>
+            <th></th>
+            <th>No. SJ</th>
+            <th>Tanggal</th>
+            <th>Tujuan / Jenis</th>
+            <th>M3</th>
+            <th>Harga Satuan (Rp)</th>
+          </tr>
+        </thead>
+        <tbody id="sjTbody"></tbody>
+      </table>
+    </div>
+    <div class="total-box" id="totalBox">Total: Rp 0</div>
+  </div>
+
+  <button type="button" class="btn block" id="btnSubmit">Simpan Invoice</button>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  var user = requireLogin();
+  if (!user) return;
+
+  var DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
+  var customers = [];
+  var rows = []; // { sj, checked, hargaSatuan }
+
+  var bar = document.getElementById("userbar");
+  bar.appendChild(document.createTextNode("Login sebagai: " + user.nama + " (" + user.role + ")"));
+
+  var msg = document.getElementById("msg");
+  var divisiSel = document.getElementById("divisi");
+  var customerSel = document.getElementById("customerId");
+  var sjLoading = document.getElementById("sjLoading");
+  var sjTableWrap = document.getElementById("sjTableWrap");
+  var sjTbody = document.getElementById("sjTbody");
+  var totalBox = document.getElementById("totalBox");
+  var btn = document.getElementById("btnSubmit");
+
+  for (var i = 0; i < DIVISI.length; i++) {
+    var opt = document.createElement("option");
+    opt.value = DIVISI[i];
+    opt.textContent = DIVISI[i];
+    divisiSel.appendChild(opt);
+  }
+  if (user.divisi && DIVISI.indexOf(user.divisi) !== -1) {
+    divisiSel.value = user.divisi;
+  }
+
+  document.getElementById("tanggal").value = todayStr();
+
+  function fmtTgl(v) {
+    if (!v) return "-";
+    var d = new Date(v);
+    var day = String(d.getDate());
+    var mo = String(d.getMonth() + 1);
+    if (day.length < 2) day = "0" + day;
+    if (mo.length < 2) mo = "0" + mo;
+    return day + "/" + mo + "/" + d.getFullYear();
+  }
+
+  function renderRows() {
+    sjTbody.innerHTML = "";
+    var total = 0;
+
+    for (var i = 0; i < rows.length; i++) {
+      (function (idx) {
+        var r = rows[idx];
+        var sj = r.sj;
+        var tr = document.createElement("tr");
+
+        var tdCheck = document.createElement("td");
+        var cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = r.checked;
+        cb.addEventListener("change", function () {
+          r.checked = cb.checked;
+          renderRows();
+        });
+        tdCheck.appendChild(cb);
+        tr.appendChild(tdCheck);
+
+        var tdNo = document.createElement("td");
+        tdNo.textContent = sj.no;
+        tr.appendChild(tdNo);
+
+        var tdTgl = document.createElement("td");
+        tdTgl.textContent = fmtTgl(sj.tanggal);
+        tr.appendChild(tdTgl);
+
+        var tdTujuan = document.createElement("td");
+        tdTujuan.textContent = (sj.tujuan || "-") + (sj.jenisBarang ? (" / " + sj.jenisBarang) : "");
+        tr.appendChild(tdTujuan);
+
+        var tdM3 = document.createElement("td");
+        tdM3.textContent = sj.m3;
+        tr.appendChild(tdM3);
+
+        var tdHarga = document.createElement("td");
+        var inputHarga = document.createElement("input");
+        inputHarga.type = "number";
+        inputHarga.step = "1";
+        inputHarga.value = r.hargaSatuan;
+        inputHarga.style.width = "110px";
+        inputHarga.addEventListener("input", function () {
+          r.hargaSatuan = Number(inputHarga.value || 0);
+          updateTotal();
+        });
+        tdHarga.appendChild(inputHarga);
+        tr.appendChild(tdHarga);
+
+        sjTbody.appendChild(tr);
+
+        if (r.checked) {
+          total += Number(r.hargaSatuan || 0) * Number(sj.m3 || 0);
+        }
+      })(i);
+    }
+
+    totalBox.textContent = "Total: " + rupiah(total);
+  }
+
+  function updateTotal() {
+    var total = 0;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].checked) {
+        total += Number(rows[i].hargaSatuan || 0) * Number(rows[i].sj.m3 || 0);
+      }
+    }
+    totalBox.textContent = "Total: " + rupiah(total);
+  }
+
+  function loadBelumDitagih() {
+    rows = [];
+    sjTbody.innerHTML = "";
+    sjTableWrap.style.display = "none";
+
+    if (!customerSel.value) {
+      sjLoading.style.display = "block";
+      sjLoading.textContent = "Pilih customer dulu untuk melihat daftar surat jalan.";
+      totalBox.textContent = "Total: Rp 0";
+      return;
+    }
+
+    sjLoading.style.display = "block";
+    sjLoading.textContent = "Memuat daftar surat jalan...";
+
+    api.get("/surat-jalan/belum-ditagih?customerId=" + encodeURIComponent(customerSel.value))
+      .then(function (list) {
+        rows = [];
+        for (var i = 0; i < list.length; i++) {
+          rows.push({ sj: list[i], checked: true, hargaSatuan: 0 });
+        }
+        sjLoading.style.display = "none";
+
+        if (!rows.length) {
+          sjLoading.style.display = "block";
+          sjLoading.textContent = "Tidak ada surat jalan yang belum ditagih untuk customer ini.";
+          totalBox.textContent = "Total: Rp 0";
+          return;
+        }
+
+        sjTableWrap.style.display = "block";
+        renderRows();
+      })
+      .catch(function (err) {
+        sjLoading.style.display = "block";
+        sjLoading.textContent = "Gagal memuat surat jalan: " + (err.message || "");
+      });
+  }
+
+  customerSel.addEventListener("change", loadBelumDitagih);
+
+  function loadCustomers() {
+    hideMsg(msg);
+    return api.get("/customers")
+      .then(function (data) {
+        customers = data;
+        for (var i = 0; i < customers.length; i++) {
+          var o = document.createElement("option");
+          o.value = customers[i].id;
+          o.textContent = customers[i].nama;
+          customerSel.appendChild(o);
+        }
+      })
+      .catch(function (err) {
+        showMsg(msg, err.message || "Gagal memuat data customer", "err");
+      });
+  }
+
+  loadCustomers();
+
+  btn.addEventListener("click", function () {
+    hideMsg(msg);
+
+    var divisi = divisiSel.value;
+    var customerId = customerSel.value;
+    var tanggal = document.getElementById("tanggal").value;
+    var jatuhTempo = document.getElementById("jatuhTempo").value;
+    var catatan = document.getElementById("catatan").value.trim();
+
+    if (!divisi) { showMsg(msg, "Divisi wajib dipilih", "err"); return; }
+    if (!customerId) { showMsg(msg, "Customer wajib dipilih", "err"); return; }
+    if (!tanggal) { showMsg(msg, "Tanggal invoice wajib diisi", "err"); return; }
+
+    var items = [];
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].checked) {
+        items.push({
+          suratJalanId: rows[i].sj.id,
+          hargaSatuan: Number(rows[i].hargaSatuan || 0)
+        });
+      }
+    }
+
+    if (!items.length) {
+      showMsg(msg, "Pilih minimal 1 surat jalan yang mau ditagihkan", "err");
+      return;
+    }
+
+    var payload = {
+      divisi: divisi,
+      customerId: customerId,
+      tanggal: tanggal,
+      jatuhTempo: jatuhTempo || null,
+      catatan: catatan,
+      halaman: 1,
+      items: items
+    };
+
+    btn.disabled = true;
+    btn.textContent = "Menyimpan...";
+
+    api.post("/invoices", payload)
+      .then(function (data) {
+        showMsg(msg, "Invoice tersimpan: " + data.no + " (Total " + rupiah(data.total) + ")", "ok");
+        document.getElementById("invHeaderForm").reset();
+        document.getElementById("tanggal").value = todayStr();
+        if (user.divisi && DIVISI.indexOf(user.divisi) !== -1) {
+          divisiSel.value = user.divisi;
+        }
+        customerSel.value = "";
+        loadBelumDitagih();
+      })
+      .catch(function (err) {
+        showMsg(msg, err.message || "Gagal menyimpan invoice", "err");
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = "Simpan Invoice";
+      });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
 import authRoutes from "./routes/auth.js";
 import customerRoutes from "./routes/customers.js";
@@ -18,7 +20,17 @@ import settingsRoutes from "./routes/settings.js";
 
 import { requireAuth } from "./middleware/auth.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+
+// Halaman statis sederhana (HTML+JS polos, tanpa Vue/Vite) untuk PC lama
+// di gudang (mis. Windows XP + Firefox 52 ESR) yang dipakai input Surat
+// Jalan & Invoice. Diakses lewat: <backend-url>/simple/login.html
+// Halaman ini memanggil API yang sama persis (path relatif /api/...),
+// jadi 1 origin dengan backend -> tidak perlu setting CORS terpisah.
+app.use("/simple", express.static(path.join(__dirname, "..", "public", "simple")));
 
 const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:5173")
   .split(",")

@@ -87,6 +87,7 @@ export async function printSJ(sj) {
   const namaCustomer = sj.customer
     ? `${sj.customer.nama}${sj.customer.kode ? " / " + sj.customer.kode : ""}`
     : "-";
+  const namaPenerima = sj.penerima || sj.customer?.nama || "-";
   const ukuran = `${Number(sj.panjang ?? sj.p ?? 0).toFixed(2)} - ${Number(
     sj.lebar ?? sj.l ?? 0
   ).toFixed(2)} - ${Number(sj.tinggi ?? sj.t ?? 0).toFixed(3)}`;
@@ -106,7 +107,7 @@ export async function printSJ(sj) {
     </style>
     <div class="sheet">
       ${field("apDari", namaCustomer)}
-      ${field("penerima", namaCustomer)}
+      ${field("penerima", namaPenerima)}
       ${field("no", sj.no)}
       ${field("tgl", `${fmtDateShort(sj.tanggal)} ${sj.jam || ""}`)}
       ${field("tujuan", sj.tujuan || sj.customer?.alamat || "")}

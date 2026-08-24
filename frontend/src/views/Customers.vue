@@ -9,12 +9,15 @@ const customers = ref([]);
 const stockMasterList = ref([]);
 const showModal = ref(false);
 const showPriceModal = ref(false);
+const showRecipientModal = ref(false);
 const loading = ref(true);
 const saving = ref(false);
 const search = ref("");
 const filterDivisi = ref("Semua");
 const showInactive = ref(false);
 const selectedCustomer = ref(null);
+const editingCustomerId = ref(null);
+const editingRecipientId = ref(null);
 
 // Kode stock baru (quick add di dalam modal harga)
 const showNewStock = ref(false);
@@ -39,6 +42,9 @@ const priceForm = ref({
   hppTruk: 0,
   destination: "",
 });
+
+const emptyRecipientForm = () => ({ nama: "", alamat: "", telepon: "" });
+const recipientForm = ref(emptyRecipientForm());
 
 const form = ref(emptyForm());
 
@@ -81,6 +87,7 @@ async function loadStockMaster() {
 }
 
 async function openModal() {
+  editingCustomerId.value = null;
   form.value = emptyForm();
   showModal.value = true;
   // Kode digenerate otomatis, tidak perlu diketik manual (biar tidak dobel/typo)
@@ -92,6 +99,22 @@ async function openModal() {
   }
 }
 
+// Kolom Edit di daftar customer: buka modal yang sama, sudah terisi data
+// lama, supaya nama/alamat/telepon/NPWP bisa diubah bebas kalau ada yang
+// keliru atau berubah.
+function openEditCustomer(c) {
+  editingCustomerId.value = c.id;
+  form.value = {
+    kode: c.kode,
+    nama: c.nama,
+    alamat: c.alamat || "",
+    telepon: c.telepon || "",
+    npwp: c.npwp || "",
+    divisi: c.divisi,
+  };
+  showModal.value = true;
+}
+
 function closeModal() {
   if (!saving.value) showModal.value = false;
 }
@@ -101,23 +124,32 @@ async function submit() {
 
   saving.value = true;
   try {
-    await api.post("/customers", {
-      ...form.value,
-      kode: form.value.kode.trim().toUpperCase(),
-      nama: form.value.nama.trim(),
-    });
-    toast("Customer berhasil ditambahkan");
+    if (editingCustomerId.value) {
+      await api.put(`/customers/${editingCustomerId.value}`, {
+        ...form.value,
+        kode: form.value.kode.trim().toUpperCase(),
+        nama: form.value.nama.trim(),
+      });
+      toast("Customer berhasil diperbarui");
+    } else {
+      await api.post("/customers", {
+        ...form.value,
+        kode: form.value.kode.trim().toUpperCase(),
+        nama: form.value.nama.trim(),
+      });
+      toast("Customer berhasil ditambahkan");
+    }
     closeModal();
     await load();
   } catch (e) {
     // Kalau kode ternyata sudah kepakai (misal ada yang nambah bersamaan), generate ulang.
-    if (e?.message?.includes("Kode customer")) {
+    if (!editingCustomerId.value && e?.message?.includes("Kode customer")) {
       try {
         const res = await api.get("/customers/next-kode");
         form.value.kode = res.kode;
       } catch {}
     }
-    toast(e?.message || "Gagal menambahkan customer");
+    toast(e?.message || "Gagal menyimpan customer");
   } finally {
     saving.value = false;
   }
@@ -238,6 +270,76 @@ async function removePrice(price) {
   }
 }
 
+// ============================================================
+// PENERIMA & TUJUAN — daftar penerima pengiriman milik customer ini
+// (dipakai sebagai dropdown "Penerima" & "Tujuan" saat Buat Surat
+// Jalan). Bisa ditambah, diedit langsung, dan dihapus di sini.
+// ============================================================
+function openRecipientModal(customer) {
+  selectedCustomer.value = customer;
+  editingRecipientId.value = null;
+  recipientForm.value = emptyRecipientForm();
+  showRecipientModal.value = true;
+}
+
+function closeRecipientModal() {
+  if (!saving.value) showRecipientModal.value = false;
+}
+
+function startEditRecipient(r) {
+  editingRecipientId.value = r.id;
+  recipientForm.value = { nama: r.nama, alamat: r.alamat, telepon: r.telepon || "" };
+}
+
+function cancelEditRecipient() {
+  editingRecipientId.value = null;
+  recipientForm.value = emptyRecipientForm();
+}
+
+async function refreshSelectedCustomer() {
+  await load();
+  selectedCustomer.value = customers.value.find((c) => c.id === selectedCustomer.value.id);
+}
+
+async function saveRecipient() {
+  if (!recipientForm.value.nama.trim() || !recipientForm.value.alamat.trim()) {
+    return toast("Nama penerima dan alamat tujuan wajib diisi");
+  }
+
+  saving.value = true;
+  try {
+    if (editingRecipientId.value) {
+      await api.put(
+        `/customers/${selectedCustomer.value.id}/recipients/${editingRecipientId.value}`,
+        recipientForm.value
+      );
+      toast("Penerima berhasil diperbarui");
+    } else {
+      await api.post(`/customers/${selectedCustomer.value.id}/recipients`, recipientForm.value);
+      toast("Penerima berhasil ditambahkan");
+    }
+    await refreshSelectedCustomer();
+    editingRecipientId.value = null;
+    recipientForm.value = emptyRecipientForm();
+  } catch (e) {
+    toast(e?.message || "Gagal menyimpan penerima");
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function removeRecipient(r) {
+  if (!confirm(`Hapus penerima "${r.nama}" dari daftar?`)) return;
+  try {
+    await api.delete(`/customers/${selectedCustomer.value.id}/recipients/${r.id}`);
+    toast("Penerima berhasil dihapus");
+    await refreshSelectedCustomer();
+    if (editingRecipientId.value === r.id) cancelEditRecipient();
+  } catch (e) {
+    toast(e?.message || "Gagal menghapus penerima");
+  }
+}
+
 async function remove(id) {
   if (!confirm("Hapus customer ini? Data harga customer juga akan ikut terhapus.")) return;
   try {
@@ -333,6 +435,7 @@ onMounted(() => {
               <th>Customer</th>
               <th>Divisi</th>
               <th>Harga</th>
+              <th>Penerima</th>
               <th>Telepon</th>
               <th>Alamat</th>
               <th class="action-head">Aksi</th>
@@ -347,9 +450,12 @@ onMounted(() => {
               </td>
               <td><span class="division-badge">{{ c.divisi }}</span></td>
               <td><button class="price-count" @click="openPriceModal(c)">{{ c.prices?.length || 0 }} harga</button></td>
+              <td><button class="price-count" @click="openRecipientModal(c)">{{ c.recipients?.length || 0 }} penerima</button></td>
               <td><span class="contact-text">{{ c.telepon || "-" }}</span></td>
               <td><div class="address-text">{{ c.alamat || "-" }}</div></td>
               <td class="action-cell">
+                <button class="btn btn-sm btn-ghost" @click="openEditCustomer(c)">Edit</button>
+                <button class="btn btn-sm btn-ghost" @click="openRecipientModal(c)">Penerima</button>
                 <button class="btn btn-sm btn-ghost" @click="openPriceModal(c)">Harga</button>
                 <button class="btn btn-sm btn-ghost" @click="toggleAktif(c)">{{ c.aktif === false ? "Aktifkan" : "Nonaktifkan" }}</button>
                 <button class="btn btn-sm btn-danger" @click="remove(c.id)">Hapus</button>
@@ -365,15 +471,15 @@ onMounted(() => {
     <div class="modal customer-modal">
       <button class="modal-close" type="button" @click="closeModal">×</button>
       <div class="modal-heading">
-        <div class="modal-icon">＋</div>
-        <div><h2>Tambah Customer</h2><div class="msub">Kode customer digenerate otomatis, tidak perlu diketik manual.</div></div>
+        <div class="modal-icon">{{ editingCustomerId ? "✎" : "＋" }}</div>
+        <div><h2>{{ editingCustomerId ? "Edit Customer" : "Tambah Customer" }}</h2><div class="msub">{{ editingCustomerId ? "Ubah data master customer ini." : "Kode customer digenerate otomatis, tidak perlu diketik manual." }}</div></div>
       </div>
 
       <div class="form-section-title">Informasi Master</div>
       <div class="row">
         <div class="field">
           <label>Kode Customer</label>
-          <input v-model="form.kode" readonly class="input-readonly" title="Digenerate otomatis" />
+          <input v-model="form.kode" :readonly="!editingCustomerId" :class="{ 'input-readonly': !editingCustomerId }" title="Digenerate otomatis" />
         </div>
         <div class="field">
           <label>Nama Customer <span class="required">*</span></label>
@@ -394,7 +500,7 @@ onMounted(() => {
 
       <div class="modal-actions">
         <button class="btn btn-ghost" type="button" :disabled="saving" @click="closeModal">Batal</button>
-        <button class="btn btn-primary" type="button" :disabled="saving" @click="submit">{{ saving ? "Menyimpan..." : "Simpan Customer" }}</button>
+        <button class="btn btn-primary" type="button" :disabled="saving" @click="submit">{{ saving ? "Menyimpan..." : editingCustomerId ? "Simpan Perubahan" : "Simpan Customer" }}</button>
       </div>
     </div>
   </div>
@@ -466,6 +572,59 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+  <!-- PENERIMA & TUJUAN -->
+  <div v-if="showRecipientModal && selectedCustomer" class="modal-bg" @click.self="closeRecipientModal">
+    <div class="modal customer-price-modal">
+      <button class="modal-close" type="button" @click="closeRecipientModal">×</button>
+      <h2>Penerima &amp; Tujuan</h2>
+      <div class="msub"><strong>{{ selectedCustomer.kode }}</strong> — {{ selectedCustomer.nama }}</div>
+      <div class="msub" style="margin-top:4px">
+        Dipakai sebagai pilihan "Penerima" &amp; "Tujuan" saat Buat Surat Jalan. Kolom nama & alamat bisa diedit langsung, tidak perlu kaku sesuai isian awal.
+      </div>
+
+      <div class="price-list" v-if="selectedCustomer.recipients?.length" style="margin-top:16px">
+        <div v-for="r in selectedCustomer.recipients" :key="r.id" class="recipient-card">
+          <template v-if="editingRecipientId === r.id">
+            <div class="row">
+              <div class="field"><label>Nama Penerima</label><input v-model="recipientForm.nama" placeholder="Contoh: PT. Pitaco Mitra Perkasa" /></div>
+              <div class="field"><label>Telepon <span class="optional">(opsional)</span></label><input v-model="recipientForm.telepon" /></div>
+            </div>
+            <div class="field"><label>Alamat / Tujuan</label><textarea v-model="recipientForm.alamat" rows="2"></textarea></div>
+            <div class="recipient-edit-actions">
+              <button type="button" class="btn btn-sm btn-ghost" :disabled="saving" @click="cancelEditRecipient">Batal</button>
+              <button type="button" class="btn btn-sm btn-primary" :disabled="saving" @click="saveRecipient">{{ saving ? "Menyimpan..." : "Simpan" }}</button>
+            </div>
+          </template>
+          <template v-else>
+            <div class="price-main">
+              <div class="price-title">{{ r.nama }}</div>
+              <div class="price-meta">{{ r.alamat }}<span v-if="r.telepon"> · {{ r.telepon }}</span></div>
+            </div>
+            <div class="recipient-row-actions">
+              <button type="button" class="btn btn-sm btn-ghost" @click="startEditRecipient(r)">Edit</button>
+              <button type="button" class="btn btn-sm btn-danger" @click="removeRecipient(r)">Hapus</button>
+            </div>
+          </template>
+        </div>
+      </div>
+      <div v-else class="empty price-empty">Belum ada penerima untuk customer ini. Customer ini akan dianggap penerima tunggal (nama & alamat customer sendiri) saat Buat Surat Jalan.</div>
+
+      <div class="form-section-title" style="margin-top:18px">{{ editingRecipientId ? "Edit Penerima" : "Tambah Penerima" }}</div>
+      <template v-if="editingRecipientId === null">
+        <div class="row">
+          <div class="field"><label>Nama Penerima</label><input v-model="recipientForm.nama" placeholder="Contoh: PT. Pitaco Mitra Perkasa" /></div>
+          <div class="field"><label>Telepon <span class="optional">(opsional)</span></label><input v-model="recipientForm.telepon" /></div>
+        </div>
+        <div class="field"><label>Alamat / Tujuan</label><textarea v-model="recipientForm.alamat" rows="2" placeholder="Alamat lengkap tujuan pengiriman"></textarea></div>
+      </template>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" :disabled="saving" @click="closeRecipientModal">Tutup</button>
+        <button v-if="editingRecipientId === null" class="btn btn-primary" :disabled="saving" @click="saveRecipient">{{ saving ? "Menyimpan..." : "+ Tambah Penerima" }}</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -508,6 +667,9 @@ onMounted(() => {
 .price-values { display:flex; flex-direction:column; align-items:flex-end; gap:3px; font-size:10px; color:var(--ink-soft); white-space:nowrap; }
 .price-values strong { color:var(--ink); font-family:"JetBrains Mono",monospace; }
 .price-empty { padding:20px; }
+.recipient-card { display:flex; flex-direction:column; gap:8px; padding:11px 12px; border:1px solid var(--line); border-radius:9px; background:#fafcff; margin-bottom:8px; }
+.recipient-row-actions { display:flex; gap:6px; justify-content:flex-end; }
+.recipient-edit-actions { display:flex; gap:6px; justify-content:flex-end; margin-top:2px; }
 .show-inactive { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); white-space:nowrap; margin-left:auto; }
 .row-inactive { opacity:.55; }
 .inactive-badge { display:inline-block; margin-top:3px; padding:2px 7px; border-radius:20px; background:#fde3e3; color:#b23b3b; font-size:9.5px; font-weight:700; }

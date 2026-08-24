@@ -57,6 +57,27 @@ model Customer {
   prices    CustomerPrice[]
   rekapPenjualan RekapPenjualan[]
   suratJalan SuratJalan[]
+  recipients CustomerRecipient[]
+}
+
+// Daftar "Penerima" pengiriman milik seorang Customer, beserta alamat
+// tujuannya masing-masing (kolom "Penerima" & "Tujuan" pada Surat Jalan
+// fisik). Dipakai terutama untuk customer distributor yang mengirim ke
+// banyak PT/CV berbeda (mis. BP. Alexander -> PT. Pitaco Mitra Perkasa,
+// PT. Alko Putra Mahkota, dst) supaya tidak digabung jadi satu alamat
+// yang sangat panjang. Untuk customer biasa cukup 1 penerima = nama &
+// alamat customer itu sendiri. Data ini bisa ditambah/diedit/dihapus
+// bebas lewat menu Customer (kolom Edit).
+model CustomerRecipient {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  nama       String   // Nama penerima, mis. "PT. Pitaco Mitra Perkasa"
+  alamat     String   // Alamat/tujuan pengiriman penerima ini
+  telepon    String?
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
 }
 
 // Master kode jenis barang/stock (AA = Pasir Putih, BB = Batu Split, dst).
@@ -176,6 +197,7 @@ model SuratJalan {
   armadaId    String?
   armada      Armada?  @relation(fields: [armadaId], references: [id])
   tujuan      String
+  penerima    String?  // Nama penerima (bisa dari master CustomerRecipient, atau diketik/edit manual)
   jenisBarang String?
   noPolisi    String?
   sopir       String?

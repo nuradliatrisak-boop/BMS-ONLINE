@@ -17,6 +17,9 @@ const editingId = ref(null);
 const emptyForm = () => ({
   divisi: DIVISI[0],
   customerId: "",
+  recipientId: "",
+  penerima: "",
+  tujuan: "",
   armadaId: "",
   jenisBarang: "",
   noPolisi: "",
@@ -36,10 +39,34 @@ const jumlahTTD = computed(
   () => list.value.filter((item) => item.statusTTD === "LENGKAP").length
 );
 
-// Tujuan bukan isian manual: otomatis dari alamat Customer yang sudah
-// diisi lebih dulu di menu Customer, sesuai format kertas fisik.
+// "Penerima" & "Tujuan" mengikuti daftar Penerima milik Customer (menu
+// Customer > Penerima), sesuai format kertas fisik. Kalau customer belum
+// punya daftar Penerima, dianggap penerima tunggal = nama & alamat
+// customer itu sendiri. Setelah dipilih dari dropdown, kedua kolom ini
+// tetap bisa diketik ulang / diedit manual kalau ada perbedaan di lapangan.
 const formCustomer = computed(() => customers.value.find((c) => c.id === form.value.customerId));
-const tujuanPreview = computed(() => formCustomer.value?.alamat || "");
+const recipientOptions = computed(() => formCustomer.value?.recipients || []);
+
+function onCustomerChange() {
+  form.value.recipientId = "";
+  if (recipientOptions.value.length) {
+    // Customer distributor dengan banyak penerima - biarkan dipilih dulu.
+    form.value.penerima = "";
+    form.value.tujuan = "";
+  } else {
+    // Customer biasa - penerima = customer itu sendiri.
+    form.value.penerima = formCustomer.value?.nama || "";
+    form.value.tujuan = formCustomer.value?.alamat || "";
+  }
+}
+
+function onRecipientChange() {
+  const r = recipientOptions.value.find((x) => x.id === form.value.recipientId);
+  if (r) {
+    form.value.penerima = r.nama;
+    form.value.tujuan = r.alamat;
+  }
+}
 
 const m3Preview = computed(() => {
   const p = Number(form.value.panjang || 0);
@@ -82,6 +109,9 @@ function openEdit(sj) {
   form.value = {
     divisi: sj.divisi,
     customerId: sj.customerId || "",
+    recipientId: "",
+    penerima: sj.penerima || "",
+    tujuan: sj.tujuan || "",
     armadaId: sj.armadaId || "",
     jenisBarang: sj.jenisBarang || "",
     noPolisi: sj.noPolisi || "",
@@ -138,7 +168,15 @@ function validateForm() {
     return false;
   }
   if (!form.value.customerId) {
-    toast("Customer wajib dipilih (tujuan otomatis mengikuti alamat customer)");
+    toast("Customer wajib dipilih");
+    return false;
+  }
+  if (!form.value.penerima?.trim()) {
+    toast("Penerima wajib diisi");
+    return false;
+  }
+  if (!form.value.tujuan?.trim()) {
+    toast("Tujuan wajib diisi");
     return false;
   }
   if (!form.value.tanggal) {
@@ -157,7 +195,8 @@ async function submit() {
       divisi: form.value.divisi,
       customerId: form.value.customerId,
       armadaId: form.value.armadaId || null,
-      tujuan: tujuanPreview.value,
+      penerima: form.value.penerima?.trim() || null,
+      tujuan: form.value.tujuan?.trim() || "",
       jenisBarang: form.value.jenisBarang?.trim() || null,
       noPolisi: form.value.noPolisi?.trim() || null,
       sopir: form.value.sopir?.trim() || null,
@@ -288,6 +327,7 @@ onMounted(load);
               <td><span class="sj-number mono">{{ sj.no }}</span></td>
               <td>
                 <strong>{{ sj.customer?.nama || "-" }}</strong>
+                <div v-if="sj.penerima && sj.penerima !== sj.customer?.nama" class="sj-penerima-sub">→ {{ sj.penerima }}</div>
                 <div class="sj-tujuan-sub">{{ sj.tujuan }}</div>
               </td>
               <td>{{ sj.jenisBarang || "-" }}</td>
@@ -339,17 +379,33 @@ onMounted(load);
         </div>
 
         <div class="field">
-          <label>Customer</label>
-          <select v-model="form.customerId">
+          <label>Customer <span class="optional">(A/P Dari)</span></label>
+          <select v-model="form.customerId" @change="onCustomerChange">
             <option value="" disabled>Pilih customer</option>
             <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.kode }} — {{ c.nama }}</option>
           </select>
         </div>
       </div>
 
-      <div class="field">
-        <label>Tujuan <span class="optional">(otomatis dari alamat customer)</span></label>
-        <input :value="tujuanPreview" disabled placeholder="Pilih customer dulu" />
+      <div class="row" v-if="recipientOptions.length">
+        <div class="field">
+          <label>Pilih Penerima <span class="optional">(customer ini punya {{ recipientOptions.length }} tujuan)</span></label>
+          <select v-model="form.recipientId" @change="onRecipientChange">
+            <option value="" disabled>Pilih penerima...</option>
+            <option v-for="r in recipientOptions" :key="r.id" :value="r.id">{{ r.nama }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Penerima</label>
+          <input v-model="form.penerima" placeholder="Nama penerima" />
+        </div>
+        <div class="field">
+          <label>Tujuan</label>
+          <input v-model="form.tujuan" placeholder="Alamat tujuan pengiriman" />
+        </div>
       </div>
 
       <div class="field">
@@ -430,6 +486,7 @@ onMounted(load);
 .sj-summary-label { font-size: 10.5px; color: var(--ink-soft); letter-spacing: .04em; }
 .sj-summary-value { font-size: 20px; font-weight: 800; }
 .sj-tujuan-sub { font-size: 11px; color: var(--ink-soft); max-width: 260px; }
+.sj-penerima-sub { font-size: 11px; color: var(--bms-blue-dark); font-weight: 600; max-width: 260px; }
 .sj-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .sj-hint { margin-top: 10px; font-size: 11.5px; color: var(--ink-soft); }
 .row-4 { grid-template-columns: repeat(4, 1fr); }

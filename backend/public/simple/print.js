@@ -78,6 +78,7 @@ function printSJ(sj) {
     var namaCustomer = sj.customer
       ? (sj.customer.nama + (sj.customer.kode ? (" / " + sj.customer.kode) : ""))
       : "-";
+    var namaPenerima = sj.penerima || (sj.customer ? sj.customer.nama : "") || "-";
     var panjang = Number(sj.panjang || 0);
     var lebar = Number(sj.lebar || 0);
     var tinggi = Number(sj.tinggi || 0);
@@ -99,7 +100,7 @@ function printSJ(sj) {
       '</style>' +
       '<div class="sheet">' +
       field("apDari", namaCustomer) +
-      field("penerima", namaCustomer) +
+      field("penerima", namaPenerima) +
       field("no", sj.no) +
       field("tgl", fmtDateShortPrint(sj.tanggal) + " " + (sj.jam || "")) +
       field("tujuan", tujuanText) +

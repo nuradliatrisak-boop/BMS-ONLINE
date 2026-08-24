@@ -22,6 +22,7 @@ const filter = ref({
 const headerForm = ref({
   pic: "",
   noInvoice: "BMS-REKAP-01",
+  recipientId: "",
   tujuan: "",
 });
 
@@ -52,6 +53,28 @@ const filteredCustomerOptions = computed(() => {
 });
 const formCustomer = computed(() => customers.value.find((c) => c.id === form.value.customerId));
 const priceOptions = computed(() => formCustomer.value?.prices || []);
+
+// "Tujuan" pada header cetak rekap mengikuti daftar Penerima milik Customer
+// (menu Customer > Penerima), bukan lagi langsung dari customer.alamat -
+// supaya customer distributor dengan banyak tujuan pengiriman bisa pilih
+// alamat penerima yang sesuai untuk lembar rekap ini. Kalau customer belum
+// punya daftar Penerima, tujuan default ke alamat customer itu sendiri.
+// Field tetap bisa diketik ulang / diedit manual setelah dipilih.
+const headerRecipientOptions = computed(() => selectedCustomer.value?.recipients || []);
+
+function applyDefaultHeaderTujuan() {
+  headerForm.value.recipientId = "";
+  if (headerRecipientOptions.value.length) {
+    headerForm.value.tujuan = "";
+  } else {
+    headerForm.value.tujuan = selectedCustomer.value?.alamat || "";
+  }
+}
+
+function onHeaderRecipientChange() {
+  const r = headerRecipientOptions.value.find((x) => x.id === headerForm.value.recipientId);
+  if (r) headerForm.value.tujuan = r.alamat;
+}
 
 function rupiah(n) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
@@ -96,7 +119,6 @@ async function load() {
     const data = await api.get(`/rekap-penjualan?${params.toString()}`);
     rows.value = data.rows || [];
     summary.value = data.summary || { count: 0, jumlah: 0, total: 0 };
-    if (selectedCustomer.value) headerForm.value.tujuan = selectedCustomer.value.alamat || "";
   } catch (e) {
     console.error(e);
     toast("Gagal memuat rekap penjualan");
@@ -215,7 +237,7 @@ watch(
   load
 );
 watch(selectedCustomer, (customer) => {
-  if (customer) headerForm.value.tujuan = customer.alamat || "";
+  if (customer) applyDefaultHeaderTujuan();
 });
 watch(() => filter.value.customerSearch, () => {
   if (
@@ -285,6 +307,15 @@ onMounted(async () => {
       <div class="row">
         <div class="field"><label>No. Invoice Rekapan</label><input v-model="headerForm.noInvoice" /></div>
         <div class="field"><label>PIC / Kepada</label><input v-model="headerForm.pic" placeholder="Contoh: Bp. Ali" /></div>
+      </div>
+      <div class="row" v-if="headerRecipientOptions.length">
+        <div class="field">
+          <label>Pilih Penerima <span class="opt">(customer ini punya {{ headerRecipientOptions.length }} tujuan)</span></label>
+          <select v-model="headerForm.recipientId" @change="onHeaderRecipientChange">
+            <option value="" disabled>Pilih penerima...</option>
+            <option v-for="r in headerRecipientOptions" :key="r.id" :value="r.id">{{ r.nama }}</option>
+          </select>
+        </div>
       </div>
       <div class="field"><label>Tujuan</label><input v-model="headerForm.tujuan" placeholder="Alamat / tujuan tagihan" /></div>
     </div>

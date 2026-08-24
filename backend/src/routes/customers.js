@@ -11,6 +11,9 @@ const customerInclude = {
       { stockCode: "asc" },
     ],
   },
+  recipients: {
+    orderBy: { nama: "asc" },
+  },
 };
 
 router.get("/", async (req, res, next) => {
@@ -186,6 +189,77 @@ router.put("/:id/prices/:priceId", async (req, res, next) => {
 router.delete("/:id/prices/:priceId", async (req, res, next) => {
   try {
     await prisma.customerPrice.delete({ where: { id: req.params.priceId } });
+    res.status(204).end();
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ============================================================
+// PENERIMA (kolom "Penerima" & "Tujuan" pada Surat Jalan fisik).
+// Satu Customer bisa punya banyak Penerima dengan alamat tujuan
+// masing-masing (mis. customer distributor yang mengirim ke banyak
+// PT/CV berbeda). Dipakai sebagai dropdown saat membuat Surat Jalan,
+// dan bisa ditambah/diedit/dihapus bebas lewat menu Customer.
+// ============================================================
+
+router.get("/:id/recipients", async (req, res, next) => {
+  try {
+    const recipients = await prisma.customerRecipient.findMany({
+      where: { customerId: req.params.id },
+      orderBy: { nama: "asc" },
+    });
+    res.json(recipients);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/:id/recipients", async (req, res, next) => {
+  try {
+    const { nama, alamat, telepon } = req.body;
+    if (!nama?.trim() || !alamat?.trim()) {
+      return res.status(400).json({ error: "Nama penerima dan alamat tujuan wajib diisi" });
+    }
+
+    const recipient = await prisma.customerRecipient.create({
+      data: {
+        customerId: req.params.id,
+        nama: nama.trim(),
+        alamat: alamat.trim(),
+        telepon: telepon?.trim() || null,
+      },
+    });
+    res.status(201).json(recipient);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.put("/:id/recipients/:recipientId", async (req, res, next) => {
+  try {
+    const { nama, alamat, telepon } = req.body;
+    if (!nama?.trim() || !alamat?.trim()) {
+      return res.status(400).json({ error: "Nama penerima dan alamat tujuan wajib diisi" });
+    }
+
+    const recipient = await prisma.customerRecipient.update({
+      where: { id: req.params.recipientId },
+      data: {
+        nama: nama.trim(),
+        alamat: alamat.trim(),
+        telepon: telepon?.trim() || null,
+      },
+    });
+    res.json(recipient);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.delete("/:id/recipients/:recipientId", async (req, res, next) => {
+  try {
+    await prisma.customerRecipient.delete({ where: { id: req.params.recipientId } });
     res.status(204).end();
   } catch (e) {
     next(e);

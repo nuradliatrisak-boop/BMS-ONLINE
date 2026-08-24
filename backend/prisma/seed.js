@@ -528,8 +528,19 @@ const customers = [
   {
     kode: "BP-ALEXANDER",
     nama: "BP. ALEXANDER",
-    alamat: "Distributor - pengiriman ke PT. Pitaco Mitra Perkasa, PT. Alko Putra Mahkota, PT. Leo Tunggal Mandiri, PT. Alko Saudara Sejati, PT. Cahaya Nusantara Berkarya",
+    alamat: "Distributor - lihat daftar Penerima",
     divisi: DIVISI_CUSTOMER,
+    // Setiap PT di bawah ini adalah "Penerima" terpisah dengan tujuan
+    // pengirimannya sendiri (dipilih lewat dropdown saat buat Surat
+    // Jalan). Alamat detail belum tercatat dari sistem lama - edit lewat
+    // menu Customer > Penerima setelah alamat pasti diketahui.
+    recipients: [
+      { nama: "PT. Pitaco Mitra Perkasa", alamat: "(alamat belum diisi - edit di menu Customer)" },
+      { nama: "PT. Alko Putra Mahkota", alamat: "(alamat belum diisi - edit di menu Customer)" },
+      { nama: "PT. Leo Tunggal Mandiri", alamat: "(alamat belum diisi - edit di menu Customer)" },
+      { nama: "PT. Alko Saudara Sejati", alamat: "(alamat belum diisi - edit di menu Customer)" },
+      { nama: "PT. Cahaya Nusantara Berkarya", alamat: "(alamat belum diisi - edit di menu Customer)" },
+    ],
     prices: [
       ["B01", "BA", "PASIR BANGKA", 430000, 0, 0, "CD"],
       ["C01", "CC", "PASIR URUG", 240000, 0, 0, "CD"],
@@ -550,8 +561,18 @@ const customers = [
   {
     kode: "BP-MORENO",
     nama: "BP. MORENO",
-    alamat: "Distributor - pengiriman ke CV. Areta Jaya, CV. Hotma Marojahan, PT. Harumas PM, PT. Peatalun Jaya, PT. Reza Berkah Abadi, PT. Tiara Sira Jaya, PT. Daliltani Pormesa, PT. Restu Bumantara",
+    alamat: "Distributor - lihat daftar Penerima",
     divisi: DIVISI_CUSTOMER,
+    recipients: [
+      { nama: "CV. Areta Jaya", alamat: "(alamat belum diisi - edit di menu Customer)" },
+      { nama: "CV. Hotma Marojahan", alamat: "(alamat belum diisi - edit di menu Customer)" },
+      { nama: "PT. Harumas PM", alamat: "(alamat belum diisi - edit di menu Customer)" },
+      { nama: "PT. Peatalun Jaya", alamat: "(alamat belum diisi - edit di menu Customer)" },
+      { nama: "PT. Reza Berkah Abadi", alamat: "(alamat belum diisi - edit di menu Customer)" },
+      { nama: "PT. Tiara Sira Jaya", alamat: "(alamat belum diisi - edit di menu Customer)" },
+      { nama: "PT. Daliltani Pormesa", alamat: "(alamat belum diisi - edit di menu Customer)" },
+      { nama: "PT. Restu Bumantara", alamat: "(alamat belum diisi - edit di menu Customer)" },
+    ],
     prices: [
       ["B01", "BA", "PASIR BANGKA", 430000, 0, 0, "CD"],
       ["C01", "CC", "PASIR URUG", 240000, 0, 0, "CD"],
@@ -670,6 +691,31 @@ async function upsertCustomer(item) {
         destination,
       },
     });
+  }
+
+  // Penerima (kolom "Penerima" & "Tujuan" pada Surat Jalan). Opsional -
+  // hanya diisi untuk customer yang punya banyak tujuan pengiriman
+  // berbeda (mis. distributor). Di-upsert per nama supaya aman dijalankan
+  // ulang (re-seed) tanpa membuat data dobel.
+  for (const r of item.recipients || []) {
+    const existing = await prisma.customerRecipient.findFirst({
+      where: { customerId: customer.id, nama: r.nama },
+    });
+    if (existing) {
+      await prisma.customerRecipient.update({
+        where: { id: existing.id },
+        data: { alamat: r.alamat, telepon: r.telepon || null },
+      });
+    } else {
+      await prisma.customerRecipient.create({
+        data: {
+          customerId: customer.id,
+          nama: r.nama,
+          alamat: r.alamat,
+          telepon: r.telepon || null,
+        },
+      });
+    }
   }
 
   return customer;

@@ -68,10 +68,15 @@
 
       <button type="submit" class="btn block" id="btnSubmit">Simpan Surat Jalan</button>
     </form>
+
+    <div id="printBox" style="display:none; margin-top:12px;">
+      <button type="button" class="btn secondary block" id="btnPrint">Cetak Surat Jalan (BMS-SJ...)</button>
+    </div>
   </div>
 </div>
 
 <script src="common.js"></script>
+<script src="print.js"></script>
 <script>
 (function () {
   var user = requireLogin();
@@ -90,6 +95,20 @@
   var armadaSel = document.getElementById("armadaId");
   var tujuanPreview = document.getElementById("tujuanPreview");
   var m3Preview = document.getElementById("m3Preview");
+  var printBox = document.getElementById("printBox");
+  var btnPrint = document.getElementById("btnPrint");
+  var lastSavedSJ = null;
+
+  btnPrint.addEventListener("click", function () {
+    if (!lastSavedSJ) return;
+    btnPrint.disabled = true;
+    printSJ(lastSavedSJ).then(function () {
+      btnPrint.disabled = false;
+    }).catch(function (err) {
+      btnPrint.disabled = false;
+      showMsg(msg, "Gagal menyiapkan cetakan: " + (err.message || ""), "err");
+    });
+  });
 
   // Isi pilihan divisi
   for (var i = 0; i < DIVISI.length; i++) {
@@ -205,6 +224,9 @@
     api.post("/surat-jalan", payload)
       .then(function (data) {
         showMsg(msg, "Surat Jalan tersimpan: " + data.no, "ok");
+        lastSavedSJ = data;
+        btnPrint.textContent = "Cetak Surat Jalan (" + data.no + ")";
+        printBox.style.display = "block";
         form.reset();
         document.getElementById("tanggal").value = todayStr();
         document.getElementById("jam").value = nowTimeStr();

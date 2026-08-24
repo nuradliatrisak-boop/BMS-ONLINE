@@ -65,9 +65,14 @@
   </div>
 
   <button type="button" class="btn block" id="btnSubmit">Simpan Invoice</button>
+
+  <div id="printBox" style="display:none; margin-top:12px;">
+    <button type="button" class="btn secondary block" id="btnPrint">Cetak Invoice</button>
+  </div>
 </div>
 
 <script src="common.js"></script>
+<script src="print.js"></script>
 <script>
 (function () {
   var user = requireLogin();
@@ -88,6 +93,20 @@
   var sjTbody = document.getElementById("sjTbody");
   var totalBox = document.getElementById("totalBox");
   var btn = document.getElementById("btnSubmit");
+  var printBox = document.getElementById("printBox");
+  var btnPrint = document.getElementById("btnPrint");
+  var lastSavedInv = null;
+
+  btnPrint.addEventListener("click", function () {
+    if (!lastSavedInv) return;
+    btnPrint.disabled = true;
+    printInvoice(lastSavedInv).then(function () {
+      btnPrint.disabled = false;
+    }).catch(function (err) {
+      btnPrint.disabled = false;
+      showMsg(msg, "Gagal menyiapkan cetakan: " + (err.message || ""), "err");
+    });
+  });
 
   for (var i = 0; i < DIVISI.length; i++) {
     var opt = document.createElement("option");
@@ -286,6 +305,9 @@
     api.post("/invoices", payload)
       .then(function (data) {
         showMsg(msg, "Invoice tersimpan: " + data.no + " (Total " + rupiah(data.total) + ")", "ok");
+        lastSavedInv = data;
+        btnPrint.textContent = "Cetak Invoice (" + data.no + ")";
+        printBox.style.display = "block";
         document.getElementById("invHeaderForm").reset();
         document.getElementById("tanggal").value = todayStr();
         if (user.divisi && DIVISI.indexOf(user.divisi) !== -1) {

@@ -82,7 +82,7 @@ function printSJ(sj) {
     var panjang = Number(sj.panjang || 0);
     var lebar = Number(sj.lebar || 0);
     var tinggi = Number(sj.tinggi || 0);
-    var ukuran = panjang.toFixed(2) + " - " + lebar.toFixed(2) + " - " + tinggi.toFixed(3);
+    var ukuran = (panjang > 0 || lebar > 0 || tinggi > 0) ? (panjang.toFixed(2) + " - " + lebar.toFixed(2) + " - " + tinggi.toFixed(3)) : "";
 
     function field(key, text) {
       return '<div class="f" style="left:' + p[key].x + 'mm;top:' + p[key].y + 'mm;font-size:' + p[key].size + 'pt">' + escapeHtml(text) + '</div>';
@@ -107,7 +107,7 @@ function printSJ(sj) {
       field("jenis", sj.jenisBarang || "") +
       field("nopol", sj.noPolisi || (sj.armada ? sj.armada.nopol : "") || "") +
       field("bak", ukuran) +
-      field("m3", Number(sj.m3 || 0).toFixed(3)) +
+      field("m3", Number(sj.m3 || 0) > 0 ? Number(sj.m3).toFixed(3) : "") +
       field("sopir", sj.sopir || (sj.armada ? sj.armada.sopir : "") || "") +
       field("hormat", signerName) +
       '</div>'

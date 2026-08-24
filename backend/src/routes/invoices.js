@@ -66,7 +66,7 @@ async function generateNomorInvoice(tx, tanggal) {
 // butuh data Surat Jalan per baris: tgl kirim, no SJ, sopir, alamat kirim,
 // P L T, M3) selalu tersedia tanpa request tambahan.
 const includeLengkap = {
-  customer: true,
+  customer: { include: { prices: true } },
   pembayaran: true,
   items: {
     include: {

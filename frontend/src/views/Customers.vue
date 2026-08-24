@@ -41,6 +41,7 @@ const priceForm = ref({
   sewaTruk: 0,
   hppTruk: 0,
   destination: "",
+  vehicleType: "CD",
 });
 
 const emptyRecipientForm = () => ({ nama: "", alamat: "", telepon: "" });
@@ -177,6 +178,7 @@ function openPriceModal(customer) {
     sewaTruk: 0,
     hppTruk: 0,
     destination: "",
+    vehicleType: "CD",
   };
   showNewStock.value = false;
   showStockManager.value = false;
@@ -250,6 +252,7 @@ async function addPrice() {
       sewaTruk: 0,
       hppTruk: 0,
       destination: "",
+      vehicleType: "CD",
     };
   } catch (e) {
     toast(e?.message || "Gagal menambahkan harga");
@@ -514,7 +517,7 @@ onMounted(() => {
       <div class="price-list" v-if="selectedCustomer.prices?.length">
         <div v-for="p in selectedCustomer.prices" :key="p.id" class="price-card">
           <div class="price-main">
-            <div class="price-title"><span class="code-chip">{{ p.destinationCode }}</span> <span class="code-chip dark">{{ p.stockCode }}</span> {{ p.stockName }}</div>
+            <div class="price-title"><span class="code-chip">{{ p.destinationCode }}</span> <span class="code-chip dark">{{ p.stockCode }}</span> {{ p.stockName }} <span class="code-chip">{{ p.vehicleType || "CD" }}</span></div>
             <div class="price-meta">{{ p.destination || "-" }}</div>
           </div>
           <div class="price-values">
@@ -529,6 +532,7 @@ onMounted(() => {
       <div class="form-section-title" style="margin-top:18px">Tambah Harga</div>
       <div class="row">
         <div class="field"><label>Kode Tujuan</label><input v-model="priceForm.destinationCode" placeholder="A01 / B01" /></div>
+        <div class="field"><label>Armada / Tarif</label><select v-model="priceForm.vehicleType"><option value="CD">CD / Colt Diesel</option><option value="TRONTON">Tronton</option></select></div>
         <div class="field">
           <label>Kode Stock</label>
           <select v-model="priceForm.stockCode" @change="onStockCodeChange">

@@ -96,6 +96,7 @@ model CustomerPrice {
   customerId      String
   customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   destinationCode String
+  vehicleType     String   @default("CD") // CD / TRONTON
   stockCode       String
   stockName       String
   hargaM3         Float    @default(0)
@@ -105,7 +106,7 @@ model CustomerPrice {
   discount        String?
   createdAt       DateTime @default(now())
 
-  @@unique([customerId, destinationCode, stockCode])
+  @@unique([customerId, destinationCode, vehicleType, stockCode])
 }
 
 model RekapPenjualan {

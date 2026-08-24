@@ -30,6 +30,20 @@ const form = ref(emptyForm());
 // baris terpilih: { suratJalanId, checked, hargaSatuan }
 const rows = ref([]);
 
+function vehicleTypeForSJ(sj) {
+  const jenis = `${sj.armada?.jenis || ""} ${sj.noPolisi || ""}`.toUpperCase();
+  return jenis.includes("TRONTON") ? "TRONTON" : "CD";
+}
+function suggestedPrice(sj) {
+  const customer = customers.value.find(c => c.id === form.value.customerId);
+  if (!customer) return 0;
+  const stock = `${sj.jenisBarang || ""}`.trim().toUpperCase();
+  const vehicle = vehicleTypeForSJ(sj);
+  const price = (customer.prices || []).find(p => p.vehicleType === vehicle && (p.stockName || "").trim().toUpperCase() === stock)
+    || (customer.prices || []).find(p => (p.stockName || "").trim().toUpperCase() === stock);
+  return Number(price?.hargaM3 || 0);
+}
+
 function rupiah(n) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
 }
@@ -85,7 +99,7 @@ async function loadBelumDitagih() {
       sj,
       checked: true,
       qty: sj.m3,
-      hargaSatuan: 0,
+      hargaSatuan: suggestedPrice(sj),
     }));
   } catch (error) {
     toast(error?.message || "Gagal memuat surat jalan yang belum ditagih");

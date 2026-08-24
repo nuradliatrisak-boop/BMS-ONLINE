@@ -79,6 +79,7 @@ router.post("/", async (req, res, next) => {
         prices: {
           create: prices.map((p) => ({
             destinationCode: p.destinationCode,
+            vehicleType: (p.vehicleType || p.destination || "CD").trim().toUpperCase(),
             stockCode: p.stockCode,
             stockName: p.stockName,
             hargaM3: Number(p.hargaM3 || 0),
@@ -130,6 +131,7 @@ router.post("/:id/prices", async (req, res, next) => {
       destinationCode,
       stockCode,
       stockName,
+      vehicleType,
       hargaM3,
       sewaTruk,
       hppTruk,
@@ -147,6 +149,7 @@ router.post("/:id/prices", async (req, res, next) => {
       data: {
         customerId: req.params.id,
         destinationCode: destinationCode.trim().toUpperCase(),
+        vehicleType: (vehicleType || req.body.destination || "CD").trim().toUpperCase(),
         stockCode: stockCode.trim().toUpperCase(),
         stockName: stockName.trim(),
         hargaM3: Number(hargaM3 || 0),
@@ -171,6 +174,7 @@ router.put("/:id/prices/:priceId", async (req, res, next) => {
       where: { id: req.params.priceId },
       data: {
         destinationCode: req.body.destinationCode?.trim().toUpperCase(),
+        vehicleType: (req.body.vehicleType || req.body.destination || "CD").trim().toUpperCase(),
         stockCode: req.body.stockCode?.trim().toUpperCase(),
         stockName: req.body.stockName?.trim(),
         hargaM3: Number(req.body.hargaM3 || 0),

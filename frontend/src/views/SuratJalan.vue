@@ -9,6 +9,7 @@ const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 const list = ref([]);
 const armadaList = ref([]);
 const customers = ref([]);
+const stockMasterList = ref([]);
 const loading = ref(true);
 const saving = ref(false);
 const showModal = ref(false);
@@ -62,10 +63,11 @@ function onCustomerChange() {
 
 function onRecipientChange() {
   const r = recipientOptions.value.find((x) => x.id === form.value.recipientId);
-  if (r) {
-    form.value.penerima = r.nama;
-    form.value.tujuan = r.alamat;
-  }
+  if (r) { form.value.penerima = r.nama; form.value.tujuan = r.alamat; }
+}
+function onTujuanChange() {
+  const r = recipientOptions.value.find((x) => x.alamat === form.value.tujuan && x.nama === form.value.penerima) || recipientOptions.value.find((x) => x.alamat === form.value.tujuan);
+  if (r) { form.value.recipientId = r.id; form.value.penerima = r.nama; }
 }
 
 const m3Preview = computed(() => {
@@ -82,14 +84,16 @@ function rupiah(n) {
 async function load() {
   loading.value = true;
   try {
-    const [suratJalanData, armadaData, customerData] = await Promise.all([
+    const [suratJalanData, armadaData, customerData, stockData] = await Promise.all([
       api.get("/surat-jalan"),
       api.get("/armada"),
       api.get("/customers"),
+      api.get("/stock-master"),
     ]);
     list.value = suratJalanData;
     armadaList.value = armadaData;
     customers.value = customerData;
+    stockMasterList.value = stockData;
   } catch (error) {
     console.error(error);
     toast("Gagal memuat data surat jalan");
@@ -389,28 +393,31 @@ onMounted(load);
 
       <div class="row" v-if="recipientOptions.length">
         <div class="field">
-          <label>Pilih Penerima <span class="optional">(customer ini punya {{ recipientOptions.length }} tujuan)</span></label>
-          <select v-model="form.recipientId" @change="onRecipientChange">
-            <option value="" disabled>Pilih penerima...</option>
-            <option v-for="r in recipientOptions" :key="r.id" :value="r.id">{{ r.nama }}</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="field">
           <label>Penerima</label>
-          <input v-model="form.penerima" placeholder="Nama penerima" />
+          <select v-model="form.recipientId" @change="onRecipientChange">
+            <option value="" disabled>Pilih PT / penerima...</option>
+            <option v-for="r in recipientOptions" :key="r.id" :value="r.id">{{ r.nama }} — {{ r.alamat }}</option>
+          </select>
         </div>
         <div class="field">
           <label>Tujuan</label>
-          <input v-model="form.tujuan" placeholder="Alamat tujuan pengiriman" />
+          <select v-model="form.tujuan" @change="onTujuanChange">
+            <option value="" disabled>Pilih alamat tujuan...</option>
+            <option v-for="r in recipientOptions" :key="r.id" :value="r.alamat">{{ r.alamat }}</option>
+          </select>
         </div>
+      </div>
+      <div class="row" v-else>
+        <div class="field"><label>Penerima</label><input v-model="form.penerima" placeholder="Nama penerima" /></div>
+        <div class="field"><label>Tujuan</label><input v-model="form.tujuan" placeholder="Alamat tujuan pengiriman" /></div>
       </div>
 
       <div class="field">
-        <label>Jenis Barang</label>
-        <input v-model="form.jenisBarang" placeholder="Contoh: Pasir Bangka / Batu Split" />
+        <label>Jenis Barang / Stock</label>
+        <select v-model="form.jenisBarang">
+          <option value="">Pilih jenis barang...</option>
+          <option v-for="s in stockMasterList" :key="s.id" :value="s.nama">{{ s.kode }} — {{ s.nama }}</option>
+        </select>
       </div>
 
       <div class="row">

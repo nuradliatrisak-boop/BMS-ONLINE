@@ -1312,7 +1312,7 @@ function printInvoice(inv) {
         // Font dibuat sedikit lebih lega.
         'font-family:"Courier New",Courier,monospace;' +
 
-        'font-size:9.5pt;' +
+        'font-size:10pt;' +
 
         'letter-spacing:0.12pt;' +
 
@@ -1438,7 +1438,7 @@ function printInvoice(inv) {
 
         'font-family:"Courier New",Courier,monospace;' +
 
-        'font-size:7.6pt;' +
+        'font-size:10pt;' +
 
         'line-height:1.3;' +
 

@@ -1438,7 +1438,7 @@ function printInvoice(inv) {
 
         'font-family:"Courier New",Courier,monospace;' +
 
-        'font-size:10pt;' +
+        'font-size:8.5pt;' +
 
         'line-height:1.3;' +
 

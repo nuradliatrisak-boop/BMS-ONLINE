@@ -62,18 +62,18 @@ function printSJ(sj) {
     }
 
     var p = {
-      apDari: pos("apDari", 8, 8, 9),
-      penerima: pos("penerima", 8, 14, 9),
-      no: pos("no", 178, 8, 10),
-      tanggal: pos("tanggal", 178, 14, 10),
-      jam: pos("jam", 178, 20, 10),
-      tujuan: pos("tujuan", 8, 20, 9),
-      jenis: pos("jenisBarang", 8, 32, 9),
-      nopol: pos("nopol", 14, 60, 12),
-      bak: pos("ukuranBak", 90, 60, 12),
-      m3: pos("m3", 200, 60, 12),
-      sopir: pos("sopirNama", 150, 96, 10),
-      hormat: pos("hormatKamiNama", 226, 100, 10)
+      apDari: pos("apDari", 8, 8, 16),
+      penerima: pos("penerima", 8, 14, 16),
+      no: pos("no", 178, 8, 16),
+      tanggal: pos("tanggal", 178, 14, 16),
+      jam: pos("jam", 178, 20, 16),
+      tujuan: pos("tujuan", 8, 20, 16),
+      jenis: pos("jenisBarang", 8, 32, 16),
+      nopol: pos("nopol", 14, 60, 16),
+      bak: pos("ukuranBak", 90, 60, 16),
+      m3: pos("m3", 200, 60, 16),
+      sopir: pos("sopirNama", 150, 96, 16),
+      hormat: pos("hormatKamiNama", 226, 100, 16)
     };
 
     // Label yang ditulis di depan tiap nilai (kertas SJ tidak ada label

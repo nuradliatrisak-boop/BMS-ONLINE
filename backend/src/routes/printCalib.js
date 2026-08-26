@@ -11,19 +11,24 @@ const DEFAULTS = {
     h: 108,
     offsetX: 0,
     offsetY: 0,
+    // Catatan: nilai default ini sengaja dibuat tidak terlalu rapat (jarak
+    // antar baris & ukuran font diperbesar dibanding versi sebelumnya) dan
+    // posisi Nomor/Tanggal/Jam digeser ke bawah supaya tidak menabrak judul
+    // "SURAT JALAN" yang sudah tercetak di kertas. Ini hanya titik awal -
+    // sesuaikan lagi lewat halaman "Kalibrasi Cetak" memakai kertas asli.
     fields: {
-      apDari: { x: 8, y: 8, size: 9 },
-      penerima: { x: 8, y: 14, size: 9 },
-      no: { x: 178, y: 8, size: 10 },
-      tanggal: { x: 178, y: 14, size: 10 },
-      jam: { x: 178, y: 20, size: 10 },
-      tujuan: { x: 8, y: 20, size: 9 },
-      jenisBarang: { x: 8, y: 32, size: 9 },
-      nopol: { x: 14, y: 60, size: 12 },
-      ukuranBak: { x: 90, y: 60, size: 12 },
-      m3: { x: 200, y: 60, size: 12 },
-      sopirNama: { x: 150, y: 96, size: 10 },
-      hormatKamiNama: { x: 226, y: 100, size: 10 },
+      apDari: { x: 8, y: 10, size: 10 },
+      penerima: { x: 8, y: 18, size: 10 },
+      tujuan: { x: 8, y: 26, size: 10 },
+      jenisBarang: { x: 8, y: 34, size: 10 },
+      no: { x: 175, y: 30, size: 11 },
+      tanggal: { x: 175, y: 38, size: 11 },
+      jam: { x: 175, y: 46, size: 11 },
+      nopol: { x: 14, y: 62, size: 13 },
+      ukuranBak: { x: 90, y: 62, size: 13 },
+      m3: { x: 200, y: 62, size: 13 },
+      sopirNama: { x: 150, y: 98, size: 11 },
+      hormatKamiNama: { x: 226, y: 102, size: 11 },
     },
   },
   inv: {

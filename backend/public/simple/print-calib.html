@@ -1,0 +1,201 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kalibrasi Cetak - BMS Gudang</title><link rel="stylesheet" href="style.css"><style>
+.calib-intro{font-size:13px;line-height:1.6}
+.calib-intro ol{margin:8px 0 0;padding-left:20px}
+.calib-tabs{display:table;width:100%;margin-bottom:12px}
+.calib-tabs .btn{margin-right:8px}
+.calib-field-row{display:table;width:100%;table-layout:fixed;border-bottom:1px solid #eee;padding:6px 0}
+.calib-field-row>div{display:table-cell;vertical-align:middle;padding:3px 4px}
+.calib-field-row input{width:90%;padding:5px;font-size:13px}
+.calib-field-head{font-weight:bold;font-size:11px;color:#666;text-transform:uppercase;border-bottom:2px solid #ccc}
+.row4{display:table;width:100%;table-layout:fixed;margin-bottom:6px}
+.row4>div{display:table-cell;padding:0 6px 0 0}
+.calib-actions{margin-top:16px;padding-top:12px;border-top:1px solid #eee}
+.calib-actions .btn{margin:0 6px 8px 0}
+</style></head><body>
+<div class="topbar"><h1>Kalibrasi Cetak</h1><div class="userbar" id="userbar"></div></div>
+<div class="wrap">
+<a href="menu.html" class="btn secondary" style="margin-bottom:12px;">&laquo; Kembali ke Menu</a>
+<div class="card"><div id="msg" class="msg" style="display:none"></div>
+
+<div class="card calib-intro">
+<strong>Cara kalibrasi (butuh printer + kertas asli sekarang):</strong>
+<ol>
+<li>Pasang kertas continuous form kamu ke printer, lalu klik <b>"Cetak Kotak Bantu (grid 5mm)"</b> di bawah - ini mencetak garis bantu tiap 5mm di seluruh kertas.</li>
+<li>Lihat hasil cetak: ukur dari tepi kertas ke posisi yang seharusnya (misal ke kotak "Nomor Polisi") pakai penggaris, dalam satuan milimeter.</li>
+<li>Masukkan angka hasil ukur ke kolom X (dari kiri) dan Y (dari atas) di bawah untuk tiap data.</li>
+<li>Klik <b>"Simpan"</b>, lalu klik <b>"Cetak Contoh"</b> untuk cek hasilnya di kertas asli. Ulangi sampai pas persis. Hasil kalibrasi ini dipakai bersama oleh halaman ini dan aplikasi utama (sama-sama baca dari server).</li>
+</ol>
+</div>
+
+<div class="calib-tabs">
+<button class="btn" id="tabSJ" type="button">Surat Jalan</button>
+<button class="btn secondary" id="tabInv" type="button">Invoice</button>
+</div>
+
+<div id="loading" class="loading">Memuat kalibrasi...</div>
+
+<div id="sjPanel" style="display:none">
+<h2>Ukuran Kertas &amp; Posisi Global (Surat Jalan)</h2>
+<div class="row4">
+<div><label>Lebar kertas (mm)</label><input type="number" step="0.1" id="sjW"></div>
+<div><label>Tinggi kertas (mm)</label><input type="number" step="0.1" id="sjH"></div>
+<div><label>Geser semua ke kanan (mm)</label><input type="number" step="0.1" id="sjOffsetX"></div>
+<div><label>Geser semua ke bawah (mm)</label><input type="number" step="0.1" id="sjOffsetY"></div>
+</div>
+<h2>Posisi Tiap Data</h2>
+<div class="calib-field-row calib-field-head"><div>Data</div><div>X (mm)</div><div>Y (mm)</div><div>Ukuran font (pt)</div></div>
+<div id="sjFieldsWrap"></div>
+<div class="calib-actions">
+<button class="btn secondary" id="btnGridSJ" type="button">Cetak Kotak Bantu (grid 5mm)</button>
+<button class="btn secondary" id="btnBlankSJ" type="button">Cetak Blanko Kosong</button>
+<button class="btn secondary" id="btnSampleSJ" type="button">Cetak Contoh Data</button>
+<button class="btn" id="btnSaveSJ" type="button">Simpan Kalibrasi Surat Jalan</button>
+</div>
+</div>
+
+<div id="invPanel" style="display:none">
+<h2>Ukuran Kertas &amp; Posisi Global (Invoice)</h2>
+<div class="row4">
+<div><label>Lebar kertas (mm)</label><input type="number" step="0.1" id="invW"></div>
+<div><label>Tinggi kertas (mm)</label><input type="number" step="0.1" id="invH"></div>
+<div><label>Geser semua ke kanan (mm)</label><input type="number" step="0.1" id="invOffsetX"></div>
+<div><label>Geser semua ke bawah (mm)</label><input type="number" step="0.1" id="invOffsetY"></div>
+</div>
+<label>Jarak dari atas ke mulai isi (kop surat) (mm)</label>
+<input type="number" step="0.5" id="invTopMargin" style="max-width:260px">
+<div class="calib-actions">
+<button class="btn secondary" id="btnGridInv" type="button">Cetak Kotak Bantu (grid 5mm)</button>
+<button class="btn secondary" id="btnSampleInv" type="button">Cetak Contoh Invoice</button>
+<button class="btn" id="btnSaveInv" type="button">Simpan Kalibrasi Invoice</button>
+</div>
+</div>
+
+</div>
+</div>
+<script src="common.js"></script>
+<script src="print.js"></script>
+<script>
+(function(){
+var u=requireLogin();if(!u)return;
+document.getElementById('userbar').textContent='Login sebagai: '+u.nama;
+var msg=document.getElementById('msg');
+var sj=null, inv=null;
+
+var SJ_FIELD_LABELS=[
+  ["apDari","A/P Dari"],
+  ["penerima","Penerima"],
+  ["no","Nomor SJ"],
+  ["tanggal","Tanggal"],
+  ["jam","Jam"],
+  ["tujuan","Tujuan"],
+  ["jenisBarang","Jenis Barang"],
+  ["nopol","Nomor Polisi"],
+  ["ukuranBak","Ukuran Bak (P L T)"],
+  ["m3","M3"],
+  ["sopirNama","Nama Sopir"],
+  ["hormatKamiNama","Nama Penandatangan (Hormat kami)"]
+];
+
+function $(id){return document.getElementById(id)}
+
+function showTab(t){
+  $('sjPanel').style.display=(t==='sj')?'block':'none';
+  $('invPanel').style.display=(t==='inv')?'block':'none';
+  $('tabSJ').className='btn'+(t==='sj'?'':' secondary');
+  $('tabInv').className='btn'+(t==='inv'?'':' secondary');
+}
+$('tabSJ').onclick=function(){showTab('sj')};
+$('tabInv').onclick=function(){showTab('inv')};
+
+function renderSJFields(){
+  var wrap=$('sjFieldsWrap');
+  wrap.innerHTML='';
+  for(var i=0;i<SJ_FIELD_LABELS.length;i++){
+    (function(key,label){
+      var f=sj.fields[key]||{x:0,y:0,size:10};
+      var row=document.createElement('div');
+      row.className='calib-field-row';
+      var d0=document.createElement('div'); d0.textContent=label; row.appendChild(d0);
+      var d1=document.createElement('div'); var ix=document.createElement('input'); ix.type='number'; ix.step='0.5'; ix.value=f.x; ix.onchange=function(){sj.fields[key].x=Number(ix.value||0)}; d1.appendChild(ix); row.appendChild(d1);
+      var d2=document.createElement('div'); var iy=document.createElement('input'); iy.type='number'; iy.step='0.5'; iy.value=f.y; iy.onchange=function(){sj.fields[key].y=Number(iy.value||0)}; d2.appendChild(iy); row.appendChild(d2);
+      var d3=document.createElement('div'); var is=document.createElement('input'); is.type='number'; is.step='0.5'; is.value=f.size; is.onchange=function(){sj.fields[key].size=Number(is.value||0)}; d3.appendChild(is); row.appendChild(d3);
+      wrap.appendChild(row);
+    })(SJ_FIELD_LABELS[i][0], SJ_FIELD_LABELS[i][1]);
+  }
+}
+
+function fillSJGlobals(){
+  $('sjW').value=sj.w; $('sjH').value=sj.h; $('sjOffsetX').value=sj.offsetX; $('sjOffsetY').value=sj.offsetY;
+  $('sjW').onchange=function(){sj.w=Number($('sjW').value||0)};
+  $('sjH').onchange=function(){sj.h=Number($('sjH').value||0)};
+  $('sjOffsetX').onchange=function(){sj.offsetX=Number($('sjOffsetX').value||0)};
+  $('sjOffsetY').onchange=function(){sj.offsetY=Number($('sjOffsetY').value||0)};
+}
+
+function fillInvGlobals(){
+  $('invW').value=inv.w; $('invH').value=inv.h; $('invOffsetX').value=inv.offsetX; $('invOffsetY').value=inv.offsetY; $('invTopMargin').value=inv.topMargin;
+  $('invW').onchange=function(){inv.w=Number($('invW').value||0)};
+  $('invH').onchange=function(){inv.h=Number($('invH').value||0)};
+  $('invOffsetX').onchange=function(){inv.offsetX=Number($('invOffsetX').value||0)};
+  $('invOffsetY').onchange=function(){inv.offsetY=Number($('invOffsetY').value||0)};
+  $('invTopMargin').onchange=function(){inv.topMargin=Number($('invTopMargin').value||0)};
+}
+
+function load(){
+  api.get('/print-calib').then(function(data){
+    sj=data.sj; inv=data.inv;
+    fillSJGlobals(); renderSJFields(); fillInvGlobals();
+    $('loading').style.display='none';
+    $('sjPanel').style.display='block';
+  }).catch(function(e){showMsg(msg,e.message||'Gagal memuat kalibrasi cetak','err')});
+}
+
+function save(jenis){
+  var body=(jenis==='sj')?sj:inv;
+  api.put('/print-calib/'+jenis, body).then(function(){
+    showMsg(msg,'Kalibrasi berhasil disimpan','ok');
+  }).catch(function(e){showMsg(msg,e.message||'Gagal menyimpan kalibrasi','err')});
+}
+
+$('btnGridSJ').onclick=function(){printGrid(sj.w, sj.h)};
+$('btnGridInv').onclick=function(){printGrid(inv.w, inv.h)};
+$('btnBlankSJ').onclick=function(){printSJBlank()};
+$('btnSaveSJ').onclick=function(){save('sj')};
+$('btnSaveInv').onclick=function(){save('inv')};
+
+$('btnSampleSJ').onclick=function(){
+  printSJ({
+    no:'SJ-CONTOH-001',
+    tanggal:new Date(),
+    jam:'10:30',
+    tujuan:'JAKARTA UTARA - CONTOH TUJUAN',
+    jenisBarang:'BATU SPLIT (CONTOH)',
+    noPolisi:'B 1234 CD',
+    customer:{kode:'TS001', nama:'CONTOH CUSTOMER'},
+    panjang:4, lebar:2, tinggi:1.5, m3:12,
+    sopir:'CONTOH NAMA SOPIR'
+  });
+};
+
+$('btnSampleInv').onclick=function(){
+  printInvoice({
+    no:'INV-CONTOH-001',
+    halaman:1,
+    tanggal:new Date(),
+    customer:{kode:'TS001', nama:'TB. CONTOH PELANGGAN', alamat:'Jl. Contoh No. 1, Jakarta'},
+    catatan:'Ini contoh invoice untuk kalibrasi cetak.',
+    dibayar:0,
+    sisaTagihan:3000000,
+    total:3000000,
+    items:[{
+      keterangan:'Contoh Barang', qty:1, satuan:'Rit', hargaSatuan:3000000,
+      suratJalan:{tanggal:new Date(), no:'SJ-CONTOH-001', sopir:'CONTOH NAMA SOPIR', tujuan:'JAKARTA UTARA', panjang:4, lebar:2, tinggi:1.5, m3:12}
+    }]
+  });
+};
+
+showTab('sj');
+load();
+})();
+</script>
+</body></html>

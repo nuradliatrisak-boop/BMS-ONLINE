@@ -1,1 +1,1480 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Surat Jalan - BMS Gudang</title><link rel="stylesheet" href="style.css"></head><body><div class="topbar"><h1 id="title">Buat Surat Jalan</h1><div class="userbar" id="userbar"></div></div><div class="wrap"><a href="surat-jalan-list.html" class="btn secondary">&laquo; Daftar Surat Jalan</a><div class="card"><div id="msg" class="msg" style="display:none"></div><label>Divisi</label><select id="divisi"></select><label>Customer</label><select id="customerId"><option value="">-- Pilih customer --</option></select><label>Penerima / PT</label><select id="penerimaPilih"><option value="">-- Pilih dari daftar tersimpan (opsional) --</option></select><input id="penerima" type="text" placeholder="Nama penerima / PT (bisa diketik/diedit manual)"><label>Tujuan / Alamat</label><textarea id="tujuan" rows="2" placeholder="Alamat tujuan pengiriman (bisa diketik/diedit manual)"></textarea><label>Jenis Barang / Stock</label><select id="stockId"><option value="">-- Pilih jenis barang --</option></select><table class="row2"><tr><td><label>Tanggal</label><input type="date" id="tanggal"></td><td><label>Jam</label><input type="time" id="jam"></td></tr></table><div id="jumlahSuratJalanWrap"><label>Jumlah Surat Jalan</label><input type="number" id="jumlahSuratJalan" min="1" max="100" step="1" value="1"><div class="desc">Isi lebih dari 1 jika customer dan tujuan yang sama membutuhkan beberapa Surat Jalan/kendaraan. Setiap Surat Jalan akan otomatis mendapat nomor yang berbeda.</div></div><p><b>Data berikut boleh dikosongkan dulu untuk dicetak dan diisi manual di kertas.</b></p><label>Armada (opsional)</label><select id="armadaId"><option value="">-- Pilih armada / kosongkan --</option></select><table class="row2"><tr><td><label>No Polisi</label><input id="noPolisi" placeholder="Kosong jika belum tahu"></td><td><label>Sopir</label><input id="sopir" placeholder="Kosong jika belum tahu"></td></tr></table><table class="row3"><tr><td><label>Panjang (m)</label><input type="number" step="0.01" id="panjang"></td><td><label>Lebar (m)</label><input type="number" step="0.01" id="lebar"></td><td><label>Tinggi (m)</label><input type="number" step="0.01" id="tinggi"></td></tr></table><label>M3 aktual (opsional)</label><input type="number" step="0.001" id="m3" placeholder="Kosongkan jika belum diketahui"><div id="m3hint" class="desc">Jika M3 kosong, sistem menghitung dari ukuran bak jika ukuran sudah ada.</div><p><button id="btnDraft" class="btn secondary" type="button">Simpan Draft</button> <button id="btnFinal" class="btn" type="button">Simpan Final</button> <button id="btnPrint" class="btn secondary" type="button" style="display:none">Cetak</button></p></div></div><script src="common.js"></script><script src="print.js"></script><script>(function(){var u=requireLogin();if(!u)return;var qs=new URLSearchParams(location.search),id=qs.get('id'),current=null,currentList=[],customers=[],stocks=[];var D=['Supplier','Armada','Alat Berat','Kontraktor','Kapal'];var $=function(x){return document.getElementById(x)},msg=$('msg');$('userbar').textContent='Login sebagai: '+u.nama;for(var i=0;i<D.length;i++){var o=document.createElement('option');o.value=D[i];o.textContent=D[i];$('divisi').appendChild(o)}if(u.divisi)$('divisi').value=u.divisi;$('tanggal').value=todayStr();function add(sel,a,text){var o=document.createElement('option');o.value=a.id||a.kode||a.nama;o.textContent=text||a.nama;sel.appendChild(o)}function loadRecipients(c){var s=$('penerimaPilih');s.innerHTML='<option value="">-- Pilih dari daftar tersimpan (opsional) --</option>';var r=(c&&c.recipients)||[];for(var i=0;i<r.length;i++){var o=document.createElement('option');o.value=r[i].nama;o.setAttribute('data-address',r[i].alamat);o.textContent=r[i].nama;s.appendChild(o)}}function fillFromPilih(){var p=$('penerimaPilih'),o=p.options[p.selectedIndex];if(o&&o.value){$('penerima').value=o.value;$('tujuan').value=o.getAttribute('data-address')||''}}$('customerId').onchange=function(){var c=null;for(var i=0;i<customers.length;i++)if(customers[i].id==this.value)c=customers[i];loadRecipients(c);$('penerima').value='';$('tujuan').value=''};$('penerimaPilih').onchange=fillFromPilih;$('armadaId').onchange=function(){var o=this.options[this.selectedIndex];if(o&&o.getAttribute('data-nopol')&&!$('noPolisi').value)$('noPolisi').value=o.getAttribute('data-nopol');if(o&&o.getAttribute('data-sopir')&&!$('sopir').value)$('sopir').value=o.getAttribute('data-sopir')};function calc(){if($('m3').value!=='')return Number($('m3').value||0);return Number($('panjang').value||0)*Number($('lebar').value||0)*Number($('tinggi').value||0)}function payload(draft){var so=$('stockId').options[$('stockId').selectedIndex];return {divisi:$('divisi').value,customerId:$('customerId').value||null,penerima:$('penerima').value||null,tujuan:$('tujuan').value||'',jenisBarang:so&&so.value?so.textContent:'',armadaId:$('armadaId').value||null,noPolisi:$('noPolisi').value.trim(),sopir:$('sopir').value.trim(),panjang:Number($('panjang').value||0),lebar:Number($('lebar').value||0),tinggi:Number($('tinggi').value||0),m3:$('m3').value===''?null:Number($('m3').value),tanggal:$('tanggal').value,jam:$('jam').value,isDraft:draft,jumlahSuratJalan:id?1:Number($('jumlahSuratJalan').value||1),detail:{stockId:$('stockId').value,stockCode:so&&so.value?so.value:'',stockName:so&&so.value?so.textContent:''}}}function save(draft){var p=payload(draft);if(!p.divisi||!p.tanggal){showMsg(msg,'Divisi dan tanggal wajib diisi','err');return}if(!id&&(!Number.isInteger(p.jumlahSuratJalan)||p.jumlahSuratJalan<1||p.jumlahSuratJalan>100)){showMsg(msg,'Jumlah Surat Jalan harus antara 1 sampai 100','err');return}var fn=id?api.put('/surat-jalan/'+id,p):api.post('/surat-jalan',p);fn.then(function(x){var banyak=Array.isArray(x)?x.length:1;currentList=Array.isArray(x)?x:[x];current=currentList[0];id=current.id;history.replaceState(null,'','surat-jalan.html?id='+encodeURIComponent(id));$('title').textContent='Edit Surat Jalan '+current.no;$('jumlahSuratJalanWrap').style.display='none';$('btnPrint').style.display='inline-block';$('btnPrint').textContent=banyak>1?('Cetak Semua ('+banyak+' Surat Jalan)'):'Cetak';if(banyak>1){var nomor=x.map(function(s){return s.no}).join(', ');showMsg(msg,(draft?'Draft':'Surat Jalan final')+' berhasil dibuat sebanyak '+banyak+' dokumen. Nomor: '+nomor+'. Klik tombol Cetak untuk mencetak semuanya berurutan.','ok')}else showMsg(msg,draft?'Draft tersimpan. Bisa dicetak sekarang dan diedit lagi nanti.':'Surat Jalan final tersimpan.','ok')}).catch(function(e){showMsg(msg,e.message,'err')})}$('btnDraft').onclick=function(){save(true)};$('btnFinal').onclick=function(){save(false)};function printAll(list,i){i=i||0;if(i>=list.length)return;printSJ(list[i]).then(function(){setTimeout(function(){printAll(list,i+1)},1200)}).catch(function(e){showMsg(msg,'Gagal mencetak '+(list[i]&&list[i].no?list[i].no:'')+': '+(e&&e.message||''),'err')})}$('btnPrint').onclick=function(){if(currentList.length)printAll(currentList);else if(current)printSJ(current)};Promise.all([api.get('/customers'),api.get('/stock-master'),api.get('/armada')]).then(function(r){customers=r[0];stocks=r[1];for(var i=0;i<customers.length;i++){var o=document.createElement('option');o.value=customers[i].id;o.textContent=customers[i].nama;$('customerId').appendChild(o)}for(var j=0;j<stocks.length;j++){var z=document.createElement('option');z.value=stocks[j].kode;z.textContent=stocks[j].nama;$('stockId').appendChild(z)}for(var k=0;k<r[2].length;k++){var a=r[2][k],q=document.createElement('option');q.value=a.id;q.textContent=a.nopol+' - '+a.jenis;q.setAttribute('data-nopol',a.nopol||'');q.setAttribute('data-sopir',a.sopir||'');$('armadaId').appendChild(q)}if(id)return api.get('/surat-jalan/'+id).then(function(x){$('jumlahSuratJalanWrap').style.display='none';current=x;currentList=[x];$('title').textContent='Edit Surat Jalan '+x.no;$('divisi').value=x.divisi;$('customerId').value=x.customerId||'';var c=null;for(var n=0;n<customers.length;n++)if(customers[n].id==x.customerId)c=customers[n];loadRecipients(c);$('penerima').value=x.penerima||'';$('tujuan').value=x.tujuan||'';$('stockId').value=(x.detail&&x.detail.stockCode)||'';$('armadaId').value=x.armadaId||'';$('noPolisi').value=x.noPolisi||'';$('sopir').value=x.sopir||'';$('panjang').value=x.panjang||'';$('lebar').value=x.lebar||'';$('tinggi').value=x.tinggi||'';$('m3').value=x.m3>0?x.m3:'';$('tanggal').value=String(x.tanggal).slice(0,10);$('jam').value=x.jam||'';$('btnPrint').style.display='inline-block'})}).catch(function(e){showMsg(msg,e.message,'err')})})();</script></body></html>
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <title>Surat Jalan - BMS Gudang</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="topbar">
+        <h1 id="title">Buat Surat Jalan</h1>
+        <div class="userbar" id="userbar"></div>
+    </div>
+
+    <div class="wrap">
+
+        <a href="surat-jalan-list.html" class="btn secondary">
+            &laquo; Daftar Surat Jalan
+        </a>
+
+        <div class="card">
+
+            <div id="msg" class="msg" style="display:none"></div>
+
+
+            <!-- DIVISI -->
+            <label>Divisi</label>
+            <select id="divisi"></select>
+
+
+            <!-- CUSTOMER -->
+            <label>Customer</label>
+            <select id="customerId">
+                <option value="">-- Pilih customer --</option>
+            </select>
+
+
+            <!-- PENERIMA -->
+            <label>Penerima / PT</label>
+
+            <select id="penerimaPilih">
+                <option value="">
+                    -- Pilih dari daftar tersimpan (opsional) --
+                </option>
+            </select>
+
+            <input
+                id="penerima"
+                type="text"
+                placeholder="Nama penerima / PT (bisa diketik/diedit manual)"
+            >
+
+
+            <!-- TUJUAN -->
+            <label>Tujuan / Alamat</label>
+
+            <textarea
+                id="tujuan"
+                rows="2"
+                placeholder="Alamat tujuan pengiriman (bisa diketik/diedit manual)"
+            ></textarea>
+
+
+            <!-- JENIS BARANG -->
+            <label>Jenis Barang / Stock</label>
+
+            <select id="stockId">
+                <option value="">-- Pilih jenis barang --</option>
+            </select>
+
+
+            <!-- TANGGAL DAN JAM -->
+            <table class="row2">
+                <tr>
+                    <td>
+                        <label>Tanggal</label>
+                        <input type="date" id="tanggal">
+                    </td>
+
+                    <td>
+                        <label>Jam</label>
+                        <input type="time" id="jam">
+                    </td>
+                </tr>
+            </table>
+
+
+            <!-- JUMLAH SURAT JALAN -->
+            <div id="jumlahSuratJalanWrap">
+
+                <label>Jumlah Surat Jalan</label>
+
+                <input
+                    type="number"
+                    id="jumlahSuratJalan"
+                    min="1"
+                    max="100"
+                    step="1"
+                    value="1"
+                >
+
+                <div class="desc">
+                    Isi lebih dari 1 jika customer dan tujuan yang sama
+                    membutuhkan beberapa Surat Jalan/kendaraan.
+                    Setiap Surat Jalan akan otomatis mendapat nomor yang berbeda.
+                </div>
+
+            </div>
+
+
+            <p>
+                <b>
+                    Data berikut boleh dikosongkan dulu untuk dicetak
+                    dan diisi manual di kertas.
+                </b>
+            </p>
+
+
+            <!-- ARMADA -->
+            <label>Armada (opsional)</label>
+
+            <select id="armadaId">
+                <option value="">
+                    -- Pilih armada / kosongkan --
+                </option>
+            </select>
+
+
+            <!-- NOPOL DAN SOPIR -->
+            <table class="row2">
+                <tr>
+
+                    <td>
+                        <label>No Polisi</label>
+
+                        <input
+                            id="noPolisi"
+                            placeholder="Kosong jika belum tahu"
+                        >
+                    </td>
+
+                    <td>
+                        <label>Sopir</label>
+
+                        <input
+                            id="sopir"
+                            placeholder="Kosong jika belum tahu"
+                        >
+                    </td>
+
+                </tr>
+            </table>
+
+
+            <!-- UKURAN BAK -->
+            <table class="row3">
+                <tr>
+
+                    <td>
+                        <label>Panjang (m)</label>
+
+                        <input
+                            type="number"
+                            step="0.01"
+                            id="panjang"
+                        >
+                    </td>
+
+                    <td>
+                        <label>Lebar (m)</label>
+
+                        <input
+                            type="number"
+                            step="0.01"
+                            id="lebar"
+                        >
+                    </td>
+
+                    <td>
+                        <label>Tinggi (m)</label>
+
+                        <input
+                            type="number"
+                            step="0.01"
+                            id="tinggi"
+                        >
+                    </td>
+
+                </tr>
+            </table>
+
+
+            <!-- M3 -->
+            <label>M3 aktual (opsional)</label>
+
+            <input
+                type="number"
+                step="0.001"
+                id="m3"
+                placeholder="Kosongkan jika belum diketahui"
+            >
+
+            <div id="m3hint" class="desc">
+                Jika M3 kosong, sistem menghitung dari ukuran bak
+                jika ukuran sudah ada.
+            </div>
+
+
+            <!-- TOMBOL -->
+            <p>
+
+                <button
+                    id="btnDraft"
+                    class="btn secondary"
+                    type="button"
+                >
+                    Simpan Draft
+                </button>
+
+                <button
+                    id="btnFinal"
+                    class="btn"
+                    type="button"
+                >
+                    Simpan Final
+                </button>
+
+                <button
+                    id="btnPrint"
+                    class="btn secondary"
+                    type="button"
+                    style="display:none"
+                >
+                    Cetak
+                </button>
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <script src="common.js"></script>
+    <script src="print.js"></script>
+
+
+    <script>
+
+    (function(){
+
+        var u = requireLogin();
+
+        if(!u) return;
+
+
+        /* =========================================================
+           VARIABEL UTAMA
+        ========================================================= */
+
+        var qs = new URLSearchParams(location.search);
+
+        var id = qs.get('id');
+
+        var current = null;
+
+        /*
+            currentList digunakan untuk menyimpan semua Surat Jalan
+            hasil pembuatan sekaligus.
+
+            Contoh:
+            Jumlah Surat Jalan = 22
+
+            currentList =
+            [
+                SJ-001,
+                SJ-002,
+                SJ-003,
+                ...
+                SJ-022
+            ]
+
+            Saat tombol Cetak diklik:
+
+            printSJ(currentList)
+
+            print.js akan membuat semuanya menjadi satu proses print.
+        */
+        var currentList = [];
+
+        var customers = [];
+
+        var stocks = [];
+
+
+        var D = [
+            'Supplier',
+            'Armada',
+            'Alat Berat',
+            'Kontraktor',
+            'Kapal'
+        ];
+
+
+        var $ = function(x){
+            return document.getElementById(x);
+        };
+
+
+        var msg = $('msg');
+
+
+        /* =========================================================
+           USER LOGIN
+        ========================================================= */
+
+        $('userbar').textContent =
+            'Login sebagai: ' + u.nama;
+
+
+        /* =========================================================
+           ISI DIVISI
+        ========================================================= */
+
+        for(var i = 0; i < D.length; i++){
+
+            var o = document.createElement('option');
+
+            o.value = D[i];
+
+            o.textContent = D[i];
+
+            $('divisi').appendChild(o);
+
+        }
+
+
+        if(u.divisi){
+            $('divisi').value = u.divisi;
+        }
+
+
+        /* =========================================================
+           DEFAULT TANGGAL HARI INI
+        ========================================================= */
+
+        $('tanggal').value = todayStr();
+
+
+        /* =========================================================
+           LOAD DAFTAR PENERIMA CUSTOMER
+        ========================================================= */
+
+        function loadRecipients(c){
+
+            var s = $('penerimaPilih');
+
+            s.innerHTML =
+                '<option value="">-- Pilih dari daftar tersimpan (opsional) --</option>';
+
+
+            var r = (c && c.recipients) || [];
+
+
+            for(var i = 0; i < r.length; i++){
+
+                var o = document.createElement('option');
+
+                o.value = r[i].nama;
+
+                o.setAttribute(
+                    'data-address',
+                    r[i].alamat || ''
+                );
+
+                o.textContent = r[i].nama;
+
+                s.appendChild(o);
+
+            }
+
+        }
+
+
+        /* =========================================================
+           SAAT PENERIMA DIPILIH
+
+           Isi otomatis nama penerima dan alamat.
+           Setelah itu tetap bisa diedit manual.
+        ========================================================= */
+
+        function fillFromPilih(){
+
+            var p = $('penerimaPilih');
+
+            var o = p.options[p.selectedIndex];
+
+
+            if(o && o.value){
+
+                $('penerima').value = o.value;
+
+                $('tujuan').value =
+                    o.getAttribute('data-address') || '';
+
+            }
+
+        }
+
+
+        /* =========================================================
+           SAAT CUSTOMER BERUBAH
+        ========================================================= */
+
+        $('customerId').onchange = function(){
+
+            var c = null;
+
+
+            for(var i = 0; i < customers.length; i++){
+
+                if(customers[i].id == this.value){
+
+                    c = customers[i];
+
+                    break;
+
+                }
+
+            }
+
+
+            loadRecipients(c);
+
+
+            /*
+                Kosongkan penerima dan tujuan
+                supaya data customer sebelumnya tidak ikut.
+            */
+            $('penerima').value = '';
+
+            $('tujuan').value = '';
+
+        };
+
+
+        $('penerimaPilih').onchange =
+            fillFromPilih;
+
+
+        /* =========================================================
+           SAAT ARMADA DIPILIH
+
+           Nopol dan sopir otomatis terisi jika field masih kosong.
+           User tetap bisa mengganti manual.
+        ========================================================= */
+
+        $('armadaId').onchange = function(){
+
+            var o =
+                this.options[this.selectedIndex];
+
+
+            if(
+                o &&
+                o.getAttribute('data-nopol') &&
+                !$('noPolisi').value
+            ){
+
+                $('noPolisi').value =
+                    o.getAttribute('data-nopol');
+
+            }
+
+
+            if(
+                o &&
+                o.getAttribute('data-sopir') &&
+                !$('sopir').value
+            ){
+
+                $('sopir').value =
+                    o.getAttribute('data-sopir');
+
+            }
+
+        };
+
+
+        /* =========================================================
+           HITUNG M3
+
+           Jika M3 diisi manual:
+           pakai M3 manual.
+
+           Jika kosong:
+           panjang × lebar × tinggi.
+        ========================================================= */
+
+        function calc(){
+
+            if($('m3').value !== ''){
+
+                return Number(
+                    $('m3').value || 0
+                );
+
+            }
+
+
+            return (
+                Number($('panjang').value || 0)
+                *
+                Number($('lebar').value || 0)
+                *
+                Number($('tinggi').value || 0)
+            );
+
+        }
+
+
+        /* =========================================================
+           BUAT PAYLOAD
+        ========================================================= */
+
+        function payload(draft){
+
+            var so =
+                $('stockId').options[
+                    $('stockId').selectedIndex
+                ];
+
+
+            return {
+
+                divisi:
+                    $('divisi').value,
+
+
+                customerId:
+                    $('customerId').value || null,
+
+
+                penerima:
+                    $('penerima').value.trim() || null,
+
+
+                tujuan:
+                    $('tujuan').value.trim() || '',
+
+
+                jenisBarang:
+
+                    so && so.value
+                    ? so.textContent
+                    : '',
+
+
+                armadaId:
+                    $('armadaId').value || null,
+
+
+                noPolisi:
+                    $('noPolisi').value.trim(),
+
+
+                sopir:
+                    $('sopir').value.trim(),
+
+
+                panjang:
+                    Number(
+                        $('panjang').value || 0
+                    ),
+
+
+                lebar:
+                    Number(
+                        $('lebar').value || 0
+                    ),
+
+
+                tinggi:
+                    Number(
+                        $('tinggi').value || 0
+                    ),
+
+
+                /*
+                    Jika M3 dikosongkan,
+                    backend menerima null.
+
+                    print.js akan memakai data M3
+                    yang tersimpan dari backend.
+                */
+                m3:
+
+                    $('m3').value === ''
+                    ? null
+                    : Number($('m3').value),
+
+
+                tanggal:
+                    $('tanggal').value,
+
+
+                jam:
+                    $('jam').value,
+
+
+                isDraft:
+                    draft,
+
+
+                /*
+                    Saat edit Surat Jalan lama,
+                    jumlah selalu 1.
+
+                    Saat membuat baru,
+                    mengikuti input user.
+                */
+                jumlahSuratJalan:
+
+                    id
+                    ? 1
+                    : Number(
+                        $('jumlahSuratJalan').value || 1
+                    ),
+
+
+                detail: {
+
+                    stockId:
+                        $('stockId').value,
+
+
+                    stockCode:
+
+                        so && so.value
+                        ? so.value
+                        : '',
+
+
+                    stockName:
+
+                        so && so.value
+                        ? so.textContent
+                        : ''
+
+                }
+
+            };
+
+        }
+
+
+        /* =========================================================
+           SIMPAN DRAFT / FINAL
+        ========================================================= */
+
+        function save(draft){
+
+            var p = payload(draft);
+
+
+            /*
+                Validasi wajib
+            */
+
+            if(!p.divisi){
+
+                showMsg(
+                    msg,
+                    'Divisi wajib dipilih.',
+                    'err'
+                );
+
+                return;
+
+            }
+
+
+            if(!p.tanggal){
+
+                showMsg(
+                    msg,
+                    'Tanggal wajib diisi.',
+                    'err'
+                );
+
+                return;
+
+            }
+
+
+            /*
+                Validasi jumlah Surat Jalan
+                hanya untuk data baru.
+            */
+
+            if(
+
+                !id &&
+
+                (
+                    !Number.isInteger(
+                        p.jumlahSuratJalan
+                    )
+
+                    ||
+
+                    p.jumlahSuratJalan < 1
+
+                    ||
+
+                    p.jumlahSuratJalan > 100
+                )
+
+            ){
+
+                showMsg(
+                    msg,
+                    'Jumlah Surat Jalan harus antara 1 sampai 100.',
+                    'err'
+                );
+
+                return;
+
+            }
+
+
+            /*
+                Jika sedang edit:
+                PUT /surat-jalan/:id
+
+                Jika baru:
+                POST /surat-jalan
+            */
+
+            var fn;
+
+
+            if(id){
+
+                fn = api.put(
+                    '/surat-jalan/' + id,
+                    p
+                );
+
+            }else{
+
+                fn = api.post(
+                    '/surat-jalan',
+                    p
+                );
+
+            }
+
+
+            fn.then(function(x){
+
+                /*
+                    Backend bisa mengembalikan:
+
+                    1 Surat Jalan:
+                    object
+
+                    Banyak Surat Jalan:
+                    array
+                */
+
+                var banyak =
+                    Array.isArray(x)
+                    ? x.length
+                    : 1;
+
+
+                /*
+                    PENTING:
+
+                    Semua hasil Surat Jalan
+                    disimpan dalam currentList.
+
+                    Contoh jika user memasukkan 22:
+
+                    currentList = [
+                        SJ 1,
+                        SJ 2,
+                        ...
+                        SJ 22
+                    ]
+
+                    Nantinya:
+                    printSJ(currentList)
+
+                    sehingga print.js mencetak semuanya
+                    dalam satu dialog print.
+                */
+
+                currentList =
+                    Array.isArray(x)
+                    ? x
+                    : [x];
+
+
+                current =
+                    currentList[0];
+
+
+                /*
+                    Pastikan ada data hasil simpan.
+                */
+
+                if(!current){
+
+                    showMsg(
+                        msg,
+                        'Data Surat Jalan tidak diterima dari server.',
+                        'err'
+                    );
+
+                    return;
+
+                }
+
+
+                /*
+                    Setelah membuat banyak Surat Jalan,
+                    halaman tetap diarahkan ke ID pertama.
+
+                    currentList tetap menyimpan semua hasil
+                    selama halaman belum direfresh.
+                */
+
+                id = current.id;
+
+
+                history.replaceState(
+
+                    null,
+
+                    '',
+
+                    'surat-jalan.html?id='
+                    +
+                    encodeURIComponent(id)
+
+                );
+
+
+                /*
+                    Ubah judul halaman
+                */
+
+                $('title').textContent =
+                    'Edit Surat Jalan ' +
+                    current.no;
+
+
+                /*
+                    Setelah data berhasil dibuat,
+                    jumlah SJ disembunyikan
+                    agar tidak membuat ulang saat edit.
+                */
+
+                $('jumlahSuratJalanWrap').style.display =
+                    'none';
+
+
+                /*
+                    Tampilkan tombol cetak
+                */
+
+                $('btnPrint').style.display =
+                    'inline-block';
+
+
+                /*
+                    Jika lebih dari satu:
+                    tombol Cetak Semua (22 Surat Jalan)
+                */
+
+                if(banyak > 1){
+
+                    $('btnPrint').textContent =
+                        'Cetak Semua (' +
+                        banyak +
+                        ' Surat Jalan)';
+
+
+                    var nomor =
+                        currentList
+                        .map(function(s){
+                            return s.no;
+                        })
+                        .join(', ');
+
+
+                    showMsg(
+
+                        msg,
+
+                        (
+                            draft
+                            ? 'Draft'
+                            : 'Surat Jalan final'
+                        )
+
+                        +
+
+                        ' berhasil dibuat sebanyak '
+
+                        +
+
+                        banyak
+
+                        +
+
+                        ' dokumen. Nomor: '
+
+                        +
+
+                        nomor
+
+                        +
+
+                        '. Klik tombol Cetak Semua untuk mencetak seluruh '
+
+                        +
+
+                        banyak
+
+                        +
+
+                        ' Surat Jalan sekaligus.',
+
+                        'ok'
+
+                    );
+
+                }else{
+
+                    $('btnPrint').textContent =
+                        'Cetak';
+
+
+                    showMsg(
+
+                        msg,
+
+                        draft
+                        ? 'Draft tersimpan. Bisa dicetak sekarang dan diedit lagi nanti.'
+                        : 'Surat Jalan final tersimpan.',
+
+                        'ok'
+
+                    );
+
+                }
+
+            })
+
+            .catch(function(e){
+
+                showMsg(
+                    msg,
+                    e.message || 'Terjadi kesalahan saat menyimpan.',
+                    'err'
+                );
+
+            });
+
+        }
+
+
+        /* =========================================================
+           TOMBOL SIMPAN
+        ========================================================= */
+
+        $('btnDraft').onclick = function(){
+
+            save(true);
+
+        };
+
+
+        $('btnFinal').onclick = function(){
+
+            save(false);
+
+        };
+
+
+        /* =========================================================
+           CETAK
+
+           PENTING:
+           Jangan menggunakan printAll() satu-satu.
+
+           print.js kamu SUDAH mendukung:
+
+           printSJ(1_object)
+
+           DAN:
+
+           printSJ([object1, object2, object3])
+
+           Jadi kalau ada 22 Surat Jalan:
+
+           printSJ(currentList)
+
+           print.js akan:
+
+           1. Membuat HTML semua SJ.
+           2. Memberi page-break setiap SJ.
+           3. Membuka SATU window.
+           4. Memunculkan SATU dialog print.
+           5. Printer mencetak semua berurutan.
+        ========================================================= */
+
+        $('btnPrint').onclick = function(){
+
+            var dataCetak = null;
+
+
+            if(
+
+                currentList
+
+                &&
+
+                currentList.length
+
+            ){
+
+                dataCetak =
+                    currentList;
+
+            }
+
+            else if(current){
+
+                dataCetak =
+                    current;
+
+            }
+
+
+            if(!dataCetak){
+
+                showMsg(
+                    msg,
+                    'Belum ada Surat Jalan yang dapat dicetak.',
+                    'err'
+                );
+
+                return;
+
+            }
+
+
+            /*
+                Kirim SELURUH currentList langsung ke printSJ.
+
+                Tidak pakai recursive print.
+                Tidak pakai setTimeout antar Surat Jalan.
+                Tidak membuka 22 dialog print.
+
+                Hanya SATU proses print.
+            */
+
+            var hasilPrint =
+                printSJ(dataCetak);
+
+
+            /*
+                printSJ di print.js mengembalikan Promise.
+            */
+
+            if(
+                hasilPrint &&
+                typeof hasilPrint.catch === 'function'
+            ){
+
+                hasilPrint.catch(function(e){
+
+                    showMsg(
+
+                        msg,
+
+                        'Gagal menyiapkan cetak: '
+
+                        +
+
+                        (
+                            e && e.message
+                            ? e.message
+                            : 'Terjadi kesalahan.'
+                        ),
+
+                        'err'
+
+                    );
+
+                });
+
+            }
+
+        };
+
+
+        /* =========================================================
+           LOAD DATA AWAL
+        ========================================================= */
+
+        Promise.all([
+
+            api.get('/customers'),
+
+            api.get('/stock-master'),
+
+            api.get('/armada')
+
+        ])
+
+        .then(function(r){
+
+            customers =
+                r[0] || [];
+
+
+            stocks =
+                r[1] || [];
+
+
+            var armadas =
+                r[2] || [];
+
+
+            /* =====================================================
+               LOAD CUSTOMER
+            ===================================================== */
+
+            for(
+                var i = 0;
+                i < customers.length;
+                i++
+            ){
+
+                var o =
+                    document.createElement('option');
+
+
+                o.value =
+                    customers[i].id;
+
+
+                o.textContent =
+                    customers[i].nama;
+
+
+                $('customerId').appendChild(o);
+
+            }
+
+
+            /* =====================================================
+               LOAD STOCK
+            ===================================================== */
+
+            for(
+                var j = 0;
+                j < stocks.length;
+                j++
+            ){
+
+                var z =
+                    document.createElement('option');
+
+
+                z.value =
+                    stocks[j].kode;
+
+
+                z.textContent =
+                    stocks[j].nama;
+
+
+                $('stockId').appendChild(z);
+
+            }
+
+
+            /* =====================================================
+               LOAD ARMADA
+            ===================================================== */
+
+            for(
+                var k = 0;
+                k < armadas.length;
+                k++
+            ){
+
+                var a =
+                    armadas[k];
+
+
+                var q =
+                    document.createElement('option');
+
+
+                q.value =
+                    a.id;
+
+
+                q.textContent =
+                    (a.nopol || '')
+                    +
+                    ' - '
+                    +
+                    (a.jenis || '');
+
+
+                q.setAttribute(
+                    'data-nopol',
+                    a.nopol || ''
+                );
+
+
+                q.setAttribute(
+                    'data-sopir',
+                    a.sopir || ''
+                );
+
+
+                $('armadaId').appendChild(q);
+
+            }
+
+
+            /*
+                Jika bukan mode edit,
+                selesai sampai sini.
+            */
+
+            if(!id){
+
+                return;
+
+            }
+
+
+            /* =====================================================
+               LOAD SURAT JALAN UNTUK MODE EDIT
+            ===================================================== */
+
+            return api.get(
+                '/surat-jalan/' + id
+            )
+
+            .then(function(x){
+
+                /*
+                    Mode edit hanya mengedit satu Surat Jalan.
+                */
+
+                current =
+                    x;
+
+
+                currentList =
+                    [x];
+
+
+                /*
+                    Jumlah SJ tidak bisa diubah
+                    dari halaman edit.
+                */
+
+                $('jumlahSuratJalanWrap').style.display =
+                    'none';
+
+
+                /*
+                    Judul
+                */
+
+                $('title').textContent =
+                    'Edit Surat Jalan ' +
+                    x.no;
+
+
+                /*
+                    Divisi
+                */
+
+                $('divisi').value =
+                    x.divisi || '';
+
+
+                /*
+                    Customer
+                */
+
+                $('customerId').value =
+                    x.customerId || '';
+
+
+                /*
+                    Cari customer untuk
+                    mengisi daftar penerima.
+                */
+
+                var c = null;
+
+
+                for(
+                    var n = 0;
+                    n < customers.length;
+                    n++
+                ){
+
+                    if(
+                        customers[n].id
+                        ==
+                        x.customerId
+                    ){
+
+                        c =
+                            customers[n];
+
+                        break;
+
+                    }
+
+                }
+
+
+                loadRecipients(c);
+
+
+                /*
+                    Karena penerima dan tujuan
+                    bisa diedit manual,
+                    isi langsung dari data SJ.
+                */
+
+                $('penerima').value =
+                    x.penerima || '';
+
+
+                $('tujuan').value =
+                    x.tujuan || '';
+
+
+                /*
+                    Stock
+                */
+
+                $('stockId').value =
+                    (
+                        x.detail &&
+                        x.detail.stockCode
+                    )
+                    ||
+                    '';
+
+
+                /*
+                    Armada
+                */
+
+                $('armadaId').value =
+                    x.armadaId || '';
+
+
+                /*
+                    Nopol
+                */
+
+                $('noPolisi').value =
+                    x.noPolisi || '';
+
+
+                /*
+                    Sopir
+                */
+
+                $('sopir').value =
+                    x.sopir || '';
+
+
+                /*
+                    Ukuran
+                */
+
+                $('panjang').value =
+                    x.panjang || '';
+
+
+                $('lebar').value =
+                    x.lebar || '';
+
+                $('tinggi').value =
+                    x.tinggi || '';
+
+
+                /*
+                    M3
+                */
+
+                $('m3').value =
+
+                    Number(x.m3 || 0) > 0
+
+                    ? x.m3
+
+                    : '';
+
+
+                /*
+                    Tanggal
+                */
+
+                $('tanggal').value =
+                    x.tanggal
+                    ? String(x.tanggal).slice(0,10)
+                    : todayStr();
+
+
+                /*
+                    Jam
+                */
+
+                $('jam').value =
+                    x.jam || '';
+
+
+                /*
+                    Tampilkan tombol cetak
+                */
+
+                $('btnPrint').style.display =
+                    'inline-block';
+
+
+                $('btnPrint').textContent =
+                    'Cetak';
+
+            });
+
+        })
+
+        .catch(function(e){
+
+            showMsg(
+
+                msg,
+
+                e.message
+                ||
+                'Gagal memuat data.',
+
+                'err'
+
+            );
+
+        });
+
+
+    })();
+
+    </script>
+
+</body>
+</html>

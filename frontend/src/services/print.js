@@ -53,8 +53,18 @@ function openPrint(html) {
 // ============================================================
 // CETAK SURAT JALAN (di atas kertas continuous form berlubang
 // yang sudah ada cetakan tetapnya - lihat halaman Kalibrasi Cetak)
+//
+// "sj" boleh berupa satu objek Surat Jalan, ATAU array berisi beberapa
+// Surat Jalan (misalnya hasil simpan dengan "Jumlah Surat Jalan" > 1).
+// Kalau array, semua dicetak sekaligus dalam SATU kali klik "Print" /
+// SATU dialog cetak browser (satu halaman kertas per Surat Jalan,
+// nomornya masing-masing beda sesuai data), jadi user tidak perlu
+// mencetak satu-satu lagi.
 // ============================================================
-export async function printSJ(sj) {
+export async function printSJ(sjOrList) {
+  const list = Array.isArray(sjOrList) ? sjOrList : [sjOrList];
+  if (!list.length) return;
+
   const [calib, signerName] = await Promise.all([
     api.get("/print-calib"),
     getSignerName(),
@@ -71,18 +81,18 @@ export async function printSJ(sj) {
   });
 
   const p = {
-    apDari: pos("apDari", { x: 8, y: 8, size: 9 }),
-    penerima: pos("penerima", { x: 8, y: 14, size: 9 }),
-    no: pos("no", { x: 178, y: 8, size: 10 }),
-    tanggal: pos("tanggal", { x: 178, y: 14, size: 10 }),
-    jam: pos("jam", { x: 178, y: 20, size: 10 }),
-    tujuan: pos("tujuan", { x: 8, y: 20, size: 9 }),
-    jenis: pos("jenisBarang", { x: 8, y: 32, size: 9 }),
-    nopol: pos("nopol", { x: 14, y: 60, size: 12 }),
-    bak: pos("ukuranBak", { x: 90, y: 60, size: 12 }),
-    m3: pos("m3", { x: 200, y: 60, size: 12 }),
-    sopir: pos("sopirNama", { x: 150, y: 96, size: 10 }),
-    hormat: pos("hormatKamiNama", { x: 226, y: 100, size: 10 }),
+    apDari: pos("apDari", { x: 8, y: 10, size: 10 }),
+    penerima: pos("penerima", { x: 8, y: 18, size: 10 }),
+    no: pos("no", { x: 175, y: 30, size: 11 }),
+    tanggal: pos("tanggal", { x: 175, y: 38, size: 11 }),
+    jam: pos("jam", { x: 175, y: 46, size: 11 }),
+    tujuan: pos("tujuan", { x: 8, y: 26, size: 10 }),
+    jenis: pos("jenisBarang", { x: 8, y: 34, size: 10 }),
+    nopol: pos("nopol", { x: 14, y: 62, size: 13 }),
+    bak: pos("ukuranBak", { x: 90, y: 62, size: 13 }),
+    m3: pos("m3", { x: 200, y: 62, size: 13 }),
+    sopir: pos("sopirNama", { x: 150, y: 98, size: 11 }),
+    hormat: pos("hormatKamiNama", { x: 226, y: 102, size: 11 }),
   };
 
   // Label ditulis di depan tiap nilai (kertas SJ tidak ada label "Nomor :",
@@ -98,14 +108,6 @@ export async function printSJ(sj) {
     jenis: "Jenis Brg",
   };
 
-  const namaCustomer = sj.customer
-    ? `${sj.customer.nama}${sj.customer.kode ? " / " + sj.customer.kode : ""}`
-    : "-";
-  const namaPenerima = sj.penerima || sj.customer?.nama || "-";
-  const ukuran = `${Number(sj.panjang ?? sj.p ?? 0).toFixed(2)} - ${Number(
-    sj.lebar ?? sj.l ?? 0
-  ).toFixed(2)} - ${Number(sj.tinggi ?? sj.t ?? 0).toFixed(3)}`;
-
   const field = (key, text, withLabel) => {
     const t = withLabel ? `${LBL[key]} : ${text || "-"}` : text;
     return `<div class="f" style="left:${p[key].x}mm;top:${p[key].y}mm;font-size:${p[key].size}pt">${esc(
@@ -113,28 +115,43 @@ export async function printSJ(sj) {
     )}</div>`;
   };
 
+  const sheets = list
+    .map((sj, i) => {
+      const namaCustomer = sj.customer
+        ? `${sj.customer.nama}${sj.customer.kode ? " / " + sj.customer.kode : ""}`
+        : "-";
+      const namaPenerima = sj.penerima || sj.customer?.nama || "-";
+      const ukuran = `${Number(sj.panjang ?? sj.p ?? 0).toFixed(2)} - ${Number(
+        sj.lebar ?? sj.l ?? 0
+      ).toFixed(2)} - ${Number(sj.tinggi ?? sj.t ?? 0).toFixed(3)}`;
+      const last = i === list.length - 1;
+
+      return `<div class="sheet"${last ? "" : ' style="page-break-after:always"'}>
+        ${field("apDari", namaCustomer, true)}
+        ${field("penerima", namaPenerima, true)}
+        ${field("no", sj.no, true)}
+        ${field("tanggal", fmtDateShort(sj.tanggal), true)}
+        ${field("jam", sj.jam || "", true)}
+        ${field("tujuan", sj.tujuan || sj.customer?.alamat || "", true)}
+        ${field("jenis", sj.jenisBarang || "", true)}
+        ${field("nopol", sj.noPolisi || sj.armada?.nopol || "")}
+        ${field("bak", ukuran)}
+        ${field("m3", Number(sj.m3 || 0).toFixed(3))}
+        ${field("sopir", sj.sopir || sj.armada?.sopir || "")}
+        ${field("hormat", signerName)}
+      </div>`;
+    })
+    .join("");
+
   openPrint(`
     <style>
       @page{size:${c.w}mm ${c.h}mm;margin:0}
-      html,body{margin:0;padding:0;width:${c.w}mm;height:${c.h}mm}
+      html,body{margin:0;padding:0;width:${c.w}mm}
       *{box-sizing:border-box}
       .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;background:#fff;font-family:"Courier New",Courier,monospace;color:#111}
       .f{position:absolute;white-space:nowrap;font-family:"Courier New",Courier,monospace}
     </style>
-    <div class="sheet">
-      ${field("apDari", namaCustomer, true)}
-      ${field("penerima", namaPenerima, true)}
-      ${field("no", sj.no, true)}
-      ${field("tanggal", fmtDateShort(sj.tanggal), true)}
-      ${field("jam", sj.jam || "", true)}
-      ${field("tujuan", sj.tujuan || sj.customer?.alamat || "", true)}
-      ${field("jenis", sj.jenisBarang || "", true)}
-      ${field("nopol", sj.noPolisi || sj.armada?.nopol || "")}
-      ${field("bak", ukuran)}
-      ${field("m3", Number(sj.m3 || 0).toFixed(3))}
-      ${field("sopir", sj.sopir || sj.armada?.sopir || "")}
-      ${field("hormat", signerName)}
-    </div>
+    ${sheets}
   `);
 }
 
@@ -222,16 +239,16 @@ export async function printInvoice(inv) {
     <style>
       @page{size:${c.w}mm ${c.h}mm;margin:0}
       html,body{margin:0;padding:0;width:${c.w}mm;height:${c.h}mm}
-      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 7mm 5mm ${7 + left}mm;font:10pt "Courier New",Courier,monospace;color:#111}
-      .head{display:flex;justify-content:space-between;margin-bottom:3mm}
+      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 8mm 6mm ${8 + left}mm;font:10.5pt "Courier New",Courier,monospace;color:#111;line-height:1.35}
+      .head{display:flex;justify-content:space-between;margin-bottom:4mm}
       .head .right{text-align:right}
-      .label{font-size:8.5pt;color:#555}
+      .label{font-size:9.5pt;color:#555}
       .val{font-weight:700}
-      .idrow{margin:2mm 0 4mm}
-      .idrow div{margin-bottom:1mm}
-      .idrow .label{display:inline-block;width:32mm}
-      .tbl{border-collapse:collapse;width:100%;font-size:9pt}
-      .tbl th,.tbl td{border:1px solid #111;padding:1.3mm;text-align:center}
+      .idrow{margin:3mm 0 5mm}
+      .idrow div{margin-bottom:1.5mm}
+      .idrow .label{display:inline-block;width:34mm}
+      .tbl{border-collapse:collapse;width:100%;font-size:9.5pt}
+      .tbl th,.tbl td{border:1px solid #111;padding:1.8mm;text-align:center}
       .tbl th{background:#eee}
       .tbl td.left{text-align:left}
       .tbl td.num{text-align:right}

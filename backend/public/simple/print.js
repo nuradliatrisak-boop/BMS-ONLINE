@@ -42,8 +42,19 @@ function openPrint(html) {
 // CETAK SURAT JALAN (di atas kertas continuous form berlubang yang
 // sudah ada cetakan tetapnya - posisi field ikut Kalibrasi Cetak yang
 // sudah diatur di aplikasi utama)
+//
+// "sjOrList" boleh satu objek Surat Jalan, ATAU array berisi beberapa
+// Surat Jalan sekaligus (misalnya hasil simpan dengan "Jumlah Surat
+// Jalan" > 1: kalau isi 1 ya tercetak 1, kalau isi 5 ya tercetak 5,
+// dst - mengikuti jumlah yang dimasukkan). Semua dicetak dalam SATU
+// kali klik tombol Cetak / SATU dialog print browser (tidak perlu
+// klik cetak satu per satu lagi), masing-masing halaman nomornya
+// beda sesuai data.
 // ============================================================
-function printSJ(sj) {
+function printSJ(sjOrList) {
+  var list = isArrayPrint(sjOrList) ? sjOrList : [sjOrList];
+  if (!list.length) return Promise.resolve();
+
   return Promise.all([api.get("/print-calib"), getSignerName()]).then(function (results) {
     var calib = results[0];
     var signerName = results[1];
@@ -62,18 +73,18 @@ function printSJ(sj) {
     }
 
     var p = {
-      apDari: pos("apDari", 8, 8, 16),
-      penerima: pos("penerima", 8, 14, 16),
-      no: pos("no", 178, 8, 16),
-      tanggal: pos("tanggal", 178, 14, 16),
-      jam: pos("jam", 178, 20, 16),
-      tujuan: pos("tujuan", 8, 20, 16),
-      jenis: pos("jenisBarang", 8, 32, 16),
-      nopol: pos("nopol", 14, 60, 16),
-      bak: pos("ukuranBak", 90, 60, 16),
-      m3: pos("m3", 200, 60, 16),
-      sopir: pos("sopirNama", 150, 96, 16),
-      hormat: pos("hormatKamiNama", 226, 100, 16)
+      apDari: pos("apDari", 8, 10, 10),
+      penerima: pos("penerima", 8, 18, 10),
+      no: pos("no", 175, 30, 11),
+      tanggal: pos("tanggal", 175, 38, 11),
+      jam: pos("jam", 175, 46, 11),
+      tujuan: pos("tujuan", 8, 26, 10),
+      jenis: pos("jenisBarang", 8, 34, 10),
+      nopol: pos("nopol", 14, 62, 13),
+      bak: pos("ukuranBak", 90, 62, 13),
+      m3: pos("m3", 200, 62, 13),
+      sopir: pos("sopirNama", 150, 98, 11),
+      hormat: pos("hormatKamiNama", 226, 102, 11)
     };
 
     // Label yang ditulis di depan tiap nilai (kertas SJ tidak ada label
@@ -90,46 +101,59 @@ function printSJ(sj) {
       jenis: "Jenis Brg"
     };
 
-    var namaCustomer = sj.customer
-      ? (sj.customer.nama + (sj.customer.kode ? (" / " + sj.customer.kode) : ""))
-      : "-";
-    var namaPenerima = sj.penerima || (sj.customer ? sj.customer.nama : "") || "-";
-    var panjang = Number(sj.panjang || 0);
-    var lebar = Number(sj.lebar || 0);
-    var tinggi = Number(sj.tinggi || 0);
-    var ukuran = (panjang > 0 || lebar > 0 || tinggi > 0) ? (panjang.toFixed(2) + " - " + lebar.toFixed(2) + " - " + tinggi.toFixed(3)) : "";
-
     function field(key, text, withLabel) {
       var t = withLabel ? (LBL[key] + " : " + (text || "-")) : text;
       return '<div class="f" style="left:' + p[key].x + 'mm;top:' + p[key].y + 'mm;font-size:' + p[key].size + 'pt">' + escapeHtml(t) + '</div>';
     }
 
-    var tujuanText = sj.tujuan || (sj.customer ? sj.customer.alamat : "") || "";
+    var sheetsHtml = "";
+    for (var i = 0; i < list.length; i++) {
+      var sj = list[i];
+      var namaCustomer = sj.customer
+        ? (sj.customer.nama + (sj.customer.kode ? (" / " + sj.customer.kode) : ""))
+        : "-";
+      var namaPenerima = sj.penerima || (sj.customer ? sj.customer.nama : "") || "-";
+      var panjang = Number(sj.panjang || 0);
+      var lebar = Number(sj.lebar || 0);
+      var tinggi = Number(sj.tinggi || 0);
+      var ukuran = (panjang > 0 || lebar > 0 || tinggi > 0) ? (panjang.toFixed(2) + " - " + lebar.toFixed(2) + " - " + tinggi.toFixed(3)) : "";
+      var tujuanText = sj.tujuan || (sj.customer ? sj.customer.alamat : "") || "";
+      var isLast = (i === list.length - 1);
+
+      sheetsHtml +=
+        '<div class="sheet"' + (isLast ? "" : ' style="page-break-after:always"') + '>' +
+        field("apDari", namaCustomer, true) +
+        field("penerima", namaPenerima, true) +
+        field("no", sj.no, true) +
+        field("tanggal", fmtDateShortPrint(sj.tanggal), true) +
+        field("jam", sj.jam || "", true) +
+        field("tujuan", tujuanText, true) +
+        field("jenis", sj.jenisBarang || "", true) +
+        field("nopol", sj.noPolisi || (sj.armada ? sj.armada.nopol : "") || "") +
+        field("bak", ukuran) +
+        field("m3", Number(sj.m3 || 0) > 0 ? Number(sj.m3).toFixed(3) : "") +
+        field("sopir", sj.sopir || (sj.armada ? sj.armada.sopir : "") || "") +
+        field("hormat", signerName) +
+        '</div>';
+    }
 
     openPrint(
       '<style>' +
       '@page{size:' + c.w + 'mm ' + c.h + 'mm;margin:0}' +
-      'html,body{margin:0;padding:0;width:' + c.w + 'mm;height:' + c.h + 'mm}' +
+      'html,body{margin:0;padding:0;width:' + c.w + 'mm}' +
       '*{box-sizing:border-box}' +
       '.sheet{position:relative;width:' + c.w + 'mm;height:' + c.h + 'mm;background:#fff;font-family:"Courier New",Courier,monospace;color:#111}' +
       '.f{position:absolute;white-space:nowrap;font-family:"Courier New",Courier,monospace}' +
       '</style>' +
-      '<div class="sheet">' +
-      field("apDari", namaCustomer, true) +
-      field("penerima", namaPenerima, true) +
-      field("no", sj.no, true) +
-      field("tanggal", fmtDateShortPrint(sj.tanggal), true) +
-      field("jam", sj.jam || "", true) +
-      field("tujuan", tujuanText, true) +
-      field("jenis", sj.jenisBarang || "", true) +
-      field("nopol", sj.noPolisi || (sj.armada ? sj.armada.nopol : "") || "") +
-      field("bak", ukuran) +
-      field("m3", Number(sj.m3 || 0) > 0 ? Number(sj.m3).toFixed(3) : "") +
-      field("sopir", sj.sopir || (sj.armada ? sj.armada.sopir : "") || "") +
-      field("hormat", signerName) +
-      '</div>'
+      sheetsHtml
     );
   });
+}
+
+// Firefox 52 ESR/XP-safe check (hindari Array.isArray jika perlu, tapi
+// Array.isArray sudah didukung sejak lama jadi aman dipakai langsung).
+function isArrayPrint(v) {
+  return Object.prototype.toString.call(v) === "[object Array]";
 }
 
 // ============================================================
@@ -179,16 +203,16 @@ function printInvoice(inv) {
       '<style>' +
       '@page{size:' + c.w + 'mm ' + c.h + 'mm;margin:0}' +
       'html,body{margin:0;padding:0;width:' + c.w + 'mm;height:' + c.h + 'mm}' +
-      '.sheet{position:relative;width:' + c.w + 'mm;height:' + c.h + 'mm;padding:' + top + 'mm 7mm 5mm ' + (7 + left) + 'mm;font:10pt "Courier New",Courier,monospace;color:#111}' +
-      '.head{display:flex;justify-content:space-between;margin-bottom:3mm}' +
+      '.sheet{position:relative;width:' + c.w + 'mm;height:' + c.h + 'mm;padding:' + top + 'mm 8mm 6mm ' + (8 + left) + 'mm;font:10.5pt "Courier New",Courier,monospace;color:#111;line-height:1.35}' +
+      '.head{display:flex;justify-content:space-between;margin-bottom:4mm}' +
       '.head .right{text-align:right}' +
-      '.label{font-size:8.5pt;color:#555}' +
+      '.label{font-size:9.5pt;color:#555}' +
       '.val{font-weight:700}' +
-      '.idrow{margin:2mm 0 4mm}' +
-      '.idrow div{margin-bottom:1mm}' +
-      '.idrow .label{display:inline-block;width:32mm}' +
-      '.tbl{border-collapse:collapse;width:100%;font-size:9pt}' +
-      '.tbl th,.tbl td{border:1px solid #111;padding:1.3mm;text-align:center}' +
+      '.idrow{margin:3mm 0 5mm}' +
+      '.idrow div{margin-bottom:1.5mm}' +
+      '.idrow .label{display:inline-block;width:34mm}' +
+      '.tbl{border-collapse:collapse;width:100%;font-size:9.5pt}' +
+      '.tbl th,.tbl td{border:1px solid #111;padding:1.8mm;text-align:center}' +
       '.tbl th{background:#eee}' +
       '.tbl td.left{text-align:left}' +
       '.tbl td.num{text-align:right}' +
@@ -230,6 +254,69 @@ function printInvoice(inv) {
       '</div>'
     );
   });
+}
+
+// Kertas kosong (blanko) Surat Jalan - dipakai di halaman Kalibrasi Cetak
+// untuk mencocokkan kertas yang BELUM ada cetakan tetapnya. Kalau kertas
+// kamu SUDAH ada cetakan judul "SURAT JALAN" dsb bawaan pabrik, cukup pakai
+// "Cetak Contoh Data" saja (jangan pakai blanko ini) supaya tidak dobel.
+function printSJBlank() {
+  openPrint(
+    '<style>' +
+    '@page{size:241.3mm 108mm;margin:0}' +
+    'html,body{margin:0;padding:0;width:241.3mm;height:108mm}' +
+    '.blank{width:241.3mm;height:108mm;font:10pt Arial;padding:7mm}' +
+    '.title{text-align:center;font-size:17pt;font-weight:700;border:2px solid #111;padding:2mm;margin-bottom:4mm}' +
+    '.head{display:flex;justify-content:space-between}' +
+    '.line{border-bottom:1px solid #777;min-height:5mm}' +
+    '.grid{margin-top:4mm;border-collapse:collapse;width:100%}' +
+    '.grid td,.grid th{border:1px solid #111;padding:2mm}' +
+    '.sign{display:flex;justify-content:space-between;margin-top:16mm;text-align:center}' +
+    '.sign>div{width:30%}' +
+    '.sign .u{border-top:1px solid #111;padding-top:2mm}' +
+    '</style>' +
+    '<div class="blank">' +
+    '<div class="title">SURAT JALAN</div>' +
+    '<div class="head">' +
+    '<div>A/P Dari &amp; Penerima<div class="line" style="width:75mm"></div></div>' +
+    '<div>Nomor<div class="line" style="width:40mm"></div>Tanggal<div class="line" style="width:40mm"></div>Jam<div class="line" style="width:40mm"></div></div>' +
+    '</div>' +
+    '<div style="margin-top:4mm">Tujuan: <span class="line" style="display:inline-block;width:125mm"></span></div>' +
+    '<div style="margin-top:3mm">Jenis Barang: <span class="line" style="display:inline-block;width:85mm"></span></div>' +
+    '<table class="grid">' +
+    '<tr><th>Nomor Polisi</th><th>Ukuran Bak (P-L-T)</th><th>M3</th></tr>' +
+    '<tr><td style="height:10mm"></td><td></td><td></td></tr>' +
+    '</table>' +
+    '<div style="font-size:8pt;margin-top:2mm">' +
+    'Perhatian: Pengisian material dilakukan sesuai dengan ukuran bak mobil (rata bak).<br/>' +
+    'Kami tidak bertanggung jawab setelah material tersebut telah diterima.' +
+    '</div>' +
+    '<div class="sign">' +
+    '<div><div class="u">Yang Menerima,</div></div>' +
+    '<div><div class="u">Supir,</div></div>' +
+    '<div><div class="u">Hormat kami,</div></div>' +
+    '</div>' +
+    '</div>'
+  );
+}
+
+// Kotak bantu grid 5mm - dicetak di atas kertas asli untuk mengukur posisi
+// (pakai penggaris) sebelum mengisi angka X/Y di halaman Kalibrasi Cetak.
+function printGrid(w, h) {
+  var v = "", g = "";
+  for (var x = 0; x <= w; x += 5) v += '<i style="left:' + x + 'mm"></i>';
+  for (var y = 0; y <= h; y += 5) g += '<b style="top:' + y + 'mm"></b>';
+  openPrint(
+    '<style>' +
+    '@page{size:' + w + 'mm ' + h + 'mm;margin:0}' +
+    'html,body{margin:0}' +
+    '.grid{position:relative;width:' + w + 'mm;height:' + h + 'mm}' +
+    '.grid i,.grid b{position:absolute;background:#aab4bf}' +
+    '.grid i{top:0;bottom:0;width:.15mm}' +
+    '.grid b{left:0;right:0;height:.15mm}' +
+    '</style>' +
+    '<div class="grid">' + v + g + '</div>'
+  );
 }
 
 function terbilang(n) {

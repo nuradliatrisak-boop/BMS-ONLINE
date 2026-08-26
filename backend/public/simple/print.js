@@ -62,17 +62,32 @@ function printSJ(sj) {
     }
 
     var p = {
-      apDari: pos("apDari", 8, 8, 8),
-      penerima: pos("penerima", 8, 14, 8),
-      no: pos("no", 186, 8, 9),
-      tgl: pos("tanggalJam", 186, 14, 8),
-      tujuan: pos("tujuan", 8, 20, 8),
-      jenis: pos("jenisBarang", 8, 32, 8),
-      nopol: pos("nopol", 14, 63, 10),
-      bak: pos("ukuranBak", 95, 63, 10),
-      m3: pos("m3", 206, 63, 10),
-      sopir: pos("sopirNama", 150, 96, 9),
-      hormat: pos("hormatKamiNama", 226, 100, 9)
+      apDari: pos("apDari", 8, 8, 9),
+      penerima: pos("penerima", 8, 14, 9),
+      no: pos("no", 178, 8, 10),
+      tanggal: pos("tanggal", 178, 14, 10),
+      jam: pos("jam", 178, 20, 10),
+      tujuan: pos("tujuan", 8, 20, 9),
+      jenis: pos("jenisBarang", 8, 32, 9),
+      nopol: pos("nopol", 14, 60, 12),
+      bak: pos("ukuranBak", 90, 60, 12),
+      m3: pos("m3", 200, 60, 12),
+      sopir: pos("sopirNama", 150, 96, 10),
+      hormat: pos("hormatKamiNama", 226, 100, 10)
+    };
+
+    // Label yang ditulis di depan tiap nilai (kertas SJ tidak ada label
+    // "Nomor :", "Tanggal :", dst tercetak - jadi labelnya ikut ditulis
+    // software supaya jelas kolom mana isinya apa, sama seperti contoh
+    // yang diminta).
+    var LBL = {
+      apDari: "A/P Dari",
+      penerima: "Penerima",
+      no: "Nomor",
+      tanggal: "Tanggal",
+      jam: "Jam",
+      tujuan: "Tujuan",
+      jenis: "Jenis Brg"
     };
 
     var namaCustomer = sj.customer
@@ -84,8 +99,9 @@ function printSJ(sj) {
     var tinggi = Number(sj.tinggi || 0);
     var ukuran = (panjang > 0 || lebar > 0 || tinggi > 0) ? (panjang.toFixed(2) + " - " + lebar.toFixed(2) + " - " + tinggi.toFixed(3)) : "";
 
-    function field(key, text) {
-      return '<div class="f" style="left:' + p[key].x + 'mm;top:' + p[key].y + 'mm;font-size:' + p[key].size + 'pt">' + escapeHtml(text) + '</div>';
+    function field(key, text, withLabel) {
+      var t = withLabel ? (LBL[key] + " : " + (text || "-")) : text;
+      return '<div class="f" style="left:' + p[key].x + 'mm;top:' + p[key].y + 'mm;font-size:' + p[key].size + 'pt">' + escapeHtml(t) + '</div>';
     }
 
     var tujuanText = sj.tujuan || (sj.customer ? sj.customer.alamat : "") || "";
@@ -95,16 +111,17 @@ function printSJ(sj) {
       '@page{size:' + c.w + 'mm ' + c.h + 'mm;margin:0}' +
       'html,body{margin:0;padding:0;width:' + c.w + 'mm;height:' + c.h + 'mm}' +
       '*{box-sizing:border-box}' +
-      '.sheet{position:relative;width:' + c.w + 'mm;height:' + c.h + 'mm;background:#fff;font-family:Arial,sans-serif;color:#111}' +
-      '.f{position:absolute;white-space:nowrap;font-family:Arial,sans-serif}' +
+      '.sheet{position:relative;width:' + c.w + 'mm;height:' + c.h + 'mm;background:#fff;font-family:"Courier New",Courier,monospace;color:#111}' +
+      '.f{position:absolute;white-space:nowrap;font-family:"Courier New",Courier,monospace}' +
       '</style>' +
       '<div class="sheet">' +
-      field("apDari", namaCustomer) +
-      field("penerima", namaPenerima) +
-      field("no", sj.no) +
-      field("tgl", fmtDateShortPrint(sj.tanggal) + " " + (sj.jam || "")) +
-      field("tujuan", tujuanText) +
-      field("jenis", sj.jenisBarang || "") +
+      field("apDari", namaCustomer, true) +
+      field("penerima", namaPenerima, true) +
+      field("no", sj.no, true) +
+      field("tanggal", fmtDateShortPrint(sj.tanggal), true) +
+      field("jam", sj.jam || "", true) +
+      field("tujuan", tujuanText, true) +
+      field("jenis", sj.jenisBarang || "", true) +
       field("nopol", sj.noPolisi || (sj.armada ? sj.armada.nopol : "") || "") +
       field("bak", ukuran) +
       field("m3", Number(sj.m3 || 0) > 0 ? Number(sj.m3).toFixed(3) : "") +
@@ -162,14 +179,15 @@ function printInvoice(inv) {
       '<style>' +
       '@page{size:' + c.w + 'mm ' + c.h + 'mm;margin:0}' +
       'html,body{margin:0;padding:0;width:' + c.w + 'mm;height:' + c.h + 'mm}' +
-      '.sheet{position:relative;width:' + c.w + 'mm;height:' + c.h + 'mm;padding:' + top + 'mm 7mm 5mm ' + (7 + left) + 'mm;font:9pt Arial;color:#111}' +
+      '.sheet{position:relative;width:' + c.w + 'mm;height:' + c.h + 'mm;padding:' + top + 'mm 7mm 5mm ' + (7 + left) + 'mm;font:10pt "Courier New",Courier,monospace;color:#111}' +
       '.head{display:flex;justify-content:space-between;margin-bottom:3mm}' +
       '.head .right{text-align:right}' +
-      '.label{font-size:7.5pt;color:#555}' +
+      '.label{font-size:8.5pt;color:#555}' +
       '.val{font-weight:700}' +
-      '.idrow{display:flex;gap:14mm;margin:2mm 0 4mm}' +
-      '.idrow .label{display:inline-block;width:26mm}' +
-      '.tbl{border-collapse:collapse;width:100%;font-size:7.8pt}' +
+      '.idrow{margin:2mm 0 4mm}' +
+      '.idrow div{margin-bottom:1mm}' +
+      '.idrow .label{display:inline-block;width:32mm}' +
+      '.tbl{border-collapse:collapse;width:100%;font-size:9pt}' +
       '.tbl th,.tbl td{border:1px solid #111;padding:1.3mm;text-align:center}' +
       '.tbl th{background:#eee}' +
       '.tbl td.left{text-align:left}' +
@@ -190,6 +208,7 @@ function printInvoice(inv) {
       '<div class="idrow">' +
       '<div><span class="label">Kode Customer</span> : <b>' + escapeHtml(custKode || "-") + '</b></div>' +
       '<div><span class="label">Nama Customer</span> : <b>' + escapeHtml(custNama || "-") + '</b></div>' +
+      '<div><span class="label">Alamat</span> : <b>' + escapeHtml(custAlamat || "-") + '</b></div>' +
       '</div>' +
       '<table class="tbl">' +
       '<tr><th>No</th><th>Tgl Kirim</th><th>No SJ</th><th>Sopir</th><th>Alamat Kirim</th><th>P L T</th><th>M3</th><th>Harga</th><th>Jumlah</th></tr>' +

@@ -71,17 +71,31 @@ export async function printSJ(sj) {
   });
 
   const p = {
-    apDari: pos("apDari", { x: 8, y: 8, size: 8 }),
-    penerima: pos("penerima", { x: 8, y: 14, size: 8 }),
-    no: pos("no", { x: 186, y: 8, size: 9 }),
-    tgl: pos("tanggalJam", { x: 186, y: 14, size: 8 }),
-    tujuan: pos("tujuan", { x: 8, y: 20, size: 8 }),
-    jenis: pos("jenisBarang", { x: 8, y: 32, size: 8 }),
-    nopol: pos("nopol", { x: 14, y: 63, size: 10 }),
-    bak: pos("ukuranBak", { x: 95, y: 63, size: 10 }),
-    m3: pos("m3", { x: 206, y: 63, size: 10 }),
-    sopir: pos("sopirNama", { x: 150, y: 96, size: 9 }),
-    hormat: pos("hormatKamiNama", { x: 226, y: 100, size: 9 }),
+    apDari: pos("apDari", { x: 8, y: 8, size: 9 }),
+    penerima: pos("penerima", { x: 8, y: 14, size: 9 }),
+    no: pos("no", { x: 178, y: 8, size: 10 }),
+    tanggal: pos("tanggal", { x: 178, y: 14, size: 10 }),
+    jam: pos("jam", { x: 178, y: 20, size: 10 }),
+    tujuan: pos("tujuan", { x: 8, y: 20, size: 9 }),
+    jenis: pos("jenisBarang", { x: 8, y: 32, size: 9 }),
+    nopol: pos("nopol", { x: 14, y: 60, size: 12 }),
+    bak: pos("ukuranBak", { x: 90, y: 60, size: 12 }),
+    m3: pos("m3", { x: 200, y: 60, size: 12 }),
+    sopir: pos("sopirNama", { x: 150, y: 96, size: 10 }),
+    hormat: pos("hormatKamiNama", { x: 226, y: 100, size: 10 }),
+  };
+
+  // Label ditulis di depan tiap nilai (kertas SJ tidak ada label "Nomor :",
+  // "Tanggal :", dst yang tercetak duluan - jadi labelnya ikut ditulis
+  // software supaya jelas kolom mana isinya apa).
+  const LBL = {
+    apDari: "A/P Dari",
+    penerima: "Penerima",
+    no: "Nomor",
+    tanggal: "Tanggal",
+    jam: "Jam",
+    tujuan: "Tujuan",
+    jenis: "Jenis Brg",
   };
 
   const namaCustomer = sj.customer
@@ -92,26 +106,29 @@ export async function printSJ(sj) {
     sj.lebar ?? sj.l ?? 0
   ).toFixed(2)} - ${Number(sj.tinggi ?? sj.t ?? 0).toFixed(3)}`;
 
-  const field = (key, text) =>
-    `<div class="f" style="left:${p[key].x}mm;top:${p[key].y}mm;font-size:${p[key].size}pt">${esc(
-      text
+  const field = (key, text, withLabel) => {
+    const t = withLabel ? `${LBL[key]} : ${text || "-"}` : text;
+    return `<div class="f" style="left:${p[key].x}mm;top:${p[key].y}mm;font-size:${p[key].size}pt">${esc(
+      t
     )}</div>`;
+  };
 
   openPrint(`
     <style>
       @page{size:${c.w}mm ${c.h}mm;margin:0}
       html,body{margin:0;padding:0;width:${c.w}mm;height:${c.h}mm}
       *{box-sizing:border-box}
-      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;background:#fff;font-family:Arial,sans-serif;color:#111}
-      .f{position:absolute;white-space:nowrap;font-family:Arial,sans-serif}
+      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;background:#fff;font-family:"Courier New",Courier,monospace;color:#111}
+      .f{position:absolute;white-space:nowrap;font-family:"Courier New",Courier,monospace}
     </style>
     <div class="sheet">
-      ${field("apDari", namaCustomer)}
-      ${field("penerima", namaPenerima)}
-      ${field("no", sj.no)}
-      ${field("tgl", `${fmtDateShort(sj.tanggal)} ${sj.jam || ""}`)}
-      ${field("tujuan", sj.tujuan || sj.customer?.alamat || "")}
-      ${field("jenis", sj.jenisBarang || "")}
+      ${field("apDari", namaCustomer, true)}
+      ${field("penerima", namaPenerima, true)}
+      ${field("no", sj.no, true)}
+      ${field("tanggal", fmtDateShort(sj.tanggal), true)}
+      ${field("jam", sj.jam || "", true)}
+      ${field("tujuan", sj.tujuan || sj.customer?.alamat || "", true)}
+      ${field("jenis", sj.jenisBarang || "", true)}
       ${field("nopol", sj.noPolisi || sj.armada?.nopol || "")}
       ${field("bak", ukuran)}
       ${field("m3", Number(sj.m3 || 0).toFixed(3))}
@@ -140,7 +157,7 @@ export function printSJBlank() {
       <div class="title">SURAT JALAN</div>
       <div class="head">
         <div>A/P Dari &amp; Penerima<div class="line" style="width:75mm"></div></div>
-        <div>Nomor<div class="line" style="width:40mm"></div>Tanggal / Jam<div class="line" style="width:40mm"></div></div>
+        <div>Nomor<div class="line" style="width:40mm"></div>Tanggal<div class="line" style="width:40mm"></div>Jam<div class="line" style="width:40mm"></div></div>
       </div>
       <div style="margin-top:4mm">Tujuan: <span class="line" style="display:inline-block;width:125mm"></span></div>
       <div style="margin-top:3mm">Jenis Barang: <span class="line" style="display:inline-block;width:85mm"></span></div>
@@ -205,14 +222,15 @@ export async function printInvoice(inv) {
     <style>
       @page{size:${c.w}mm ${c.h}mm;margin:0}
       html,body{margin:0;padding:0;width:${c.w}mm;height:${c.h}mm}
-      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 7mm 5mm ${7 + left}mm;font:9pt Arial;color:#111}
+      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 7mm 5mm ${7 + left}mm;font:10pt "Courier New",Courier,monospace;color:#111}
       .head{display:flex;justify-content:space-between;margin-bottom:3mm}
       .head .right{text-align:right}
-      .label{font-size:7.5pt;color:#555}
+      .label{font-size:8.5pt;color:#555}
       .val{font-weight:700}
-      .idrow{display:flex;gap:14mm;margin:2mm 0 4mm}
-      .idrow .label{display:inline-block;width:26mm}
-      .tbl{border-collapse:collapse;width:100%;font-size:7.8pt}
+      .idrow{margin:2mm 0 4mm}
+      .idrow div{margin-bottom:1mm}
+      .idrow .label{display:inline-block;width:32mm}
+      .tbl{border-collapse:collapse;width:100%;font-size:9pt}
       .tbl th,.tbl td{border:1px solid #111;padding:1.3mm;text-align:center}
       .tbl th{background:#eee}
       .tbl td.left{text-align:left}
@@ -242,6 +260,7 @@ export async function printInvoice(inv) {
       <div class="idrow">
         <div><span class="label">Kode Customer</span> : <b>${esc(inv.customer?.kode || "-")}</b></div>
         <div><span class="label">Nama Customer</span> : <b>${esc(inv.customer?.nama || "-")}</b></div>
+        <div><span class="label">Alamat</span> : <b>${esc(inv.customer?.alamat || "-")}</b></div>
       </div>
       <table class="tbl">
         <tr>

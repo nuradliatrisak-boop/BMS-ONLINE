@@ -30,6 +30,7 @@ const emptyForm = () => ({
   tinggi: 0,
   tanggal: new Date().toISOString().slice(0, 10),
   jam: new Date().toTimeString().slice(0, 5),
+  jumlahSuratJalan: 1,
   isDraft: true,
 });
 
@@ -125,6 +126,7 @@ function openEdit(sj) {
     tinggi: sj.tinggi || 0,
     tanggal: sj.tanggal ? new Date(sj.tanggal).toISOString().slice(0, 10) : "",
     jam: sj.jam || "",
+    jumlahSuratJalan: 1,
     isDraft: !!sj.isDraft,
   };
   showModal.value = true;
@@ -187,6 +189,10 @@ function validateForm() {
     toast("Tanggal wajib diisi");
     return false;
   }
+  if (!editingId.value && (!Number.isInteger(Number(form.value.jumlahSuratJalan)) || Number(form.value.jumlahSuratJalan) < 1 || Number(form.value.jumlahSuratJalan) > 100)) {
+    toast("Jumlah surat jalan harus antara 1 sampai 100");
+    return false;
+  }
   return true;
 }
 
@@ -210,6 +216,7 @@ async function submit() {
       tanggal: form.value.tanggal,
       jam: form.value.jam || null,
       isDraft: !!form.value.isDraft,
+      ...(!editingId.value ? { jumlahSuratJalan: Number(form.value.jumlahSuratJalan) || 1 } : {}),
     };
 
     if (editingId.value) {
@@ -217,7 +224,11 @@ async function submit() {
       toast("Surat jalan berhasil diperbarui");
     } else {
       const created = await api.post("/surat-jalan", payload);
-      toast(`Surat jalan ${created.no} berhasil disimpan`);
+      if (Array.isArray(created)) {
+        toast(`${created.length} surat jalan berhasil disimpan (${created[0]?.no} s/d ${created[created.length - 1]?.no})`);
+      } else {
+        toast(`Surat jalan ${created.no} berhasil disimpan`);
+      }
     }
 
     showModal.value = false;
@@ -434,6 +445,12 @@ onMounted(load);
         </div>
       </div>
 
+      <div v-if="!editingId" class="field">
+        <label>Jumlah Surat Jalan</label>
+        <input v-model.number="form.jumlahSuratJalan" type="number" min="1" max="100" step="1" />
+        <div class="field-hint">Untuk customer dan tujuan yang sama. Setiap surat jalan akan dibuat dengan nomor yang berbeda otomatis.</div>
+      </div>
+
       <div class="row">
         <div class="field">
           <label>No. Polisi</label>
@@ -502,6 +519,7 @@ onMounted(load);
 .draft-check input { margin-top: 3px; }
 .draft-check-sub { font-size: 11px; color: var(--ink-soft); }
 .optional { font-weight: 400; color: var(--ink-soft); font-size: 11px; }
+.field-hint { margin-top: 5px; font-size: 11px; color: var(--ink-soft); line-height: 1.4; }
 
 @media (max-width: 700px) {
   .sj-summary { grid-template-columns: 1fr; }

@@ -181,50 +181,55 @@ router.post("/", async (req, res, next) => {
       });
     }
 
-    let sj;
-
-    /*
-     * Generate nomor otomatis.
-     *
-     * Contoh:
-     * BMS-SJ-202608-0001
-     * BMS-SJ-202608-0002
-     */
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const no = await createNomorSuratJalan();
-
-      try {
-        sj = await prisma.suratJalan.create({
-          data: {
-            no,
-            divisi,
-            ...buildDataFields(req.body, { forCreate: true }),
-          },
-          include: includeRelasi,
-        });
-
-        break;
-      } catch (e) {
-        /*
-         * Kalau dua user membuat surat jalan
-         * hampir bersamaan dan nomor yang sama
-         * terbentuk, coba generate nomor berikutnya.
-         */
-        if (e.code === "P2002" && attempt < 4) {
-          continue;
-        }
-
-        throw e;
-      }
-    }
-
-    if (!sj) {
-      return res.status(500).json({
-        error: "Gagal membuat nomor surat jalan",
+    // Satu tujuan/customer bisa membutuhkan beberapa kendaraan. Data pengiriman
+    // tetap sama, tetapi setiap Surat Jalan harus mempunyai nomor unik sendiri.
+    const jumlahSuratJalan = Number(req.body.jumlahSuratJalan ?? 1);
+    if (!Number.isInteger(jumlahSuratJalan) || jumlahSuratJalan < 1 || jumlahSuratJalan > 100) {
+      return res.status(400).json({
+        error: "Jumlah surat jalan harus berupa angka antara 1 sampai 100",
       });
     }
 
-    res.status(201).json(sj);
+    const hasil = [];
+
+    for (let index = 0; index < jumlahSuratJalan; index++) {
+      let sj;
+
+      /*
+       * Generate nomor otomatis untuk SETIAP dokumen.
+       * Contoh: BMS-SJ-202608-0001, BMS-SJ-202608-0002, dst.
+       */
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const no = await createNomorSuratJalan();
+
+        try {
+          sj = await prisma.suratJalan.create({
+            data: {
+              no,
+              divisi,
+              ...buildDataFields(req.body, { forCreate: true }),
+            },
+            include: includeRelasi,
+          });
+
+          break;
+        } catch (e) {
+          // Hindari bentrok nomor jika ada pembuatan bersamaan.
+          if (e.code === "P2002" && attempt < 4) continue;
+          throw e;
+        }
+      }
+
+      if (!sj) {
+        return res.status(500).json({ error: "Gagal membuat nomor surat jalan" });
+      }
+
+      hasil.push(sj);
+    }
+
+    // Tetap mempertahankan respons lama untuk pembuatan 1 Surat Jalan agar
+    // integrasi yang sudah ada tidak berubah. Jika jumlah > 1, kirim semua SJ.
+    res.status(201).json(jumlahSuratJalan === 1 ? hasil[0] : hasil);
   } catch (e) {
     next(e);
   }

@@ -1194,3 +1194,25 @@ textarea {
 ::-webkit-scrollbar-thumb:hover {
   background: #9eabbc;
 }
+
+/* =========================================================
+   PRINT (GLOBAL) -- halaman yang cetak langsung di tempat (bukan lewat
+   jendela popup baru, mis. Rekap Penjualan) pakai class ".print-document"
+   + window.print(). Aturan sembunyikan sidebar/topbar/dsb HARUS global
+   (bukan scoped di dalam .vue), karena Sidebar adalah komponen terpisah
+   -- kalau ditulis scoped di komponen lain, Vue nambahin atribut
+   data-v-xxxx yang bikin selector ".sidebar" itu tidak pernah match ke
+   Sidebar asli, jadi sidebar tetap kebawa saat dicetak/print-to-PDF.
+   ========================================================= */
+@media print {
+  .sidebar,
+  .sidebar-overlay,
+  .mobile-menu-btn {
+    display: none !important;
+  }
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+}

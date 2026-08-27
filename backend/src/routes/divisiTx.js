@@ -79,6 +79,56 @@ router.post("/", async (req, res, next) => {
   }
 });
 
+router.put("/:id", async (req, res, next) => {
+  try {
+    const current = await prisma.divisiTx.findUnique({ where: { id: req.params.id } });
+    if (!current) return res.status(404).json({ error: "Transaksi tidak ditemukan" });
+
+    const {
+      divisi = current.divisi,
+      tipe = current.tipe,
+      kelompok,
+      kategori,
+      subKategori,
+      keterangan,
+      qty,
+      hargaSatuan,
+      nominal,
+      tanggal,
+    } = req.body;
+
+    if (!divisi || !tipe || !kelompok || !kategori || !tanggal) {
+      return res.status(400).json({ error: "Divisi, tipe, kelompok, kategori, dan tanggal wajib diisi" });
+    }
+
+    const pakaiQty = qty !== undefined && qty !== null && qty !== "" &&
+      hargaSatuan !== undefined && hargaSatuan !== null && hargaSatuan !== "";
+    const nominalFinal = pakaiQty ? Number(qty) * Number(hargaSatuan) : Number(nominal);
+    if (!Number.isFinite(nominalFinal) || nominalFinal <= 0) {
+      return res.status(400).json({ error: "Nominal (atau Qty x Harga Satuan) wajib diisi dan lebih dari 0" });
+    }
+
+    const tx = await prisma.divisiTx.update({
+      where: { id: req.params.id },
+      data: {
+        divisi,
+        tipe: String(tipe).toUpperCase(),
+        kelompok,
+        kategori,
+        subKategori: subKategori || null,
+        keterangan: keterangan || null,
+        qty: pakaiQty ? Number(qty) : null,
+        hargaSatuan: pakaiQty ? Number(hargaSatuan) : null,
+        nominal: nominalFinal,
+        tanggal: new Date(tanggal),
+      },
+    });
+    res.json(tx);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.delete("/:id", async (req, res, next) => {
   try {
     await prisma.divisiTx.delete({ where: { id: req.params.id } });

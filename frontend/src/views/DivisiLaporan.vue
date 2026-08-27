@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { parseDivisiExcel } from "../utils/excelImport.js";
@@ -19,6 +19,8 @@ const laporan = ref(null);
 const txList = ref([]);
 const loading = ref(false);
 const showModal = ref(false);
+const editingId = ref(null);
+const populatingForm = ref(false);
 const armadaMaster = ref([]); // data master kendaraan (menu "Armada"), untuk dropdown nopol
 
 const CUSTOM_OPT = "__custom__";
@@ -113,6 +115,7 @@ async function load() {
 }
 
 function openModal() {
+  editingId.value = null;
   form.value = emptyForm();
   kategoriCustom.value = false;
   if (kelompokOptions.value.length) form.value.kelompok = kelompokOptions.value[0].key;
@@ -144,6 +147,7 @@ function onNopolSelect(val) {
 }
 
 watch(() => form.value.kelompok, () => {
+  if (populatingForm.value) return;
   // Kalau kelompok ini tidak punya daftar kategori bawaan (mis. "Lainnya"),
   // langsung buka mode ketik manual biar user tidak lihat dropdown kosong.
   kategoriCustom.value = !(selectedKelompok.value?.kategoriDefault || []).length && !!selectedKelompok.value?.allowCustom;
@@ -152,9 +156,31 @@ watch(() => form.value.kelompok, () => {
   form.value.subKategori = "";
 });
 watch(() => form.value.kategori, () => {
+  if (populatingForm.value) return;
   nopolCustom.value = false;
   if (selectedKelompok.value?.subKategoriKendaraan) form.value.subKategori = "";
 });
+
+async function openEditModal(t) {
+  editingId.value = t.id;
+  populatingForm.value = true;
+  form.value = {
+    kelompok: t.kelompok || "",
+    kategori: t.kategori || "",
+    subKategori: t.subKategori || "",
+    qty: t.qty ?? "",
+    hargaSatuan: t.hargaSatuan ?? "",
+    nominal: t.nominal ?? "",
+    keterangan: t.keterangan || "",
+    tanggal: new Date(t.tanggal).toISOString().slice(0, 10),
+  };
+  const k = kelompokOptions.value.find((x) => x.key === form.value.kelompok);
+  kategoriCustom.value = !!form.value.kategori && !(k?.kategoriDefault || []).includes(form.value.kategori);
+  nopolCustom.value = !!form.value.subKategori && k?.subKategoriKendaraan && !kendaraanOptions.value.some((a) => a.nopol === form.value.subKategori);
+  showModal.value = true;
+  await nextTick();
+  populatingForm.value = false;
+}
 
 async function submit() {
   if (!form.value.kelompok || !form.value.kategori) {
@@ -167,7 +193,7 @@ async function submit() {
 
   const tipe = selectedKelompok.value?.tipe === "PENJUALAN" ? "penjualan" : "pengeluaran";
 
-  await api.post("/divisi-tx", {
+  const payload = {
     divisi: divisi.value,
     tipe,
     kelompok: form.value.kelompok,
@@ -178,9 +204,16 @@ async function submit() {
     nominal: pakaiQty ? undefined : form.value.nominal,
     keterangan: form.value.keterangan || undefined,
     tanggal: form.value.tanggal,
-  });
-  toast("Transaksi dicatat");
+  };
+  if (editingId.value) {
+    await api.put(`/divisi-tx/${editingId.value}`, payload);
+    toast("Transaksi berhasil diubah");
+  } else {
+    await api.post("/divisi-tx", payload);
+    toast("Transaksi dicatat");
+  }
   showModal.value = false;
+  editingId.value = null;
   await load();
 }
 
@@ -366,7 +399,7 @@ onMounted(async () => {
               <th>Kategori</th>
               <th>Rincian</th>
               <th class="num">Nominal</th>
-              <th></th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -380,7 +413,10 @@ onMounted(async () => {
                 <span v-else>-</span>
               </td>
               <td class="num mono">{{ rupiah(t.nominal) }}</td>
-              <td><button class="btn btn-ghost btn-sm" @click="removeTx(t)">Hapus</button></td>
+              <td style="white-space: nowrap">
+                <button class="btn btn-ghost btn-sm" @click="openEditModal(t)">Edit</button>
+                <button class="btn btn-ghost btn-sm" @click="removeTx(t)">Hapus</button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -391,7 +427,7 @@ onMounted(async () => {
   <div v-if="showModal" class="modal-bg" @click.self="showModal = false">
     <div class="modal">
       <button class="modal-close" @click="showModal = false">×</button>
-      <h2>Catat Transaksi &mdash; {{ divisi }}</h2>
+      <h2>{{ editingId ? "Edit Transaksi" : "Catat Transaksi" }} &mdash; {{ divisi }}</h2>
 
       <div class="field">
         <label>Kelompok</label>
@@ -472,7 +508,7 @@ onMounted(async () => {
 
       <div class="field"><label>Catatan (opsional)</label><input v-model="form.keterangan" /></div>
 
-      <button class="btn btn-primary" @click="submit">Simpan</button>
+      <button class="btn btn-primary" @click="submit">{{ editingId ? "Simpan Perubahan" : "Simpan" }}</button>
     </div>
   </div>
 

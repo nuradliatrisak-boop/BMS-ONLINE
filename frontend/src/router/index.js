@@ -11,6 +11,7 @@ import Invoices from "../views/Invoices.vue";
 import InvoiceDetail from "../views/InvoiceDetail.vue";
 import SuratJalan from "../views/SuratJalan.vue";
 import DivisiLaporan from "../views/DivisiLaporan.vue";
+import RekapKeseluruhan from "../views/RekapKeseluruhan.vue";
 import Users from "../views/Users.vue";
 import RekapPenjualan from "../views/RekapPenjualan.vue";
 import KalibrasiCetak from "../views/KalibrasiCetak.vue";
@@ -27,6 +28,7 @@ const routes = [
   { path: "/invoices/:id", name: "invoice-detail", component: InvoiceDetail },
   { path: "/surat-jalan", name: "surat-jalan", component: SuratJalan },
   { path: "/laporan-divisi", name: "laporan-divisi", component: DivisiLaporan },
+  { path: "/rekap-keseluruhan", name: "rekap-keseluruhan", component: RekapKeseluruhan },
   { path: "/rekap-penjualan", name: "rekap-penjualan", component: RekapPenjualan },
   { path: "/users", name: "users", component: Users, meta: { adminOnly: true } },
   { path: "/kalibrasi-cetak", name: "kalibrasi-cetak", component: KalibrasiCetak, meta: { adminOnly: true } },

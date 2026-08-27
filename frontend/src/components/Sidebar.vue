@@ -110,6 +110,11 @@ function doLogout() {
         <span>Laporan Divisi</span>
       </router-link>
 
+      <router-link to="/rekap-keseluruhan" @click="closeSidebar">
+        <span class="ic">🗂️</span>
+        <span>Rekap Keseluruhan</span>
+      </router-link>
+
       <router-link
         v-if="auth.isAdmin"
         to="/users"

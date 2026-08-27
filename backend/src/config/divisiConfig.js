@@ -83,13 +83,21 @@ export const DIVISI_CONFIG = {
         tipe: "PENJUALAN",
         kategoriDefault: ["Hasil Mobil Tronton", "Hasil Mobil Cold Diesel"],
         allowCustom: true,
+        // Rincian per kelompok ini diisi per KENDARAAN (nomor polisi), bukan
+        // teks bebas -- persis seperti sheet COLD DIESEL / TRONTON di Excel
+        // yang mendata tiap mobil (nopol) satu-satu. Frontend akan menampilkan
+        // dropdown nopol yang diambil dari data master Armada (menu "Armada"),
+        // difilter sesuai kategori (Tronton / Cold Diesel), plus opsi ketik
+        // manual untuk nopol yang belum terdaftar di master.
+        subKategoriKendaraan: true,
       },
       {
         key: "sparepart",
         label: "Laporan Pengeluaran Sparepart",
         tipe: "PENGELUARAN",
-        kategoriDefault: ["Sparepart Tronton", "Sparepart Colt Diesel"],
+        kategoriDefault: ["Sparepart Tronton", "Sparepart Cold Diesel"],
         allowCustom: true,
+        subKategoriKendaraan: true,
       },
       {
         key: "bulanan",

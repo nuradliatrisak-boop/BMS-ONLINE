@@ -185,6 +185,116 @@ router.get("/laporan/:divisi/:bulan", async (req, res, next) => {
   }
 });
 
+// Rekap Keseluruhan: laporan laba-rugi per divisi dengan filter RENTANG
+// TANGGAL bebas (bukan cuma satu bulan seperti /laporan/:divisi/:bulan),
+// dan bisa dipilih "semua divisi sekaligus" (untuk dicetak keseluruhan)
+// ATAU satu divisi saja (untuk dicetak per-divisi) -- dipakai halaman
+// "Rekap Keseluruhan" di frontend.
+// Query: ?dari=YYYY-MM-DD&sampai=YYYY-MM-DD&divisi=<nama divisi | ALL>
+router.get("/rekap-keseluruhan", async (req, res, next) => {
+  try {
+    const { dari, sampai } = req.query;
+    const divisiFilter = req.query.divisi && req.query.divisi !== "ALL" ? req.query.divisi : null;
+    if (!dari || !sampai) {
+      return res.status(400).json({ error: "Parameter dari dan sampai wajib diisi" });
+    }
+
+    const scope = scopeDivisi(req);
+    const divisiList = divisiFilter
+      ? [divisiFilter]
+      : DIVISI_LIST.filter((d) => !scope.divisi || scope.divisi === d);
+
+    // Rentang tanggal inklusif: "sampai" digenapkan ke akhir hari itu.
+    const tglMulai = new Date(`${dari}T00:00:00`);
+    const tglAkhir = new Date(`${sampai}T23:59:59.999`);
+
+    const invoices = await prisma.invoice.findMany({
+      where: { ...scope, tanggal: { gte: tglMulai, lte: tglAkhir } },
+      include: { items: true },
+    });
+    const txAll = await prisma.divisiTx.findMany({
+      where: { ...scope, tanggal: { gte: tglMulai, lte: tglAkhir } },
+    });
+
+    const hasil = divisiList.map((divisi) => {
+      const config = DIVISI_CONFIG[divisi] || { kelompok: [] };
+      const tx = txAll.filter((t) => t.divisi === divisi);
+      const penjualanInvoice = invoices
+        .filter((i) => i.divisi === divisi)
+        .reduce((s, i) => s + i.items.reduce((a, it) => a + it.qty * it.hargaSatuan, 0), 0);
+
+      let invoiceRowUsed = false;
+      const kelompok = config.kelompok.map((k) => {
+        const items = tx.filter((t) => t.kelompok === k.key);
+        const map = new Map();
+        for (const it of items) {
+          const rowKey = `${it.kategori}||${it.subKategori || ""}`;
+          if (!map.has(rowKey)) {
+            map.set(rowKey, { kategori: it.kategori, subKategori: it.subKategori || null, nominal: 0 });
+          }
+          map.get(rowKey).nominal += it.nominal;
+        }
+        for (const defKat of k.kategoriDefault || []) {
+          if (!map.has(`${defKat}||`)) {
+            map.set(`${defKat}||`, { kategori: defKat, subKategori: null, nominal: 0 });
+          }
+        }
+        let rows = Array.from(map.values()).filter((r) => r.nominal !== 0 || (k.kategoriDefault || []).includes(r.kategori));
+
+        if (!invoiceRowUsed && k.tipe === "PENJUALAN" && penjualanInvoice > 0) {
+          rows.unshift({ kategori: "Invoice (Sistem)", subKategori: null, nominal: penjualanInvoice });
+          invoiceRowUsed = true;
+        }
+
+        const order = k.kategoriDefault || [];
+        rows.sort((a, b) => {
+          const ia = order.indexOf(a.kategori);
+          const ib = order.indexOf(b.kategori);
+          if (ia === -1 && ib === -1) return 0;
+          if (ia === -1) return 1;
+          if (ib === -1) return -1;
+          return ia - ib;
+        });
+
+        const subtotal = rows.reduce((s, r) => s + r.nominal, 0);
+        return { key: k.key, label: k.label, tipe: k.tipe, hasQty: !!k.hasQty, rows, subtotal };
+      });
+
+      if (!invoiceRowUsed && penjualanInvoice > 0) {
+        kelompok.unshift({
+          key: "penjualan-sistem",
+          label: "Penjualan (Sistem)",
+          tipe: "PENJUALAN",
+          hasQty: false,
+          rows: [{ kategori: "Invoice (Sistem)", subKategori: null, nominal: penjualanInvoice }],
+          subtotal: penjualanInvoice,
+        });
+      }
+
+      const totalPenjualan = kelompok.filter((k) => k.tipe === "PENJUALAN").reduce((s, k) => s + k.subtotal, 0);
+      const totalPengeluaran = kelompok.filter((k) => k.tipe === "PENGELUARAN").reduce((s, k) => s + k.subtotal, 0);
+
+      return {
+        divisi,
+        kelompok,
+        totalPenjualan,
+        totalPengeluaran,
+        labaBersih: totalPenjualan - totalPengeluaran,
+      };
+    });
+
+    const grandTotal = {
+      totalPenjualan: hasil.reduce((s, d) => s + d.totalPenjualan, 0),
+      totalPengeluaran: hasil.reduce((s, d) => s + d.totalPengeluaran, 0),
+    };
+    grandTotal.labaBersih = grandTotal.totalPenjualan - grandTotal.totalPengeluaran;
+
+    res.json({ dari, sampai, divisi: hasil, grandTotal });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // Import massal dari Excel (dipakai oleh parser di frontend, lihat
 // frontend/src/utils/excelImport.js). Body: { items: [{ divisi, tipe,
 // kelompok, kategori, subKategori, qty, hargaSatuan, nominal, tanggal,

@@ -344,6 +344,128 @@ function terbilang(n) {
   return f(n);
 }
 
+// ============================================================
+// CETAK REKAP KESELURUHAN -- laporan laba rugi (bisa beberapa divisi
+// sekaligus atau satu divisi saja, sesuai filter di halaman "Rekap
+// Keseluruhan"), dengan kop surat perusahaan seperti dokumen cetak
+// lainnya. Tiap divisi dicetak di halaman baru kalau lebih dari satu.
+// ============================================================
+export function printRekapKeseluruhan(data) {
+  if (!data) return;
+
+  const periode = `${fmtDate(data.dari)} &ndash; ${fmtDate(data.sampai)}`;
+
+  const kelompokTable = (k) => {
+    const adaRincian = k.hasQty || k.rows.some((r) => r.subKategori);
+    const rows = k.rows.length
+      ? k.rows
+          .map(
+            (r, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${esc(r.kategori)}</td>
+          ${adaRincian ? `<td>${esc(r.subKategori || "-")}</td>` : ""}
+          <td class="num">${rupiah(r.nominal)}</td>
+        </tr>`
+          )
+          .join("")
+      : `<tr><td colspan="${adaRincian ? 4 : 3}" class="empty">Belum ada data.</td></tr>`;
+
+    return `
+      <div class="sec">
+        <div class="sec-title">${esc(k.label)} <span class="tag">${k.tipe === "PENJUALAN" ? "Pendapatan" : "Pengeluaran"}</span></div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:32px">No</th>
+              <th>Kategori</th>
+              ${adaRincian ? "<th>Rincian</th>" : ""}
+              <th class="num">Nominal</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr>
+              <td colspan="${adaRincian ? 3 : 2}"><b>Total ${esc(k.label)}</b></td>
+              <td class="num"><b>${rupiah(k.subtotal)}</b></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>`;
+  };
+
+  const divisiSections = data.divisi
+    .map(
+      (d, idx) => `
+    <div class="page" ${idx > 0 ? 'style="page-break-before:always"' : ""}>
+      <div class="head">
+        <div class="company">PT. BINTANG MUARA SEJATI</div>
+        <div class="title">REKAP LAPORAN &mdash; DIVISI ${esc(d.divisi.toUpperCase())}</div>
+        <div class="period">Periode ${periode}</div>
+      </div>
+      ${d.kelompok.map(kelompokTable).join("")}
+      <div class="summary">
+        <div class="srow"><span>Total Penjualan / Pendapatan</span><b>${rupiah(d.totalPenjualan)}</b></div>
+        <div class="srow"><span>Total Pengeluaran</span><b>${rupiah(d.totalPengeluaran)}</b></div>
+        <div class="srow final"><span>Hasil Bersih (Laba / Rugi)</span><b>${rupiah(d.labaBersih)}</b></div>
+      </div>
+    </div>`
+    )
+    .join("");
+
+  const grandTotalBlock =
+    data.divisi.length > 1
+      ? `
+    <div class="page" style="page-break-before:always">
+      <div class="head">
+        <div class="company">PT. BINTANG MUARA SEJATI</div>
+        <div class="title">REKAP KESELURUHAN SEMUA DIVISI</div>
+        <div class="period">Periode ${periode}</div>
+      </div>
+      <table>
+        <thead><tr><th>Divisi</th><th class="num">Pendapatan</th><th class="num">Pengeluaran</th><th class="num">Hasil Bersih</th></tr></thead>
+        <tbody>
+          ${data.divisi
+            .map(
+              (d) => `<tr><td>${esc(d.divisi)}</td><td class="num">${rupiah(d.totalPenjualan)}</td><td class="num">${rupiah(d.totalPengeluaran)}</td><td class="num">${rupiah(d.labaBersih)}</td></tr>`
+            )
+            .join("")}
+        </tbody>
+      </table>
+      <div class="summary">
+        <div class="srow"><span>Total Pendapatan Seluruh Divisi</span><b>${rupiah(data.grandTotal.totalPenjualan)}</b></div>
+        <div class="srow"><span>Total Pengeluaran Seluruh Divisi</span><b>${rupiah(data.grandTotal.totalPengeluaran)}</b></div>
+        <div class="srow final"><span>Hasil Bersih Keseluruhan</span><b>${rupiah(data.grandTotal.labaBersih)}</b></div>
+      </div>
+    </div>`
+      : "";
+
+  openPrint(`
+    <style>
+      @page { size: A4; margin: 14mm; }
+      * { box-sizing: border-box; }
+      body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; }
+      .head { text-align: center; margin-bottom: 14px; }
+      .company { font-weight: 800; font-size: 15px; letter-spacing: 0.02em; }
+      .title { font-weight: 700; margin-top: 2px; }
+      .period { color: #555; font-size: 12px; margin-top: 2px; }
+      .sec { margin-bottom: 12px; }
+      .sec-title { font-weight: 700; margin-bottom: 4px; }
+      .tag { font-weight: 400; font-size: 10px; border: 1px solid #999; border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #999; padding: 3px 6px; font-size: 11px; }
+      th { background: #f0f0f0; text-align: left; }
+      .num { text-align: right; white-space: nowrap; }
+      .empty { text-align: center; color: #777; padding: 8px; }
+      tfoot td { background: #fafafa; }
+      .summary { margin-top: 8px; max-width: 420px; margin-left: auto; }
+      .srow { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #ccc; }
+      .srow.final { font-size: 13px; border-bottom: none; margin-top: 2px; }
+    </style>
+    ${divisiSections}${grandTotalBlock}
+  `);
+}
+
 export function printGrid(w, h) {
   let v = "";
   let g = "";

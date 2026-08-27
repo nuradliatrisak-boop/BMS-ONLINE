@@ -5,10 +5,19 @@ import { toast } from "../services/toast.js";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
+// Pilihan "Jenis Armada" dibakukan (dropdown) supaya penamaan konsisten
+// di seluruh sistem -- terutama Tronton & Cold Diesel, karena nama ini
+// dipakai untuk mengelompokkan kendaraan di halaman Laporan Divisi &
+// Rekap Armada (kalau ditulis beda-beda, mis. "cold diesel" vs "Colt
+// Diesel", kendaraannya tidak akan ketemu di rekap). Tetap bisa ketik
+// manual lewat opsi "Lainnya" untuk jenis alat/kendaraan di luar daftar.
+const JENIS_ARMADA_OPTIONS = ["Tronton", "Cold Diesel", "Excavator", "Lainnya (ketik manual)"];
+
 const list = ref([]);
 const showModal = ref(false);
 const loading = ref(true);
 const editingId = ref(null);
+const jenisCustom = ref(false);
 
 const emptyForm = () => ({
   nopol: "",
@@ -54,11 +63,13 @@ async function load() {
 function openModal() {
   editingId.value = null;
   form.value = emptyForm();
+  jenisCustom.value = false;
   showModal.value = true;
 }
 
 function openEdit(a) {
   editingId.value = a.id;
+  jenisCustom.value = !!a.jenis && !JENIS_ARMADA_OPTIONS.slice(0, -1).includes(a.jenis);
   form.value = {
     nopol: a.nopol,
     jenis: a.jenis,
@@ -70,6 +81,16 @@ function openEdit(a) {
     volume: a.volume ?? "",
   };
   showModal.value = true;
+}
+
+function onJenisSelect(val) {
+  if (val === "Lainnya (ketik manual)") {
+    jenisCustom.value = true;
+    form.value.jenis = "";
+  } else {
+    jenisCustom.value = false;
+    form.value.jenis = val;
+  }
 }
 
 function closeModal() {
@@ -252,9 +273,18 @@ onMounted(load);
 
         <div class="field">
           <label>Jenis Armada</label>
+          <select
+            :value="jenisCustom ? 'Lainnya (ketik manual)' : form.jenis"
+            @change="onJenisSelect($event.target.value)"
+          >
+            <option value="" disabled>Pilih jenis</option>
+            <option v-for="j in JENIS_ARMADA_OPTIONS" :key="j" :value="j">{{ j }}</option>
+          </select>
           <input
+            v-if="jenisCustom"
             v-model="form.jenis"
-            placeholder="Truk, Dump Truck, Excavator, dll"
+            placeholder="Ketik jenis armada/alat, mis. Dump Truck"
+            style="margin-top: 6px"
           />
         </div>
       </div>

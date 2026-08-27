@@ -17,6 +17,11 @@ const laporan = ref(null);
 const txList = ref([]);
 const loading = ref(false);
 const showModal = ref(false);
+const armadaMaster = ref([]); // data master kendaraan (menu "Armada"), untuk dropdown nopol
+
+const CUSTOM_OPT = "__custom__";
+const kategoriCustom = ref(false);
+const nopolCustom = ref(false);
 
 const emptyForm = () => ({
   kelompok: "",
@@ -55,6 +60,23 @@ const selectedKelompok = computed(
   () => kelompokOptions.value.find((k) => k.key === form.value.kelompok) || null
 );
 
+// Untuk kelompok yang rinciannya per-kendaraan (Armada: Pendapatan &
+// Sparepart), dropdown nopol difilter sesuai kategori yang dipilih
+// ("...Tronton" -> kendaraan jenis Tronton, "...Cold Diesel" -> jenis
+// Cold Diesel/Colt Diesel), diambil dari data master menu "Armada".
+const kendaraanOptions = computed(() => {
+  if (!selectedKelompok.value?.subKategoriKendaraan) return [];
+  const kat = (form.value.kategori || "").toLowerCase();
+  let keyword = null;
+  if (kat.includes("tronton")) keyword = "tronton";
+  else if (kat.includes("diesel")) keyword = "diesel";
+  return armadaMaster.value.filter((a) => {
+    if (a.divisi !== "Armada") return false;
+    if (!keyword) return true;
+    return (a.jenis || "").toLowerCase().includes(keyword);
+  });
+});
+
 const nominalOtomatis = computed(() => {
   const q = Number(form.value.qty);
   const h = Number(form.value.hargaSatuan);
@@ -69,6 +91,11 @@ async function loadConfig() {
   divisiList.value = c.divisiList;
   config.value = c.config;
   if (!divisi.value) divisi.value = divisiList.value[0];
+  try {
+    armadaMaster.value = await api.get("/armada");
+  } catch (e) {
+    armadaMaster.value = [];
+  }
 }
 
 async function load() {
@@ -85,9 +112,45 @@ async function load() {
 
 function openModal() {
   form.value = emptyForm();
+  kategoriCustom.value = false;
   if (kelompokOptions.value.length) form.value.kelompok = kelompokOptions.value[0].key;
   showModal.value = true;
 }
+
+// Kategori: dropdown dari kategoriDefault, plus opsi "+ Kategori baru
+// (ketik manual)" kalau kelompoknya allowCustom -- supaya bisa pilih dari
+// daftar ATAU isi manual sesuai kebutuhan.
+function onKategoriSelect(val) {
+  if (val === CUSTOM_OPT) {
+    kategoriCustom.value = true;
+    form.value.kategori = "";
+  } else {
+    kategoriCustom.value = false;
+    form.value.kategori = val;
+  }
+  form.value.subKategori = "";
+}
+
+function onNopolSelect(val) {
+  if (val === "__manual__") {
+    nopolCustom.value = true;
+    form.value.subKategori = "";
+  } else {
+    nopolCustom.value = false;
+    form.value.subKategori = val;
+  }
+}
+
+watch(() => form.value.kelompok, () => {
+  kategoriCustom.value = false;
+  nopolCustom.value = false;
+  form.value.kategori = "";
+  form.value.subKategori = "";
+});
+watch(() => form.value.kategori, () => {
+  nopolCustom.value = false;
+  if (selectedKelompok.value?.subKategoriKendaraan) form.value.subKategori = "";
+});
 
 async function submit() {
   if (!form.value.kelompok || !form.value.kategori) {
@@ -313,13 +376,49 @@ onMounted(async () => {
 
       <div class="field">
         <label>Kategori</label>
-        <input v-model="form.kategori" list="kategori-list" placeholder="Pilih atau ketik kategori baru" />
-        <datalist id="kategori-list">
-          <option v-for="kt in selectedKelompok?.kategoriDefault || []" :key="kt" :value="kt" />
-        </datalist>
+        <select
+          :value="kategoriCustom ? CUSTOM_OPT : form.kategori"
+          @change="onKategoriSelect($event.target.value)"
+        >
+          <option value="" disabled>Pilih kategori</option>
+          <option v-for="kt in selectedKelompok?.kategoriDefault || []" :key="kt" :value="kt">{{ kt }}</option>
+          <option v-if="selectedKelompok?.allowCustom" :value="CUSTOM_OPT">+ Kategori baru (ketik manual)</option>
+        </select>
+        <input
+          v-if="kategoriCustom"
+          v-model="form.kategori"
+          placeholder="Ketik nama kategori baru"
+          style="margin-top: 6px"
+        />
       </div>
 
-      <div class="field" v-if="selectedKelompok?.subKategoriDefault?.length">
+      <!-- Rincian per kendaraan (Armada: Pendapatan & Sparepart) -->
+      <div class="field" v-if="selectedKelompok?.subKategoriKendaraan">
+        <label>Rincian &mdash; Nomor Polisi</label>
+        <select
+          :value="nopolCustom ? '__manual__' : form.subKategori"
+          @change="onNopolSelect($event.target.value)"
+        >
+          <option value="" disabled>Pilih kendaraan</option>
+          <option v-for="a in kendaraanOptions" :key="a.id" :value="a.nopol">
+            {{ a.nopol }}<span v-if="a.sopir"> &mdash; {{ a.sopir }}</span>
+          </option>
+          <option value="__manual__">+ Nopol lain (belum terdaftar, ketik manual)</option>
+        </select>
+        <input
+          v-if="nopolCustom"
+          v-model="form.subKategori"
+          placeholder="Ketik nomor polisi, mis. B 1234 XYZ"
+          style="margin-top: 6px"
+        />
+        <div class="desc" style="margin-top: 4px">
+          Kendaraan diambil dari menu Armada. Belum ada di daftar? Tambahkan dulu di menu
+          <b>Armada</b>, atau ketik manual dulu di sini.
+        </div>
+      </div>
+
+      <!-- Rincian bebas biasa (mis. Alat Berat: Uang Makan/Sparepart/Solar) -->
+      <div class="field" v-else-if="selectedKelompok?.subKategoriDefault?.length">
         <label>Rincian (opsional)</label>
         <input v-model="form.subKategori" list="subkategori-list" placeholder="Mis. Uang Makan / Sparepart / Solar" />
         <datalist id="subkategori-list">

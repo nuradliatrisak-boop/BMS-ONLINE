@@ -26,6 +26,7 @@ export const DIVISI_CONFIG = {
         label: "Laporan Penjualan",
         tipe: "PENJUALAN",
         kategoriDefault: ["Invoice Harian", "Penjualan Cash"],
+        allowCustom: true,
       },
       {
         key: "pembelian",
@@ -50,6 +51,7 @@ export const DIVISI_CONFIG = {
         label: "Sewa Armada & Excavator",
         tipe: "PENGELUARAN",
         kategoriDefault: ["Tronton", "Cold Diesel", "Excavator"],
+        allowCustom: true,
       },
       {
         key: "harian",
@@ -173,3 +175,30 @@ export const DIVISI_CONFIG = {
     ],
   },
 };
+
+// Tambahan: kelompok "Lainnya" (Pendapatan Lainnya & Pengeluaran Lainnya) di
+// SETIAP divisi yang strukturnya sudah baku mengikuti Excel (Supplier, Armada,
+// Alat Berat) -- supaya kalau ada transaksi yang beneran di luar semua
+// kelompok/kategori yang sudah ada, tetap bisa dicatat tanpa maksa masuk ke
+// kelompok yang gak pas. Kategori di kelompok ini bebas diketik manual.
+// Kontraktor & Kapal tidak perlu ditambah karena strukturnya memang sudah
+// generik/bebas dari awal (kategori kosong + boleh isi manual).
+const DIVISI_DENGAN_KELOMPOK_LAINNYA = ["Supplier", "Armada", "Alat Berat"];
+for (const d of DIVISI_DENGAN_KELOMPOK_LAINNYA) {
+  DIVISI_CONFIG[d].kelompok.push(
+    {
+      key: "lainnya-pendapatan",
+      label: "Pendapatan Lainnya",
+      tipe: "PENJUALAN",
+      kategoriDefault: [],
+      allowCustom: true,
+    },
+    {
+      key: "lainnya-pengeluaran",
+      label: "Pengeluaran Lainnya",
+      tipe: "PENGELUARAN",
+      kategoriDefault: [],
+      allowCustom: true,
+    }
+  );
+}

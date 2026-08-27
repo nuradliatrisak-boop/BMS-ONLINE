@@ -80,7 +80,7 @@ onMounted(async () => {
 
   <div class="content">
     <div class="card" style="margin-bottom: 20px">
-      <div class="row" style="align-items: flex-end; flex-wrap: wrap">
+      <div class="row filter-row">
         <div class="field">
           <label>Dari Tanggal</label>
           <input v-model="dari" type="date" />
@@ -96,12 +96,10 @@ onMounted(async () => {
             <option v-for="d in divisiList" :key="d" :value="d">{{ d }}</option>
           </select>
         </div>
-        <div class="field" style="flex: 0">
-          <button class="btn btn-primary" :disabled="loading" @click="load">
-            {{ loading ? "Memuat..." : "Tampilkan" }}
-          </button>
-        </div>
       </div>
+      <button class="btn btn-primary" style="margin-top: 4px" :disabled="loading" @click="load">
+        {{ loading ? "Memuat..." : "Tampilkan" }}
+      </button>
       <div class="desc" style="margin-top: 8px">
         Pilih "Semua Divisi" untuk rekap keseluruhan perusahaan (tiap divisi tampil terpisah, ditutup
         total gabungan semua divisi), atau pilih satu divisi untuk rekap divisi itu saja. Tombol Cetak
@@ -181,6 +179,12 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.filter-row {
+  flex-wrap: wrap;
+}
+.filter-row .field {
+  min-width: 160px;
+}
 .lr-doc {
   max-width: 820px;
   margin-bottom: 32px;

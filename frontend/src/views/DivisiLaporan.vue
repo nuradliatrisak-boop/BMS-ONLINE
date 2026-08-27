@@ -142,7 +142,9 @@ function onNopolSelect(val) {
 }
 
 watch(() => form.value.kelompok, () => {
-  kategoriCustom.value = false;
+  // Kalau kelompok ini tidak punya daftar kategori bawaan (mis. "Lainnya"),
+  // langsung buka mode ketik manual biar user tidak lihat dropdown kosong.
+  kategoriCustom.value = !(selectedKelompok.value?.kategoriDefault || []).length && !!selectedKelompok.value?.allowCustom;
   nopolCustom.value = false;
   form.value.kategori = "";
   form.value.subKategori = "";

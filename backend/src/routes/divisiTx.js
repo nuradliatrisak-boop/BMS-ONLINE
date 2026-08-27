@@ -1,8 +1,15 @@
 import { Router } from "express";
 import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
+import { DIVISI_LIST, DIVISI_CONFIG } from "../config/divisiConfig.js";
 
 const router = Router();
+
+// Konfigurasi kelompok/kategori per divisi (dipakai frontend untuk membangun
+// form "Catat Transaksi" dan urutan section pada Laporan Divisi).
+router.get("/config", (req, res) => {
+  res.json({ divisiList: DIVISI_LIST, config: DIVISI_CONFIG });
+});
 
 router.get("/", async (req, res, next) => {
   try {
@@ -23,16 +30,46 @@ router.get("/", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { divisi, tipe, keterangan, nominal, tanggal } = req.body;
-    if (!divisi || !tipe || !keterangan || !nominal || !tanggal) {
-      return res.status(400).json({ error: "Semua field wajib diisi" });
+    const {
+      divisi,
+      tipe,
+      kelompok,
+      kategori,
+      subKategori,
+      keterangan,
+      qty,
+      hargaSatuan,
+      nominal,
+      tanggal,
+    } = req.body;
+
+    if (!divisi || !tipe || !kelompok || !kategori || !tanggal) {
+      return res
+        .status(400)
+        .json({ error: "Divisi, tipe, kelompok, kategori, dan tanggal wajib diisi" });
     }
+
+    const pakaiQty = qty !== undefined && qty !== null && qty !== "" &&
+      hargaSatuan !== undefined && hargaSatuan !== null && hargaSatuan !== "";
+    const nominalFinal = pakaiQty ? Number(qty) * Number(hargaSatuan) : Number(nominal);
+
+    if (!nominalFinal || nominalFinal <= 0) {
+      return res
+        .status(400)
+        .json({ error: "Nominal (atau Qty x Harga Satuan) wajib diisi dan lebih dari 0" });
+    }
+
     const tx = await prisma.divisiTx.create({
       data: {
         divisi,
         tipe: tipe.toUpperCase(),
-        keterangan,
-        nominal: Number(nominal),
+        kelompok,
+        kategori,
+        subKategori: subKategori || null,
+        keterangan: keterangan || null,
+        qty: pakaiQty ? Number(qty) : null,
+        hargaSatuan: pakaiQty ? Number(hargaSatuan) : null,
+        nominal: nominalFinal,
         tanggal: new Date(tanggal),
       },
     });
@@ -51,10 +88,15 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
-// Ringkasan laba rugi per divisi per bulan (menggabungkan invoice + transaksi manual)
+// Laporan Laba Rugi per divisi per bulan, dikelompokkan persis seperti
+// Excel: tiap "kelompok" (section) berisi baris-baris "kategori" yang
+// dijumlah dari semua transaksi bulan itu. Penjualan dari Invoice sistem
+// otomatis dimasukkan sebagai baris tambahan di kelompok Penjualan/Pendapatan
+// pertama, supaya tidak perlu dicatat ulang manual.
 router.get("/laporan/:divisi/:bulan", async (req, res, next) => {
   try {
     const { divisi, bulan } = req.params; // bulan = "YYYY-MM"
+    const config = DIVISI_CONFIG[divisi] || { kelompok: [] };
 
     const invoices = await prisma.invoice.findMany({
       where: { divisi },
@@ -64,23 +106,155 @@ router.get("/laporan/:divisi/:bulan", async (req, res, next) => {
       .filter((i) => i.tanggal.toISOString().slice(0, 7) === bulan)
       .reduce((s, i) => s + i.items.reduce((a, it) => a + it.qty * it.hargaSatuan, 0), 0);
 
-    const tx = await prisma.divisiTx.findMany({ where: { divisi } });
-    const txBulanIni = tx.filter((t) => t.tanggal.toISOString().slice(0, 7) === bulan);
-    const penjualanManual = txBulanIni
-      .filter((t) => t.tipe === "PENJUALAN")
-      .reduce((s, t) => s + t.nominal, 0);
-    const pengeluaran = txBulanIni
-      .filter((t) => t.tipe === "PENGELUARAN")
-      .reduce((s, t) => s + t.nominal, 0);
+    const txAll = await prisma.divisiTx.findMany({ where: { divisi } });
+    const tx = txAll.filter((t) => t.tanggal.toISOString().slice(0, 7) === bulan);
 
-    const totalPenjualan = penjualanInvoice + penjualanManual;
+    let invoiceRowUsed = false;
+
+    const kelompokResult = config.kelompok.map((k) => {
+      const items = tx.filter((t) => t.kelompok === k.key);
+      const map = new Map();
+      for (const it of items) {
+        const rowKey = `${it.kategori}||${it.subKategori || ""}`;
+        if (!map.has(rowKey)) {
+          map.set(rowKey, { kategori: it.kategori, subKategori: it.subKategori || null, nominal: 0 });
+        }
+        map.get(rowKey).nominal += it.nominal;
+      }
+
+      // Baris default tetap tampil walau nominal masih 0, biar bentuknya
+      // konsisten seperti template Excel.
+      for (const defKat of k.kategoriDefault || []) {
+        if (!map.has(`${defKat}||`)) {
+          map.set(`${defKat}||`, { kategori: defKat, subKategori: null, nominal: 0 });
+        }
+      }
+
+      let rows = Array.from(map.values());
+
+      // Selipkan pendapatan dari Invoice sistem ke kelompok Penjualan/Pendapatan pertama.
+      if (!invoiceRowUsed && k.tipe === "PENJUALAN" && penjualanInvoice > 0) {
+        rows.unshift({ kategori: "Invoice (Sistem)", subKategori: null, nominal: penjualanInvoice });
+        invoiceRowUsed = true;
+      }
+
+      const order = k.kategoriDefault || [];
+      rows.sort((a, b) => {
+        const ia = order.indexOf(a.kategori);
+        const ib = order.indexOf(b.kategori);
+        if (ia === -1 && ib === -1) return 0;
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+      });
+
+      const subtotal = rows.reduce((s, r) => s + r.nominal, 0);
+      return { key: k.key, label: k.label, tipe: k.tipe, hasQty: !!k.hasQty, rows, subtotal };
+    });
+
+    // Kalau tidak ada satupun kelompok Penjualan (mis. divisi belum dikonfigurasi)
+    // tapi ada pendapatan dari invoice, tetap tampilkan biar tidak hilang.
+    if (!invoiceRowUsed && penjualanInvoice > 0) {
+      kelompokResult.unshift({
+        key: "penjualan-sistem",
+        label: "Penjualan (Sistem)",
+        tipe: "PENJUALAN",
+        hasQty: false,
+        rows: [{ kategori: "Invoice (Sistem)", subKategori: null, nominal: penjualanInvoice }],
+        subtotal: penjualanInvoice,
+      });
+    }
+
+    const totalPenjualan = kelompokResult
+      .filter((k) => k.tipe === "PENJUALAN")
+      .reduce((s, k) => s + k.subtotal, 0);
+    const totalPengeluaran = kelompokResult
+      .filter((k) => k.tipe === "PENGELUARAN")
+      .reduce((s, k) => s + k.subtotal, 0);
 
     res.json({
       divisi,
       bulan,
-      penjualan: totalPenjualan,
-      pengeluaran,
-      laba: totalPenjualan - pengeluaran,
+      kelompok: kelompokResult,
+      totalPenjualan,
+      totalPengeluaran,
+      labaBersih: totalPenjualan - totalPengeluaran,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Import massal dari Excel (dipakai oleh parser di frontend, lihat
+// frontend/src/utils/excelImport.js). Body: { items: [{ divisi, tipe,
+// kelompok, kategori, subKategori, qty, hargaSatuan, nominal, tanggal,
+// sumber }, ...] }
+//
+// Duplikat (kombinasi divisi+kelompok+kategori+subKategori+tanggal+nominal
+// yang sama persis) dilewati otomatis, supaya file yang sama aman
+// diimport ulang tanpa membuat data dobel.
+router.post("/import", async (req, res, next) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items) || !items.length) {
+      return res.status(400).json({ error: "Tidak ada data untuk diimport" });
+    }
+
+    const divisiScope = req.user.role === "ADMIN" ? null : req.user.divisi;
+    const divisiDiluarAkses = new Set();
+
+    let dilewati = 0;
+    let dibuat = 0;
+    const dibuatList = [];
+
+    for (const raw of items) {
+      const divisi = String(raw.divisi || "").trim();
+      const kelompok = String(raw.kelompok || "").trim();
+      const kategori = String(raw.kategori || "").trim();
+      const subKategori = raw.subKategori ? String(raw.subKategori).trim() : null;
+      const tipe = String(raw.tipe || "").toUpperCase();
+      const nominal = Number(raw.nominal);
+      const tanggal = raw.tanggal ? new Date(raw.tanggal) : null;
+
+      if (!divisi || !kelompok || !kategori || !tipe || !nominal || !tanggal || isNaN(tanggal)) {
+        continue; // baris tidak lengkap/valid, lewati diam-diam
+      }
+      if (divisiScope && divisi !== divisiScope) {
+        divisiDiluarAkses.add(divisi);
+        continue;
+      }
+
+      const existing = await prisma.divisiTx.findFirst({
+        where: { divisi, kelompok, kategori, subKategori, tanggal, nominal },
+      });
+      if (existing) {
+        dilewati++;
+        continue;
+      }
+
+      const tx = await prisma.divisiTx.create({
+        data: {
+          divisi,
+          tipe,
+          kelompok,
+          kategori,
+          subKategori,
+          qty: raw.qty != null && raw.qty !== "" ? Number(raw.qty) : null,
+          hargaSatuan: raw.hargaSatuan != null && raw.hargaSatuan !== "" ? Number(raw.hargaSatuan) : null,
+          nominal,
+          tanggal,
+          sumber: raw.sumber ? String(raw.sumber).slice(0, 255) : null,
+        },
+      });
+      dibuat++;
+      dibuatList.push(tx);
+    }
+
+    res.status(201).json({
+      dibuat,
+      dilewati,
+      divisiDiluarAkses: [...divisiDiluarAkses],
+      items: dibuatList,
     });
   } catch (e) {
     next(e);

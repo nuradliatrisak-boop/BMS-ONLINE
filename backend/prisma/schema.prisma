@@ -136,6 +136,12 @@ model Armada {
   jenis     String
   sopir     String?
   divisi    String
+  // Index P-L-T & Volume (sheet "INDEK MOBIL" di Excel) -- ukuran bak kendaraan,
+  // dipakai sebagai acuan/patokan volume muatan (m3) per kendaraan.
+  panjang   Float?   // meter
+  lebar     Float?   // meter
+  tinggi    Float?   // meter
+  volume    Float?   // m3, biasanya panjang x lebar x tinggi tapi bisa ditimpa manual
   createdAt DateTime @default(now())
 
   suratJalan SuratJalan[]
@@ -219,13 +225,26 @@ model SuratJalan {
 }
 
 model DivisiTx {
-  id         String   @id @default(cuid())
-  divisi     String
-  tipe       TipeTransaksi
-  keterangan String
-  nominal    Float
-  tanggal    DateTime
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  divisi      String
+  tipe        TipeTransaksi
+  // "kelompok" = section pada Laporan Laba Rugi (mis. "Sewa Armada & Excavator",
+  // "Pengeluaran Bulanan"), "kategori" = baris/nama item di dalamnya (mis. "Tronton",
+  // "Gaji Staff"). Kombinasi kelompok+kategori dijumlah di halaman Laporan Divisi
+  // supaya bentuknya persis seperti laporan Excel per divisi.
+  kelompok    String   @default("")
+  kategori    String   @default("")
+  subKategori String?  // opsional, untuk rincian per-kategori (mis. Uang Makan / Sparepart / Solar per unit alat berat)
+  keterangan  String?  // catatan tambahan bebas (opsional)
+  qty         Float?   // opsional: jumlah (hari, liter, dst) kalau nominal dihitung qty x hargaSatuan
+  hargaSatuan Float?   // opsional: harga satuan, dipakai bersama qty
+  nominal     Float
+  tanggal     DateTime
+  sumber      String?  // opsional: asal data, mis. "Excel Import - SUPPLIER (Pengeluaran Juli 2026.xlsx)".
+                        // null/kosong = input manual lewat form "Catat Transaksi".
+  createdAt   DateTime @default(now())
+
+  @@index([divisi, kelompok, kategori])
 }
 
 model PrintCalib {

@@ -347,11 +347,20 @@ function terbilang(n) {
 // ============================================================
 // CETAK REKAP KESELURUHAN -- laporan laba rugi (bisa beberapa divisi
 // sekaligus atau satu divisi saja, sesuai filter di halaman "Rekap
-// Keseluruhan"), dengan kop surat perusahaan seperti dokumen cetak
-// lainnya. Tiap divisi dicetak di halaman baru kalau lebih dari satu.
+// Keseluruhan"), dengan kop surat asli PT. Bintang Muara Sejati di
+// atas tiap halaman (gambar /letterhead/kop-surat.jpg) dan logo BM
+// sebagai watermark transparan di latar belakang kertas
+// (/letterhead/bm-logo-transparent.png). Tiap divisi dicetak di
+// halaman baru kalau lebih dari satu. Path gambar dibuat absolut
+// (pakai location.origin) karena ini dicetak dari jendela popup baru
+// yang document-nya ditulis manual, bukan dari halaman aplikasi.
 // ============================================================
 export function printRekapKeseluruhan(data) {
   if (!data) return;
+
+  const origin = window.location.origin;
+  const kopSuratUrl = `${origin}/letterhead/kop-surat.jpeg`;
+  const watermarkUrl = `${origin}/letterhead/bm-logo-transparent.png`;
 
   const periode = `${fmtDate(data.dari)} &ndash; ${fmtDate(data.sampai)}`;
 
@@ -398,8 +407,9 @@ export function printRekapKeseluruhan(data) {
     .map(
       (d, idx) => `
     <div class="page" ${idx > 0 ? 'style="page-break-before:always"' : ""}>
+      <img class="watermark" src="${watermarkUrl}" alt="" />
       <div class="head">
-        <div class="company">PT. BINTANG MUARA SEJATI</div>
+        <img class="kop" src="${kopSuratUrl}" alt="PT. Bintang Muara Sejati" />
         <div class="title">REKAP LAPORAN &mdash; DIVISI ${esc(d.divisi.toUpperCase())}</div>
         <div class="period">Periode ${periode}</div>
       </div>
@@ -417,8 +427,9 @@ export function printRekapKeseluruhan(data) {
     data.divisi.length > 1
       ? `
     <div class="page" style="page-break-before:always">
+      <img class="watermark" src="${watermarkUrl}" alt="" />
       <div class="head">
-        <div class="company">PT. BINTANG MUARA SEJATI</div>
+        <img class="kop" src="${kopSuratUrl}" alt="PT. Bintang Muara Sejati" />
         <div class="title">REKAP KESELURUHAN SEMUA DIVISI</div>
         <div class="period">Periode ${periode}</div>
       </div>
@@ -445,8 +456,13 @@ export function printRekapKeseluruhan(data) {
       @page { size: A4; margin: 14mm; }
       * { box-sizing: border-box; }
       body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; }
+      .page { position: relative; }
+      .watermark {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 65%; max-width: 400px; opacity: 0.07; z-index: -1; pointer-events: none;
+      }
       .head { text-align: center; margin-bottom: 14px; }
-      .company { font-weight: 800; font-size: 15px; letter-spacing: 0.02em; }
+      .kop { width: 100%; max-height: 90px; object-fit: contain; margin-bottom: 6px; }
       .title { font-weight: 700; margin-top: 2px; }
       .period { color: #555; font-size: 12px; margin-top: 2px; }
       .sec { margin-bottom: 12px; }

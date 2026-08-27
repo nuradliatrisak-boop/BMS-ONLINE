@@ -3,6 +3,8 @@ import { ref, computed, onMounted, watch } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { printRekapKeseluruhan } from "../services/print.js";
+import { exportRekapKeseluruhanExcel } from "../utils/excelExport.js";
+import { exportRekapKeseluruhanPdf } from "../utils/pdfExport.js";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -59,6 +61,24 @@ function cetak() {
   printRekapKeseluruhan(data.value);
 }
 
+function exportExcel() {
+  if (!data.value) return toast("Tampilkan rekapnya dulu sebelum diexport");
+  exportRekapKeseluruhanExcel(data.value);
+}
+
+const exportingPdf = ref(false);
+async function exportPdf() {
+  if (!data.value) return toast("Tampilkan rekapnya dulu sebelum diexport");
+  exportingPdf.value = true;
+  try {
+    await exportRekapKeseluruhanPdf(data.value);
+  } catch (e) {
+    toast("Gagal membuat PDF: " + (e?.message || String(e)));
+  } finally {
+    exportingPdf.value = false;
+  }
+}
+
 function adaRincian(k) {
   return k.hasQty || k.rows.some((r) => r.subKategori);
 }
@@ -75,7 +95,13 @@ onMounted(async () => {
       <h1>Rekap Keseluruhan</h1>
       <div class="desc">Rekap laba rugi semua divisi, bebas rentang tanggal &amp; bisa dicetak</div>
     </div>
-    <button class="btn btn-primary" :disabled="!data || loading" @click="cetak">Cetak</button>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap">
+      <button class="btn btn-ghost" :disabled="!data || loading" @click="exportExcel">⬇ Export Excel</button>
+      <button class="btn btn-ghost" :disabled="!data || loading || exportingPdf" @click="exportPdf">
+        {{ exportingPdf ? "Membuat PDF..." : "⬇ Export PDF" }}
+      </button>
+      <button class="btn btn-primary" :disabled="!data || loading" @click="cetak">🖨 Cetak</button>
+    </div>
   </div>
 
   <div class="content">

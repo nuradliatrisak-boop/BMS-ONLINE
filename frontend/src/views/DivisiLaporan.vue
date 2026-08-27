@@ -3,6 +3,8 @@ import { ref, computed, onMounted, watch } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { parseDivisiExcel } from "../utils/excelImport.js";
+import { exportLaporanDivisiExcel } from "../utils/excelExport.js";
+import { exportLaporanDivisiPdf } from "../utils/pdfExport.js";
 
 const BULAN_NAMA = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -193,6 +195,24 @@ function kelompokLabel(key) {
   return kelompokOptions.value.find((k) => k.key === key)?.label || key || "-";
 }
 
+function exportExcel() {
+  if (!laporan.value) return toast("Tampilkan laporannya dulu sebelum diexport");
+  exportLaporanDivisiExcel({ divisi: divisi.value, bulanLabel: bulanLabel.value, laporan: laporan.value });
+}
+
+const exportingPdf = ref(false);
+async function exportPdf() {
+  if (!laporan.value) return toast("Tampilkan laporannya dulu sebelum diexport");
+  exportingPdf.value = true;
+  try {
+    await exportLaporanDivisiPdf({ divisi: divisi.value, bulanLabel: bulanLabel.value, laporan: laporan.value });
+  } catch (e) {
+    toast("Gagal membuat PDF: " + (e?.message || String(e)));
+  } finally {
+    exportingPdf.value = false;
+  }
+}
+
 // --- Import dari Excel ---
 function openImportModal() {
   importFile.value = null;
@@ -256,8 +276,12 @@ onMounted(async () => {
       <h1>Laporan Divisi</h1>
       <div class="desc">Laba rugi bulanan per divisi</div>
     </div>
-    <div style="display: flex; gap: 8px">
+    <div style="display: flex; gap: 8px; flex-wrap: wrap">
       <button class="btn btn-ghost" @click="openImportModal">Import dari Excel</button>
+      <button class="btn btn-ghost" :disabled="!laporan" @click="exportExcel">⬇ Export Excel</button>
+      <button class="btn btn-ghost" :disabled="!laporan || exportingPdf" @click="exportPdf">
+        {{ exportingPdf ? "Membuat PDF..." : "⬇ Export PDF" }}
+      </button>
       <button class="btn btn-primary" @click="openModal">+ Catat Transaksi</button>
     </div>
   </div>

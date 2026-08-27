@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 
@@ -8,15 +8,36 @@ const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 const list = ref([]);
 const showModal = ref(false);
 const loading = ref(true);
+const editingId = ref(null);
 
 const emptyForm = () => ({
   nopol: "",
   jenis: "",
   sopir: "",
   divisi: DIVISI[0],
+  panjang: "",
+  lebar: "",
+  tinggi: "",
+  volume: "",
 });
 
 const form = ref(emptyForm());
+
+// Volume otomatis dihitung dari Index P-L-T (mengikuti sheet "INDEK MOBIL"),
+// tapi tetap bisa ditimpa manual kalau angkanya beda di lapangan.
+const volumeOtomatis = computed(() => {
+  const p = Number(form.value.panjang);
+  const l = Number(form.value.lebar);
+  const t = Number(form.value.tinggi);
+  if (!p || !l || !t) return null;
+  return Math.round(p * l * t * 100) / 100;
+});
+
+function pakaiVolumeOtomatis() {
+  if (volumeOtomatis.value !== null) {
+    form.value.volume = String(volumeOtomatis.value);
+  }
+}
 
 async function load() {
   loading.value = true;
@@ -31,7 +52,23 @@ async function load() {
 }
 
 function openModal() {
+  editingId.value = null;
   form.value = emptyForm();
+  showModal.value = true;
+}
+
+function openEdit(a) {
+  editingId.value = a.id;
+  form.value = {
+    nopol: a.nopol,
+    jenis: a.jenis,
+    sopir: a.sopir || "",
+    divisi: a.divisi,
+    panjang: a.panjang ?? "",
+    lebar: a.lebar ?? "",
+    tinggi: a.tinggi ?? "",
+    volume: a.volume ?? "",
+  };
   showModal.value = true;
 }
 
@@ -45,14 +82,19 @@ async function submit() {
   }
 
   try {
-    await api.post("/armada", form.value);
+    if (editingId.value) {
+      await api.put(`/armada/${editingId.value}`, form.value);
+      toast("Armada berhasil diperbarui");
+    } else {
+      await api.post("/armada", form.value);
+      toast("Armada berhasil ditambahkan");
+    }
 
-    toast("Armada berhasil ditambahkan");
     showModal.value = false;
 
     await load();
   } catch (e) {
-    toast(e.message || "Gagal menambahkan armada");
+    toast(e.message || "Gagal menyimpan armada");
   }
 }
 
@@ -67,6 +109,11 @@ async function remove(id) {
   } catch (e) {
     toast(e.message || "Gagal menghapus armada");
   }
+}
+
+function fmtUkuran(a) {
+  if (!a.panjang && !a.lebar && !a.tinggi) return "-";
+  return `${a.panjang ?? "-"} x ${a.lebar ?? "-"} x ${a.tinggi ?? "-"} m`;
 }
 
 onMounted(load);
@@ -110,6 +157,11 @@ onMounted(load);
         <span class="tag">{{ list.length }} Armada</span>
       </div>
 
+      <div class="msub" style="margin-bottom:10px;">
+        Index P-L-T &amp; Volume dipakai sebagai acuan kapasitas muatan (m³) per kendaraan,
+        sesuai master data "Indek Mobil".
+      </div>
+
       <table>
         <thead>
           <tr>
@@ -117,6 +169,8 @@ onMounted(load);
             <th>Jenis Armada</th>
             <th>Sopir</th>
             <th>Divisi</th>
+            <th>Index P-L-T</th>
+            <th>Volume (m³)</th>
             <th></th>
           </tr>
         </thead>
@@ -139,7 +193,22 @@ onMounted(load);
               {{ a.divisi }}
             </td>
 
-            <td style="text-align:right;">
+            <td class="mono">
+              {{ fmtUkuran(a) }}
+            </td>
+
+            <td class="mono">
+              {{ a.volume ?? "-" }}
+            </td>
+
+            <td style="text-align:right; white-space:nowrap;">
+              <button
+                class="btn btn-sm btn-ghost"
+                @click="openEdit(a)"
+              >
+                Edit
+              </button>
+
               <button
                 class="btn btn-sm btn-danger"
                 @click="remove(a.id)"
@@ -166,10 +235,10 @@ onMounted(load);
         ×
       </button>
 
-      <h2>Tambah Armada</h2>
+      <h2>{{ editingId ? "Edit Armada" : "Tambah Armada" }}</h2>
 
       <div class="msub">
-        Isi data kendaraan atau alat operasional baru
+        Isi data kendaraan atau alat operasional
       </div>
 
       <div class="row">
@@ -211,6 +280,68 @@ onMounted(load);
               {{ d }}
             </option>
           </select>
+        </div>
+      </div>
+
+      <div class="msub" style="margin-top:10px;">
+        Index P-L-T (ukuran bak, meter) &amp; Volume — opsional
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Panjang (m)</label>
+          <input
+            v-model="form.panjang"
+            type="number"
+            step="0.01"
+            placeholder="Panjang"
+          />
+        </div>
+
+        <div class="field">
+          <label>Lebar (m)</label>
+          <input
+            v-model="form.lebar"
+            type="number"
+            step="0.01"
+            placeholder="Lebar"
+          />
+        </div>
+
+        <div class="field">
+          <label>Tinggi (m)</label>
+          <input
+            v-model="form.tinggi"
+            type="number"
+            step="0.01"
+            placeholder="Tinggi"
+          />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Volume (m³)</label>
+          <input
+            v-model="form.volume"
+            type="number"
+            step="0.01"
+            placeholder="Volume kapasitas"
+          />
+        </div>
+
+        <div
+          class="field"
+          style="justify-content:flex-end; display:flex; flex-direction:column;"
+        >
+          <button
+            v-if="volumeOtomatis !== null"
+            type="button"
+            class="btn btn-ghost btn-sm"
+            @click="pakaiVolumeOtomatis"
+          >
+            Pakai hasil P×L×T ({{ volumeOtomatis }} m³)
+          </button>
         </div>
       </div>
 

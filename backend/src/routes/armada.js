@@ -1,6 +1,5 @@
 import { Router } from "express";
 import prisma from "../prismaClient.js";
-import { scopeDivisi } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -29,31 +28,39 @@ router.get("/", async (req, res, next) => {
 router.get("/rekap/:bulan", async (req, res, next) => {
   try {
     const { bulan } = req.params; // "YYYY-MM"
-    const where = scopeDivisi(req);
+    // Rekap Armada sengaja TIDAK dibatasi per-divisi login: halaman ini
+    // memang untuk melihat gambaran lintas-divisi (kendaraan "Armada" yang
+    // disewa "Supplier" dst harus tetap kelihatan sinkron apa pun divisi
+    // akun yang sedang login) -- beda dengan Laporan Divisi (kerja harian
+    // per divisi) yang memang sengaja dibatasi.
 
     const armadaList = await prisma.armada.findMany({
-      where,
       orderBy: { nopol: "asc" },
     });
 
     const sjAll = await prisma.suratJalan.findMany({
-      where: { ...where, isDraft: false },
+      where: { isDraft: false },
     });
     const sjBulan = sjAll.filter(
       (s) => s.tanggal.toISOString().slice(0, 7) === bulan
     );
 
-    const txAll = await prisma.divisiTx.findMany({ where });
+    const txAll = await prisma.divisiTx.findMany({ where: { divisi: "Armada" } });
     const txBulan = txAll.filter(
       (t) => t.tanggal.toISOString().slice(0, 7) === bulan && t.subKategori
     );
+
+    // Normalisasi nopol (huruf besar, tanpa spasi) supaya pencocokan
+    // transaksi <-> kendaraan tetap ketemu walau format ketikan beda
+    // (mis. "B 22156 YPA" vs "B22156YPA" vs "b 22156 ypa").
+    const normNopol = (s) => (s || "").toString().toUpperCase().replace(/\s+/g, "");
 
     const rekap = armadaList.map((a) => {
       const trips = sjBulan.filter((s) => s.armadaId === a.id);
       const ritasi = trips.length;
       const totalM3 = trips.reduce((s, t) => s + (t.m3 || 0), 0);
 
-      const txNopol = txBulan.filter((t) => t.subKategori === a.nopol);
+      const txNopol = txBulan.filter((t) => normNopol(t.subKategori) === normNopol(a.nopol));
       const pendapatan = txNopol
         .filter((t) => t.tipe === "PENJUALAN")
         .reduce((s, t) => s + t.nominal, 0);

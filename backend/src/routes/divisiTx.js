@@ -206,11 +206,9 @@ router.delete("/:id", async (req, res, next) => {
 router.get("/alat-berat/rekap/:bulan", async (req, res, next) => {
   try {
     const { bulan } = req.params;
-    const scope = scopeDivisi(req);
-    if (scope.divisi && scope.divisi !== "Alat Berat") {
-      return res.json({ bulan, unit: [], total: { pendapatan: 0, pengeluaran: 0, hasilBersih: 0 } });
-    }
-
+    // Sama seperti /armada/rekap: laporan rekap unit alat berat sengaja
+    // TIDAK dibatasi per-divisi login, karena tujuannya melihat gambaran
+    // lintas-divisi (Alat Berat disewa Supplier, dst).
     const config = DIVISI_CONFIG["Alat Berat"];
     const kelPendapatan = config.kelompok.find((k) => k.key === "pendapatan");
     const kelOperasional = config.kelompok.find((k) => k.key === "operasional");
@@ -360,21 +358,21 @@ router.get("/rekap-keseluruhan", async (req, res, next) => {
       return res.status(400).json({ error: "Parameter dari dan sampai wajib diisi" });
     }
 
-    const scope = scopeDivisi(req);
-    const divisiList = divisiFilter
-      ? [divisiFilter]
-      : DIVISI_LIST.filter((d) => !scope.divisi || scope.divisi === d);
+    // Rekap Keseluruhan sengaja TIDAK dibatasi per-divisi akun yang login --
+    // ini memang laporan gabungan lintas-divisi (beda dengan Laporan Divisi
+    // harian yang sengaja dibatasi per-divisi).
+    const divisiList = divisiFilter ? [divisiFilter] : DIVISI_LIST;
 
     // Rentang tanggal inklusif: "sampai" digenapkan ke akhir hari itu.
     const tglMulai = new Date(`${dari}T00:00:00`);
     const tglAkhir = new Date(`${sampai}T23:59:59.999`);
 
     const invoices = await prisma.invoice.findMany({
-      where: { ...scope, tanggal: { gte: tglMulai, lte: tglAkhir } },
+      where: { tanggal: { gte: tglMulai, lte: tglAkhir } },
       include: { items: true },
     });
     const txAll = await prisma.divisiTx.findMany({
-      where: { ...scope, tanggal: { gte: tglMulai, lte: tglAkhir } },
+      where: { tanggal: { gte: tglMulai, lte: tglAkhir } },
     });
 
     const hasil = divisiList.map((divisi) => {

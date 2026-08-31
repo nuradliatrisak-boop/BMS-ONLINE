@@ -20,6 +20,8 @@ const txList = ref([]);
 const loading = ref(false);
 const showModal = ref(false);
 const editingId = ref(null);
+const TX_PAGE_SIZE = 15;
+const txVisibleCount = ref(TX_PAGE_SIZE);
 const populatingForm = ref(false);
 const armadaMaster = ref([]); // data master kendaraan (menu "Armada"), untuk dropdown nopol
 
@@ -109,9 +111,21 @@ async function load() {
     laporan.value = await api.get(`/divisi-tx/laporan/${encodeURIComponent(divisi.value)}/${bulan.value}`);
     const all = await api.get(`/divisi-tx?bulan=${bulan.value}`);
     txList.value = all.filter((t) => t.divisi === divisi.value);
+    txVisibleCount.value = TX_PAGE_SIZE;
   } finally {
     loading.value = false;
   }
+}
+
+// Transaksi otomatis (mengikuti input Pendapatan di Armada/Alat Berat) tidak
+// boleh diedit/dihapus dari sini -- harus dari divisi asalnya.
+function isAutoMirror(t) {
+  return !!t.sumber && t.sumber.startsWith("AUTO_MIRROR_OF:");
+}
+
+const txListVisible = computed(() => txList.value.slice(0, txVisibleCount.value));
+function tampilkanLebihBanyak() {
+  txVisibleCount.value += TX_PAGE_SIZE;
 }
 
 function openModal() {
@@ -403,7 +417,7 @@ onMounted(async () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="t in txList" :key="t.id">
+            <tr v-for="t in txListVisible" :key="t.id">
               <td>{{ new Date(t.tanggal).toLocaleDateString("id-ID") }}</td>
               <td>{{ kelompokLabel(t.kelompok) }}</td>
               <td>{{ t.kategori }}</td>
@@ -414,12 +428,22 @@ onMounted(async () => {
               </td>
               <td class="num mono">{{ rupiah(t.nominal) }}</td>
               <td style="white-space: nowrap">
-                <button class="btn btn-ghost btn-sm" @click="openEditModal(t)">Edit</button>
-                <button class="btn btn-ghost btn-sm" @click="removeTx(t)">Hapus</button>
+                <span v-if="isAutoMirror(t)" class="tag" title="Otomatis mengikuti input Pendapatan di Armada/Alat Berat, edit/hapus dari sana.">
+                  Otomatis
+                </span>
+                <template v-else>
+                  <button class="btn btn-ghost btn-sm" @click="openEditModal(t)">Edit</button>
+                  <button class="btn btn-ghost btn-sm" @click="removeTx(t)">Hapus</button>
+                </template>
               </td>
             </tr>
           </tbody>
         </table>
+        <div v-if="txVisibleCount < txList.length" style="text-align:center; margin-top:12px;">
+          <button class="btn btn-ghost btn-sm" @click="tampilkanLebihBanyak">
+            Tampilkan Lainnya ({{ txList.length - txVisibleCount }} lagi)
+          </button>
+        </div>
       </div>
     </div>
   </div>

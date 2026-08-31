@@ -16,6 +16,37 @@
 //   - allowCustom (opsional): true kalau user boleh menambah kategori baru
 //                      di luar daftar default (mis. Pengeluaran Bulanan yang
 //                      isinya bisa beda-beda tiap bulan: cicilan mobil baru, dst)
+// Divisi Armada & Alat Berat "menyewakan" kendaraan/excavator ke Divisi
+// Supplier -- persis seperti sheet COLD DIESEL/TRONTON di Excel yang
+// rumusnya (='COLD DIESEL'!P27 dst) otomatis menjumlahkan Uang Jalan +
+// Hasil Mobil per kendaraan menjadi baris "Sewa Armada & Excavator" di
+// sheet SUPPLIER. Supaya perilaku itu sama persis di aplikasi, tiap kali
+// ada transaksi PENDAPATAN dicatat di Armada/Alat Berat, backend otomatis
+// membuat/mengubah/menghapus baris "cerminan"-nya (mirror) di kelompok
+// "sewa" milik Supplier -- lihat fungsi getMirrorTarget() di divisiTx.js.
+// Baris mirror ini ditandai lewat kolom `sumber` (diawali "AUTO_MIRROR_OF:")
+// dan tidak boleh diedit/dihapus manual dari sisi Supplier; harus dari
+// transaksi asalnya di Armada/Alat Berat.
+export function getMirrorTarget(tx) {
+  if (tx.kelompok !== "pendapatan") return null;
+  if (tx.divisi === "Armada") {
+    const kat = (tx.kategori || "").toLowerCase();
+    let kategori = tx.kategori;
+    if (kat.includes("tronton")) kategori = "Tronton";
+    else if (kat.includes("diesel")) kategori = "Cold Diesel";
+    return { kategori, subKategori: tx.subKategori || null };
+  }
+  if (tx.divisi === "Alat Berat") {
+    // Semua unit excavator digabung jadi satu baris "Excavator" di Supplier
+    // (di Excel angka ini malah statis/manual, tapi disini kita otomatiskan
+    // supaya selalu sinkron dengan pendapatan Alat Berat yang sebenarnya).
+    return { kategori: "Excavator", subKategori: tx.kategori || null };
+  }
+  return null;
+}
+
+export const MIRROR_SOURCE_PREFIX = "AUTO_MIRROR_OF:";
+
 export const DIVISI_LIST = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
 export const DIVISI_CONFIG = {
@@ -83,7 +114,12 @@ export const DIVISI_CONFIG = {
         key: "pendapatan",
         label: "Laporan Armada (Pendapatan)",
         tipe: "PENJUALAN",
-        kategoriDefault: ["Hasil Mobil Tronton", "Hasil Mobil Cold Diesel"],
+        kategoriDefault: [
+          "Hasil Mobil Tronton",
+          "Uang Jalan Tronton",
+          "Hasil Mobil Cold Diesel",
+          "Uang Jalan Cold Diesel",
+        ],
         allowCustom: true,
         // Rincian per kelompok ini diisi per KENDARAAN (nomor polisi), bukan
         // teks bebas -- persis seperti sheet COLD DIESEL / TRONTON di Excel

@@ -6,6 +6,7 @@ import Dashboard from "../views/Dashboard.vue";
 import Customers from "../views/Customers.vue";
 import Armada from "../views/Armada.vue";
 import ArmadaRekap from "../views/ArmadaRekap.vue";
+import AlatBerat from "../views/AlatBerat.vue";
 import Material from "../views/Material.vue";
 import Invoices from "../views/Invoices.vue";
 import InvoiceDetail from "../views/InvoiceDetail.vue";
@@ -23,6 +24,7 @@ const routes = [
   { path: "/customers", name: "customers", component: Customers },
   { path: "/armada", name: "armada", component: Armada },
   { path: "/armada-rekap", name: "armada-rekap", component: ArmadaRekap },
+  { path: "/alat-berat", name: "alat-berat", component: AlatBerat },
   { path: "/material", name: "material", component: Material },
   { path: "/invoices", name: "invoices", component: Invoices },
   { path: "/invoices/:id", name: "invoice-detail", component: InvoiceDetail },

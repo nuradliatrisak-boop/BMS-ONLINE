@@ -1,9 +1,50 @@
 import { Router } from "express";
 import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
-import { DIVISI_LIST, DIVISI_CONFIG } from "../config/divisiConfig.js";
+import { DIVISI_LIST, DIVISI_CONFIG, getMirrorTarget, MIRROR_SOURCE_PREFIX } from "../config/divisiConfig.js";
 
 const router = Router();
+
+// --- Sinkronisasi otomatis Armada/Alat Berat -> Supplier ("Sewa Armada &
+// Excavator"), mengikuti rumus di Excel. Lihat komentar di divisiConfig.js.
+function isAutoMirror(tx) {
+  return !!tx?.sumber && tx.sumber.startsWith(MIRROR_SOURCE_PREFIX);
+}
+
+async function syncMirrorTx(sourceTx) {
+  const target = getMirrorTarget(sourceTx);
+  const tagSumber = `${MIRROR_SOURCE_PREFIX}${sourceTx.id}`;
+  const existing = await prisma.divisiTx.findFirst({ where: { sumber: tagSumber } });
+
+  if (!target) {
+    if (existing) await prisma.divisiTx.delete({ where: { id: existing.id } });
+    return;
+  }
+
+  const data = {
+    divisi: "Supplier",
+    tipe: "PENGELUARAN",
+    kelompok: "sewa",
+    kategori: target.kategori,
+    subKategori: target.subKategori,
+    keterangan: `Otomatis dari ${sourceTx.divisi} \u2014 ${sourceTx.kategori}${
+      sourceTx.subKategori ? ` (${sourceTx.subKategori})` : ""
+    }`,
+    nominal: sourceTx.nominal,
+    tanggal: sourceTx.tanggal,
+    sumber: tagSumber,
+  };
+
+  if (existing) {
+    await prisma.divisiTx.update({ where: { id: existing.id }, data });
+  } else {
+    await prisma.divisiTx.create({ data });
+  }
+}
+
+async function deleteMirrorOf(sourceId) {
+  await prisma.divisiTx.deleteMany({ where: { sumber: `${MIRROR_SOURCE_PREFIX}${sourceId}` } });
+}
 
 // Konfigurasi kelompok/kategori per divisi (dipakai frontend untuk membangun
 // form "Catat Transaksi" dan urutan section pada Laporan Divisi).
@@ -73,6 +114,7 @@ router.post("/", async (req, res, next) => {
         tanggal: new Date(tanggal),
       },
     });
+    await syncMirrorTx(tx);
     res.status(201).json(tx);
   } catch (e) {
     next(e);
@@ -83,6 +125,13 @@ router.put("/:id", async (req, res, next) => {
   try {
     const current = await prisma.divisiTx.findUnique({ where: { id: req.params.id } });
     if (!current) return res.status(404).json({ error: "Transaksi tidak ditemukan" });
+
+    if (isAutoMirror(current)) {
+      return res.status(400).json({
+        error:
+          "Transaksi ini otomatis mengikuti input Pendapatan di divisi Armada/Alat Berat (Sewa Armada & Excavator). Ubah dari transaksi asalnya di divisi tersebut.",
+      });
+    }
 
     const {
       divisi = current.divisi,
@@ -123,6 +172,7 @@ router.put("/:id", async (req, res, next) => {
         tanggal: new Date(tanggal),
       },
     });
+    await syncMirrorTx(tx);
     res.json(tx);
   } catch (e) {
     next(e);
@@ -131,8 +181,69 @@ router.put("/:id", async (req, res, next) => {
 
 router.delete("/:id", async (req, res, next) => {
   try {
+    const current = await prisma.divisiTx.findUnique({ where: { id: req.params.id } });
+    if (!current) return res.status(404).json({ error: "Transaksi tidak ditemukan" });
+
+    if (isAutoMirror(current)) {
+      return res.status(400).json({
+        error:
+          "Transaksi ini otomatis mengikuti input Pendapatan di divisi Armada/Alat Berat (Sewa Armada & Excavator). Hapus dari transaksi asalnya di divisi tersebut.",
+      });
+    }
+
     await prisma.divisiTx.delete({ where: { id: req.params.id } });
+    await deleteMirrorOf(current.id);
     res.status(204).end();
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Rekap per unit Excavator/Alat Berat untuk satu bulan (pendapatan dari
+// kelompok "pendapatan", pengeluaran operasional dari kelompok "operasional"
+// -- uang makan/sparepart/solar digabung jadi satu total per unit). Sama
+// polanya dengan /armada/rekap/:bulan, dipakai halaman "Alat Berat".
+router.get("/alat-berat/rekap/:bulan", async (req, res, next) => {
+  try {
+    const { bulan } = req.params;
+    const scope = scopeDivisi(req);
+    if (scope.divisi && scope.divisi !== "Alat Berat") {
+      return res.json({ bulan, unit: [], total: { pendapatan: 0, pengeluaran: 0, hasilBersih: 0 } });
+    }
+
+    const config = DIVISI_CONFIG["Alat Berat"];
+    const kelPendapatan = config.kelompok.find((k) => k.key === "pendapatan");
+    const kelOperasional = config.kelompok.find((k) => k.key === "operasional");
+
+    const txAll = await prisma.divisiTx.findMany({ where: { divisi: "Alat Berat" } });
+    const tx = txAll.filter((t) => t.tanggal.toISOString().slice(0, 7) === bulan);
+
+    const unitNames = new Set([
+      ...(kelPendapatan?.kategoriDefault || []),
+      ...(kelOperasional?.kategoriDefault || []),
+      ...tx.filter((t) => t.kelompok === "pendapatan" || t.kelompok === "operasional").map((t) => t.kategori),
+    ]);
+
+    const unit = Array.from(unitNames).map((nama) => {
+      const pendapatan = tx
+        .filter((t) => t.kelompok === "pendapatan" && t.kategori === nama)
+        .reduce((s, t) => s + t.nominal, 0);
+      const pengeluaranTx = tx.filter((t) => t.kelompok === "operasional" && t.kategori === nama);
+      const pengeluaran = pengeluaranTx.reduce((s, t) => s + t.nominal, 0);
+      const rincian = ["Uang Makan", "Sparepart", "Solar"].map((sub) => ({
+        subKategori: sub,
+        nominal: pengeluaranTx.filter((t) => t.subKategori === sub).reduce((s, t) => s + t.nominal, 0),
+      }));
+      return { nama, pendapatan, pengeluaran, hasilBersih: pendapatan - pengeluaran, rincian };
+    });
+
+    const total = {
+      pendapatan: unit.reduce((s, u) => s + u.pendapatan, 0),
+      pengeluaran: unit.reduce((s, u) => s + u.pengeluaran, 0),
+    };
+    total.hasilBersih = total.pendapatan - total.pengeluaran;
+
+    res.json({ bulan, unit, total });
   } catch (e) {
     next(e);
   }

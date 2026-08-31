@@ -85,6 +85,11 @@ function doLogout() {
         <span>Rekap Armada</span>
       </router-link>
 
+      <router-link to="/alat-berat" @click="closeSidebar">
+        <span class="ic">🏗️</span>
+        <span>Alat Berat</span>
+      </router-link>
+
       <router-link to="/material" @click="closeSidebar">
         <span class="ic">📦</span>
         <span>Material</span>

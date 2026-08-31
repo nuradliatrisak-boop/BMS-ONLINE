@@ -32,7 +32,7 @@ const emptyForm = () => ({
   nopol: "",
   jenis: "",
   sopir: "",
-  divisi: Armada,
+  divisi: DIVISI[0],
   panjang: "",
   lebar: "",
   tinggi: "",

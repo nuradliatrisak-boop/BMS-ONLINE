@@ -6,8 +6,12 @@ const router = Router();
 
 router.get("/", async (req, res, next) => {
   try {
+    // Daftar master kendaraan sengaja TIDAK dibatasi per-divisi (beda dengan
+    // data keuangan seperti DivisiTx/rekap): armada dipakai lintas divisi --
+    // mis. Supplier perlu lihat kendaraan Armada untuk mencatat sewa, dan
+    // dropdown nopol di Laporan Divisi (kelompok "pendapatan") butuh lihat
+    // semua kendaraan divisi "Armada" apa pun divisi akun yang login.
     const armada = await prisma.armada.findMany({
-      where: scopeDivisi(req),
       orderBy: { nopol: "asc" },
     });
     res.json(armada);

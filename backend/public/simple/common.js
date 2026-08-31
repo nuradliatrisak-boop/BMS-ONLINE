@@ -86,7 +86,46 @@ var api = {
   post: function (path, body) { return apiRequest(path, "POST", body); },
   put: function (path, body) { return apiRequest(path, "PUT", body); },
   patch: function (path, body) { return apiRequest(path, "PATCH", body); },
-  del: function (path) { return apiRequest(path, "DELETE"); }
+  del: function (path) { return apiRequest(path, "DELETE"); },
+  // Dipakai buat endpoint yang membalas file (contoh: export invoice ke
+  // Excel), bukan JSON - langsung memicu download di browser.
+  download: function (path, fallbackFilename) {
+    var token = getToken();
+    var headers = {};
+    if (token) {
+      headers["Authorization"] = "Bearer " + token;
+    }
+
+    return fetch(API_BASE + path, { headers: headers }).then(function (res) {
+      if (res.status === 401) {
+        clearSession();
+        window.location.href = "login.html";
+        throw new Error("Sesi habis, silakan login ulang");
+      }
+
+      if (!res.ok) {
+        return res.json().catch(function () { return null; }).then(function (data) {
+          var msg = (data && data.error) ? data.error : "Gagal mengunduh file";
+          throw new Error(msg);
+        });
+      }
+
+      var disposition = res.headers.get("content-disposition") || "";
+      var match = disposition.match(/filename="?([^"]+)"?/);
+      var filename = (match && match[1]) ? match[1] : (fallbackFilename || "download");
+
+      return res.blob().then(function (blob) {
+        var url = window.URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.parentNode.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      });
+    });
+  }
 };
 
 function showMsg(el, text, kind) {

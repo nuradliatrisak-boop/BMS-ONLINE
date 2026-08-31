@@ -1,6 +1,8 @@
 import { Router } from "express";
 import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
+import { buildInvoiceWorkbook } from "../services/invoiceXlsx.js";
+import { DEFAULTS as PRINT_CALIB_DEFAULTS } from "./printCalib.js";
 
 const router = Router();
 
@@ -180,6 +182,49 @@ router.get("/:id", async (req, res, next) => {
     }
 
     res.json(ringkas(inv));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ============================================================
+// EXPORT INVOICE KE EXCEL (.xlsx)
+// Dipakai buat orang yang lebih nyaman ngatur & print langsung dari
+// Excel (seperti alur lama), daripada dari dialog print browser.
+// Margin atas & kiri file ini ikut angka yang sama dengan Kalibrasi
+// Cetak > Invoice supaya dua cara cetak (browser & Excel) tetap sinkron.
+// ============================================================
+
+router.get("/:id/export-xlsx", async (req, res, next) => {
+  try {
+    const inv = await prisma.invoice.findUnique({
+      where: { id: req.params.id },
+      include: includeLengkap,
+    });
+
+    if (!inv) {
+      return res.status(404).json({ error: "Invoice tidak ditemukan" });
+    }
+
+    const [calibRow, settingRows] = await Promise.all([
+      prisma.printCalib.findUnique({ where: { jenis: "inv" } }),
+      prisma.setting.findMany(),
+    ]);
+
+    const calib = { ...PRINT_CALIB_DEFAULTS.inv, ...(calibRow?.data || {}) };
+    const signerName = settingRows.find((s) => s.key === "signerName")?.value || "";
+
+    const wb = await buildInvoiceWorkbook(ringkas(inv), calib, signerName);
+
+    const filename = `Invoice-${(inv.no || "invoice").replace(/[^a-zA-Z0-9-]/g, "_")}.xlsx`;
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+    await wb.xlsx.write(res);
+    res.end();
   } catch (e) {
     next(e);
   }

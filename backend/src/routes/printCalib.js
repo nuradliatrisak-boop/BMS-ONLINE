@@ -5,7 +5,7 @@ const router = Router();
 
 // Nilai default awal. Setelah dikalibrasi lewat halaman "Kalibrasi Cetak",
 // nilai yang tersimpan di database (tabel PrintCalib) akan menimpa nilai ini.
-const DEFAULTS = {
+export const DEFAULTS = {
   sj: {
     w: 241.3,
     h: 108,
@@ -32,11 +32,24 @@ const DEFAULTS = {
     },
   },
   inv: {
+    // Titik awal (bukan hasil akhir!) diambil dari Page Setup file Excel
+    // rekap invoice lama CV. Bintang Muara (kertas Letter 215,9mm x 279,4mm,
+    // margin Top 25mm, Left 6mm, Right 10mm, Bottom 25mm, Header/Footer
+    // 13mm, scaling 100% - bukan "fit to page"). Lebar kertas continuous
+    // (w) tetap dipertahankan di 241,3mm (9,5") karena itu ukuran fisik
+    // total kertas dot matrix TERMASUK strip berlubang di kedua sisi -
+    // area cetak efektifnya (241,3mm dikurangi kedua strip) yang mendekati
+    // lebar Letter 215,9mm punya Excel. offsetX 6mm mewakili margin kiri
+    // Excel dari tepi AREA CETAK; kalau kertas fisik yang dipakai sekarang
+    // stripnya lebih lebar/sempit dari asumsi ini, tambahkan selisihnya di
+    // sini juga. topMargin 38mm = margin atas 25mm + header 13mm Excel.
+    // Ini semua tetap harus difinalisasi dengan cetak & ukur kertas asli
+    // lewat halaman Kalibrasi Cetak, bukan dipakai mentah-mentah.
     w: 241.3,
     h: 279.4,
-    offsetX: 0,
+    offsetX: 6,
     offsetY: 0,
-    topMargin: 36,
+    topMargin: 38,
   },
 };
 

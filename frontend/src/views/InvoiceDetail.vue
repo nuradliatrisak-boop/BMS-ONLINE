@@ -168,6 +168,23 @@ function cetakInvoice() {
   printInvoice(invoice.value);
 }
 
+const exportingXlsx = ref(false);
+
+async function exportInvoiceXlsx() {
+  if (!invoice.value) return;
+  exportingXlsx.value = true;
+  try {
+    await api.download(
+      `/invoices/${invoice.value.id}/export-xlsx`,
+      `Invoice-${invoice.value.no}.xlsx`
+    );
+  } catch (e) {
+    toast(e?.message || "Gagal mengunduh Excel invoice");
+  } finally {
+    exportingXlsx.value = false;
+  }
+}
+
 function openEditModal() {
   if (!invoice.value) return;
   editForm.value = {
@@ -338,6 +355,14 @@ onMounted(load);
           :disabled="!invoice"
         >
           🖨 Cetak Invoice
+        </button>
+
+        <button
+          class="btn btn-ghost"
+          @click="exportInvoiceXlsx"
+          :disabled="!invoice || exportingXlsx"
+        >
+          {{ exportingXlsx ? "Menyiapkan..." : "📊 Export ke Excel" }}
         </button>
 
         <button

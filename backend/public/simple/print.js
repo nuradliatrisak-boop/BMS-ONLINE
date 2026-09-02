@@ -479,6 +479,61 @@ function printSJ(sjOrList) {
 
 
     // --------------------------------------------------------
+    // CETAK FIELD "TUJUAN"
+    //
+    // "Tujuan" bisa berupa alamat panjang, dan posisinya sebaris
+    // dengan kolom Nomor/Tanggal/Jam di kanan atas. Field lain aman
+    // pakai nowrap, tapi Tujuan kalau dibiarkan nowrap teksnya bakal
+    // memanjang terus ke kanan dan menabrak kolom Nomor/Tanggal/Jam.
+    // Jadi di sini Tujuan dibuat wrap (turun ke bawah), lebarnya
+    // dibatasi supaya berhenti sebelum kolom itu.
+    // --------------------------------------------------------
+
+    function fieldTujuan(text) {
+
+      var t =
+        LBL.tujuan +
+        " : " +
+        (text || "-");
+
+      var maxWidth =
+        Math.max(
+          40,
+          p.no.x - p.tujuan.x - 6
+        );
+
+      return (
+
+        '<div class="f sj-field sj-field-wrap" style="' +
+
+        'left:' +
+        p.tujuan.x +
+        'mm;' +
+
+        'top:' +
+        p.tujuan.y +
+        'mm;' +
+
+        'font-size:' +
+        p.tujuan.size +
+        'pt;' +
+
+        'width:' +
+        maxWidth +
+        'mm;' +
+
+        '">' +
+
+        escapeHtml(t) +
+
+        '</div>'
+
+      );
+
+    }
+
+
+    // --------------------------------------------------------
     // BUAT SEMUA HALAMAN SURAT JALAN
     // --------------------------------------------------------
 
@@ -659,10 +714,8 @@ function printSJ(sjOrList) {
         ) +
 
 
-        field(
-          "tujuan",
-          tujuanText,
-          true
+        fieldTujuan(
+          tujuanText
         ) +
 
 
@@ -839,6 +892,15 @@ function printSJ(sjOrList) {
         'line-height:1.2;' +
 
         'font-kerning:none;' +
+
+      '}' +
+
+
+      '.sj-field-wrap{' +
+
+        'white-space:normal;' +
+
+        'word-break:break-word;' +
 
       '}' +
 

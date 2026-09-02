@@ -53,6 +53,21 @@ function fmtDateLong(v) {
 const THIN = { style: "thin", color: { argb: "FF111111" } };
 const BOX = { top: THIN, bottom: THIN, left: THIN, right: THIN };
 
+// Perkiraan tinggi baris (dalam point) yang dibutuhkan supaya teks dengan
+// wrapText tetap kebaca penuh (tidak kepotong tinggi barisnya), berdasarkan
+// panjang teks dibagi kira-kira jumlah karakter yang muat per baris untuk
+// lebar kolom (dalam satuan "lebar kolom Excel") yang diberikan. Excel/Google
+// Sheets tidak selalu auto-fit tinggi baris untuk sel yang tingginya sudah
+// di-set eksplisit dari kode, jadi tinggi ini sengaja dihitung manual supaya
+// aman di kedua aplikasi tersebut, bukan cuma mengandalkan auto-fit Excel.
+function estimateWrapHeight(text, colWidthChars, lineHeightPt = 14) {
+  const len = String(text ?? "").length;
+  if (!len) return lineHeightPt;
+  const charsPerLine = Math.max(6, Math.floor(colWidthChars));
+  const lines = Math.max(1, Math.ceil(len / charsPerLine));
+  return lines * lineHeightPt;
+}
+
 export async function buildInvoiceWorkbook(inv, calib, signerName) {
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Invoice", {
@@ -106,20 +121,29 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
   // di bawah, jadi kalau cuma mengandalkan overflow, label panjang di
   // sini bisa kepotong (terutama di Google Sheets yang penanganan
   // overflow-nya kadang beda dari Excel).
+  // Label di kolom I ("Halaman" / "No. Invoice" / "Tanggal") di-merge I:J
+  // (bukan cuma mengandalkan overflow ke kolom J yang kosong), karena kalau
+  // kolom J kebetulan tetap "ada isinya" (walau cuma string kosong "") teks
+  // label yang lebih panjang dari lebar kolom I saja (mis. "No. Invoice")
+  // akan KEPOTONG persis di batas kolom I/J - itulah yang bikin sebelumnya
+  // muncul sebagai "No. Invoic" di hasil export.
   const rKepada = ws.addRow(["Kepada Yth", "", "", "", "", "", "", "", "Halaman", "", inv.halaman ?? 1]);
   ws.mergeCells(`A${rKepada.number}:D${rKepada.number}`);
+  ws.mergeCells(`I${rKepada.number}:J${rKepada.number}`);
   rKepada.getCell(1).font = { size: 9, color: { argb: "FF555555" } };
   rKepada.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
   rKepada.getCell(11).font = { bold: true };
 
   const rNamaCust = ws.addRow([inv.customer?.nama || "", "", "", "", "", "", "", "", "No. Invoice", "", inv.no || ""]);
   ws.mergeCells(`A${rNamaCust.number}:D${rNamaCust.number}`);
+  ws.mergeCells(`I${rNamaCust.number}:J${rNamaCust.number}`);
   rNamaCust.getCell(1).font = { bold: true };
   rNamaCust.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
   rNamaCust.getCell(11).font = { bold: true };
 
   const rAlamatCust = ws.addRow([inv.customer?.alamat || "", "", "", "", "", "", "", "", "Tanggal", "", fmtDateShort(inv.tanggal)]);
   ws.mergeCells(`A${rAlamatCust.number}:D${rAlamatCust.number}`);
+  ws.mergeCells(`I${rAlamatCust.number}:J${rAlamatCust.number}`);
   rAlamatCust.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
   rAlamatCust.getCell(11).font = { bold: true };
 
@@ -134,8 +158,15 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
   for (const [label, val] of idRows) {
     const r = ws.addRow([label, "", "", ":", val]);
     ws.mergeCells(`A${r.number}:C${r.number}`); // label dapat ruang A:C, kolom D tetap buat ":"
+    // Nilainya (terutama Alamat) di-merge E:K & wrapText, bukan mengandalkan
+    // overflow saja - alamat yang panjang bisa lebih lebar dari kolom E (26)
+    // ditambah sisa kolom kosong di kanannya, jadi perlu wrap + tinggi baris
+    // yang menyesuaikan supaya tidak ada bagian teks yang hilang dari tampilan.
+    ws.mergeCells(`E${r.number}:K${r.number}`);
     r.getCell(1).font = { size: 9, color: { argb: "FF555555" } };
     r.getCell(5).font = { bold: true };
+    r.getCell(5).alignment = { wrapText: true, vertical: "middle" };
+    r.height = Math.max(r.height || 0, estimateWrapHeight(val, 83));
   }
 
   ws.addRow([]);
@@ -173,10 +204,19 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
     row.eachCell((cell, colNumber) => {
       if (colNumber > LASTCOL) return;
       cell.border = BOX;
-      cell.alignment = { horizontal: colNumber === 5 ? "left" : "center", vertical: "middle" };
+      cell.alignment = {
+        horizontal: colNumber === 5 ? "left" : "center",
+        vertical: "middle",
+        wrapText: colNumber === 5, // "Alamat Kirim" boleh panjang - wrap, jangan kepotong
+      };
     });
     row.getCell(10).numFmt = '"Rp" #,##0';
     row.getCell(11).numFmt = '"Rp" #,##0';
+    // Kolom F/G/H/I (P/L/T/M3) di baris ini selalu terisi angka, jadi teks
+    // "Alamat Kirim" TIDAK BISA meluber ke kanan seperti sel kosong biasa -
+    // makanya wrapText di atas wajib dibarengi tinggi baris yang cukup di
+    // sini, kalau tidak isinya tetap kelihatan terpotong walau datanya utuh.
+    row.height = Math.max(row.height || 0, estimateWrapHeight(row.getCell(5).value, 26));
   });
 
   ws.addRow([]);
@@ -201,7 +241,15 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
   ];
   for (const [label, val] of boxRows) {
     const r = ws.addRow(["", "", "", "", "", "", "", "", label, "", val]);
+    // Sama seperti label "No. Invoice" di atas: "Jumlah Total Tagihan" &
+    // "Sudah Dibayar" lebih panjang dari lebar kolom I saja, jadi di-merge
+    // I:J supaya tidak kepotong (sebelumnya muncul sebagai "Jumlah T" /
+    // "Sudah Di"). Border kotaknya diikutkan ke kolom J juga biar kotaknya
+    // menyatu, bukan cuma mengelilingi kolom I.
+    ws.mergeCells(`I${r.number}:J${r.number}`);
     r.getCell(9).border = BOX;
+    r.getCell(10).border = BOX;
+    r.getCell(9).alignment = { horizontal: "left", vertical: "middle" };
     r.getCell(11).border = BOX;
     r.getCell(11).numFmt = '"Rp" #,##0';
     r.getCell(11).alignment = { horizontal: "right" };

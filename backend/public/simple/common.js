@@ -87,16 +87,26 @@ var api = {
   put: function (path, body) { return apiRequest(path, "PUT", body); },
   patch: function (path, body) { return apiRequest(path, "PATCH", body); },
   del: function (path) { return apiRequest(path, "DELETE"); },
-  // Dipakai buat endpoint yang membalas file (contoh: export invoice ke
-  // Excel), bukan JSON - langsung memicu download di browser.
-  download: function (path, fallbackFilename) {
+  // Dipakai buat endpoint yang membalas file (contoh: export invoice/surat
+  // jalan ke Excel), bukan JSON - langsung memicu download di browser.
+  // options opsional: { method: "POST", body: {...} } - dipakai untuk
+  // export gabungan beberapa dokumen sekaligus (lihat surat-jalan-list.html).
+  download: function (path, fallbackFilename, options) {
     var token = getToken();
+    var opts = options || {};
     var headers = {};
     if (token) {
       headers["Authorization"] = "Bearer " + token;
     }
+    if (opts.body) {
+      headers["Content-Type"] = "application/json";
+    }
 
-    return fetch(API_BASE + path, { headers: headers }).then(function (res) {
+    return fetch(API_BASE + path, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    }).then(function (res) {
       if (res.status === 401) {
         clearSession();
         window.location.href = "login.html";

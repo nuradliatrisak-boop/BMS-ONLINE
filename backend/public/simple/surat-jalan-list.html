@@ -1,1 +1,92 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Daftar Surat Jalan</title><link rel="stylesheet" href="style.css"></head><body><div class="topbar"><h1>Daftar Surat Jalan</h1><div id="userbar" class="userbar"></div></div><div class="wrap"><a href="dashboard.html" class="btn secondary">&laquo; Dashboard</a> <a href="surat-jalan.html" class="btn">+ Buat Surat Jalan</a><div class="card"><div id="msg" class="msg" style="display:none"></div><div id="list" class="loading">Memuat...</div></div></div><script src="common.js"></script><script src="print.js"></script><script>(function(){var u=requireLogin();if(!u)return;document.getElementById('userbar').textContent='Login sebagai: '+u.nama;var box=document.getElementById('list'),msg=document.getElementById('msg');function fdate(v){var d=new Date(v);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()}function load(){api.get('/surat-jalan').then(function(a){var h='<table class="sj-table"><tr><th>No SJ</th><th>Tanggal</th><th>Customer</th><th>Barang</th><th>M3</th><th>Status</th><th>Aksi</th></tr>';for(var i=0;i<a.length;i++){var x=a[i];h+='<tr><td>'+x.no+'</td><td>'+fdate(x.tanggal)+'</td><td>'+((x.customer&&x.customer.nama)||'-')+'</td><td>'+(x.jenisBarang||'-')+'</td><td>'+Number(x.m3||0).toFixed(3)+'</td><td>'+(x.isDraft?'DRAFT':'FINAL')+'</td><td><button class="btn edit" data-id="'+x.id+'">Edit</button> <button class="btn secondary print" data-id="'+x.id+'">Print</button> <button class="btn danger del" data-id="'+x.id+'">Hapus</button></td></tr>'}h+='</table>';box.innerHTML=h;var bs=box.getElementsByClassName('edit');for(var j=0;j<bs.length;j++)bs[j].onclick=function(){location.href='surat-jalan.html?id='+encodeURIComponent(this.getAttribute('data-id'))};var ps=box.getElementsByClassName('print');for(var k=0;k<ps.length;k++)ps[k].onclick=function(){var id=this.getAttribute('data-id');api.get('/surat-jalan/'+id).then(printSJ)};var ds=box.getElementsByClassName('del');for(var l=0;l<ds.length;l++)ds[l].onclick=function(){var id=this.getAttribute('data-id');if(!confirm('Hapus Surat Jalan ini?'))return;api.del('/surat-jalan/'+id).then(load).catch(function(e){showMsg(msg,e.message,'err')})}}).catch(function(e){box.textContent=e.message})}load()})();</script></body></html>
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Daftar Surat Jalan</title><link rel="stylesheet" href="style.css"></head><body><div class="topbar"><h1>Daftar Surat Jalan</h1><div id="userbar" class="userbar"></div></div><div class="wrap"><a href="dashboard.html" class="btn secondary">&laquo; Dashboard</a> <a href="surat-jalan.html" class="btn">+ Buat Surat Jalan</a><div class="card"><div id="msg" class="msg" style="display:none"></div><div id="batchbar" style="display:none;margin-bottom:10px"><span id="batchcount"></span> &nbsp; <button class="btn secondary" id="btnCetakTerpilih">Cetak Terpilih</button> <button class="btn secondary" id="btnExcelTerpilih">Excel Terpilih</button> <button class="btn secondary" id="btnBatal">Batal pilih</button></div><div id="list" class="loading">Memuat...</div></div></div><script src="common.js"></script><script src="print.js"></script><script>(function(){
+var u=requireLogin();if(!u)return;
+document.getElementById('userbar').textContent='Login sebagai: '+u.nama;
+var box=document.getElementById('list'),msg=document.getElementById('msg');
+var batchbar=document.getElementById('batchbar'),batchcount=document.getElementById('batchcount');
+var data=[]; // data terakhir dari server, dipakai lagi biar tombol Terpilih tidak perlu fetch ulang
+var selected={}; // map id -> true
+
+function fdate(v){var d=new Date(v);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()}
+
+function selectedList(){
+  var out=[];
+  for(var i=0;i<data.length;i++){ if(selected[data[i].id]) out.push(data[i]); }
+  return out;
+}
+
+function updateBatchBar(){
+  var n=selectedList().length;
+  if(n>0){ batchbar.style.display='block'; batchcount.textContent=n+' dipilih'; }
+  else { batchbar.style.display='none'; }
+}
+
+function load(){
+  api.get('/surat-jalan').then(function(a){
+    data=a; selected={}; updateBatchBar();
+    var h='<table class="sj-table"><tr><th></th><th>No SJ</th><th>Tanggal</th><th>Customer</th><th>Barang</th><th>M3</th><th>Status</th><th>Aksi</th></tr>';
+    for(var i=0;i<a.length;i++){
+      var x=a[i];
+      h+='<tr><td><input type="checkbox" class="pilih" data-id="'+x.id+'"></td><td>'+x.no+'</td><td>'+fdate(x.tanggal)+'</td><td>'+((x.customer&&x.customer.nama)||'-')+'</td><td>'+(x.jenisBarang||'-')+'</td><td>'+Number(x.m3||0).toFixed(3)+'</td><td>'+(x.isDraft?'DRAFT':'FINAL')+'</td><td><button class="btn edit" data-id="'+x.id+'">Edit</button> <button class="btn secondary print" data-id="'+x.id+'">Print</button> <button class="btn secondary xlsx" data-id="'+x.id+'" data-no="'+x.no+'">Excel</button> <button class="btn danger del" data-id="'+x.id+'">Hapus</button></td></tr>';
+    }
+    h+='</table>';
+    box.innerHTML=h;
+
+    var cs=box.getElementsByClassName('pilih');
+    for(var c=0;c<cs.length;c++)cs[c].onchange=function(){
+      var id=this.getAttribute('data-id');
+      if(this.checked) selected[id]=true; else delete selected[id];
+      updateBatchBar();
+    };
+
+    var bs=box.getElementsByClassName('edit');
+    for(var j=0;j<bs.length;j++)bs[j].onclick=function(){location.href='surat-jalan.html?id='+encodeURIComponent(this.getAttribute('data-id'))};
+
+    var ps=box.getElementsByClassName('print');
+    for(var k=0;k<ps.length;k++)ps[k].onclick=function(){var id=this.getAttribute('data-id');api.get('/surat-jalan/'+id).then(printSJ)};
+
+    // Export ke Excel satu SJ - dicetak lewat Excel (Page Setup tersimpan
+    // di file, lebih stabil di kertas continuous form daripada lewat
+    // dialog print browser yang settingnya suka balik ke default).
+    var xs=box.getElementsByClassName('xlsx');
+    for(var m=0;m<xs.length;m++)xs[m].onclick=function(){
+      var btn=this,id=btn.getAttribute('data-id'),no=btn.getAttribute('data-no');
+      btn.disabled=true;
+      api.download('/surat-jalan/'+id+'/export-xlsx','SJ-'+no+'.xlsx').then(function(){btn.disabled=false}).catch(function(e){btn.disabled=false;showMsg(msg,e.message,'err')});
+    };
+
+    var ds=box.getElementsByClassName('del');
+    for(var l=0;l<ds.length;l++)ds[l].onclick=function(){var id=this.getAttribute('data-id');if(!confirm('Hapus Surat Jalan ini?'))return;api.del('/surat-jalan/'+id).then(load).catch(function(e){showMsg(msg,e.message,'err')})};
+  }).catch(function(e){box.textContent=e.message});
+}
+
+// Cetak beberapa SJ yang dicentang sekaligus lewat browser, berurutan
+// tanpa jeda (print.js sudah mendukung array).
+document.getElementById('btnCetakTerpilih').onclick=function(){
+  var items=selectedList();
+  if(!items.length){ showMsg(msg,'Pilih dulu Surat Jalan yang mau dicetak','err'); return; }
+  printSJ(items);
+};
+
+// Export beberapa SJ yang dicentang jadi SATU file .xlsx (satu sheet per
+// SJ). Waktu diprint di PC print, HARUS diprint sebagai satu file/workbook
+// sekaligus (bukan sheet satu-satu) supaya kertas terus nyambung tanpa
+// jeda - lihat PrintSJExcel.vbs, sudah disesuaikan untuk ini.
+document.getElementById('btnExcelTerpilih').onclick=function(){
+  var items=selectedList();
+  if(!items.length){ showMsg(msg,'Pilih dulu Surat Jalan yang mau di-export','err'); return; }
+  var ids=[]; for(var i=0;i<items.length;i++) ids.push(items[i].id);
+  var btn=this; btn.disabled=true;
+  api.download('/surat-jalan/export-xlsx-batch','SJ-Batch-'+ids.length+'dok.xlsx',{method:'POST',body:{ids:ids}})
+    .then(function(){btn.disabled=false})
+    .catch(function(e){btn.disabled=false;showMsg(msg,e.message,'err')});
+};
+
+document.getElementById('btnBatal').onclick=function(){
+  selected={};
+  var cs=box.getElementsByClassName('pilih');
+  for(var c=0;c<cs.length;c++)cs[c].checked=false;
+  updateBatchBar();
+};
+
+load();
+})();</script></body></html>

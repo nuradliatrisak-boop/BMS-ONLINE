@@ -1,6 +1,8 @@
 import { Router } from "express";
 import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
+import { buildSJWorkbook } from "../services/suratJalanXlsx.js";
+import { DEFAULTS as PRINT_CALIB_DEFAULTS } from "./printCalib.js";
 
 const router = Router();
 
@@ -265,6 +267,114 @@ router.patch("/:id/ttd", async (req, res, next) => {
     });
 
     res.json(sj);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ============================================================
+// EXPORT BANYAK SURAT JALAN SEKALIGUS KE SATU FILE EXCEL (.xlsx)
+// Dipakai kalau mau cetak beberapa SJ berurutan tanpa jeda (nomor SJ
+// beda-beda, tapi harus nyambung di kertas continuous form). Semua SJ
+// yang dipilih digabung jadi satu file (satu sheet = satu SJ), dan nanti
+// waktu diprint, HARUS diprint sebagai satu file/workbook sekaligus
+// (bukan sheet per sheet satu-satu) supaya printer tidak eject/motong
+// kertas di antara tiap SJ - lihat PrintSJExcel.vbs yang sudah disesuaikan
+// untuk ini.
+// ============================================================
+router.post("/export-xlsx-batch", async (req, res, next) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    if (!ids.length) {
+      return res.status(400).json({ error: "Tidak ada surat jalan yang dipilih" });
+    }
+
+    const list = await prisma.suratJalan.findMany({
+      where: { id: { in: ids } },
+      include: includeRelasi,
+    });
+    if (!list.length) {
+      return res.status(404).json({ error: "Surat jalan tidak ditemukan" });
+    }
+
+    // urutkan sesuai urutan ids yang dikirim frontend (biasanya = urutan
+    // dipilih/urutan tabel), bukan urutan hasil query database
+    const byId = new Map(list.map((sj) => [sj.id, sj]));
+    const ordered = ids.map((id) => byId.get(id)).filter(Boolean);
+
+    const [calibRow, settingRows] = await Promise.all([
+      prisma.printCalib.findUnique({ where: { jenis: "sj" } }),
+      prisma.setting.findMany(),
+    ]);
+
+    const calib = {
+      ...PRINT_CALIB_DEFAULTS.sj,
+      ...(calibRow?.data || {}),
+      fields: { ...PRINT_CALIB_DEFAULTS.sj.fields, ...(calibRow?.data?.fields || {}) },
+    };
+    const signerName = settingRows.find((s) => s.key === "signerName")?.value || "";
+
+    const wb = await buildSJWorkbook(ordered, calib, signerName);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const filename = `SJ-Batch-${today}-${ordered.length}dok.xlsx`;
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+    await wb.xlsx.write(res);
+    res.end();
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ============================================================
+// EXPORT SURAT JALAN KE EXCEL (.xlsx)
+// Dipakai buat cetak lewat Excel (Page Setup tersimpan di file, print
+// lewat driver langsung) daripada lewat dialog print browser yang
+// settingnya suka balik ke default tiap kali print dan bikin hasil
+// geser-geser walau sudah dikalibrasi. Posisi field yang dipakai PERSIS
+// sama dengan kalibrasi tersimpan di menu "Kalibrasi Cetak > Surat
+// Jalan" - jadi kalau kalibrasi itu diubah, hasil Excel ini otomatis
+// ikut menyesuaikan.
+// ============================================================
+router.get("/:id/export-xlsx", async (req, res, next) => {
+  try {
+    const sj = await prisma.suratJalan.findUnique({
+      where: { id: req.params.id },
+      include: includeRelasi,
+    });
+
+    if (!sj) {
+      return res.status(404).json({ error: "Surat jalan tidak ditemukan" });
+    }
+
+    const [calibRow, settingRows] = await Promise.all([
+      prisma.printCalib.findUnique({ where: { jenis: "sj" } }),
+      prisma.setting.findMany(),
+    ]);
+
+    const calib = {
+      ...PRINT_CALIB_DEFAULTS.sj,
+      ...(calibRow?.data || {}),
+      fields: { ...PRINT_CALIB_DEFAULTS.sj.fields, ...(calibRow?.data?.fields || {}) },
+    };
+    const signerName = settingRows.find((s) => s.key === "signerName")?.value || "";
+
+    const wb = await buildSJWorkbook(sj, calib, signerName);
+
+    const filename = `SJ-${(sj.no || "surat-jalan").replace(/[^a-zA-Z0-9-]/g, "_")}.xlsx`;
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+    await wb.xlsx.write(res);
+    res.end();
   } catch (e) {
     next(e);
   }

@@ -13,6 +13,7 @@ const stockMasterList = ref([]);
 const loading = ref(true);
 const saving = ref(false);
 const showModal = ref(false);
+const selectedIds = ref([]); // buat pilih beberapa SJ sekaligus (cetak/export gabungan)
 const editingId = ref(null);
 
 const emptyForm = () => ({
@@ -267,6 +268,63 @@ function cetak(sj) {
   printSJ(sj);
 }
 
+// ---- pilih banyak SJ sekaligus ----
+const allSelected = computed(
+  () => list.value.length > 0 && selectedIds.value.length === list.value.length
+);
+
+function toggleSelectAll() {
+  selectedIds.value = allSelected.value ? [] : list.value.map((sj) => sj.id);
+}
+
+function toggleSelectOne(id) {
+  const i = selectedIds.value.indexOf(id);
+  if (i === -1) selectedIds.value.push(id);
+  else selectedIds.value.splice(i, 1);
+}
+
+function selectedSJList() {
+  // urutan sesuai tampilan tabel (bukan urutan klik), biar hasil cetak
+  // urut sama seperti yang terlihat di layar
+  const idSet = new Set(selectedIds.value);
+  return list.value.filter((sj) => idSet.has(sj.id));
+}
+
+function cetakTerpilih() {
+  const items = selectedSJList();
+  if (!items.length) return toast("Pilih dulu Surat Jalan yang mau dicetak");
+  printSJ(items); // print.js sudah mendukung array - satu print job berurutan tanpa jeda
+}
+
+// Export beberapa SJ sekaligus jadi SATU file .xlsx (satu sheet per SJ).
+// Nanti waktu diprint di PC print, harus diprint sebagai satu
+// file/workbook (bukan sheet satu-satu) supaya kertas terus nyambung -
+// PrintSJExcel.vbs sudah otomatis melakukan ini.
+async function exportSJXlsxTerpilih() {
+  const ids = selectedIds.value;
+  if (!ids.length) return toast("Pilih dulu Surat Jalan yang mau di-export");
+  try {
+    await api.download("/surat-jalan/export-xlsx-batch", `SJ-Batch-${ids.length}dok.xlsx`, {
+      method: "POST",
+      body: { ids },
+    });
+  } catch (error) {
+    toast(error?.message || "Gagal export ke Excel");
+  }
+}
+
+// Export ke .xlsx (Page Setup terkunci di file, dicetak lewat Excel -
+// lebih stabil di kertas continuous form / dot matrix daripada lewat
+// dialog print browser, karena settingnya tidak balik ke default tiap
+// print). Pakai posisi kalibrasi yang sama dengan "Cetak" biasa.
+async function exportSJXlsx(sj) {
+  try {
+    await api.download(`/surat-jalan/${sj.id}/export-xlsx`, `SJ-${sj.no}.xlsx`);
+  } catch (error) {
+    toast(error?.message || "Gagal export ke Excel");
+  }
+}
+
 onMounted(load);
 </script>
 
@@ -322,10 +380,24 @@ onMounted(load);
         <span class="tag">{{ list.length }} Dokumen</span>
       </div>
 
+      <div v-if="selectedIds.length" class="sj-batch-bar">
+        <span>{{ selectedIds.length }} dipilih</span>
+        <button class="btn btn-sm" @click="cetakTerpilih" title="Cetak semua yang dipilih berurutan tanpa jeda">
+          🖨 Cetak Terpilih
+        </button>
+        <button class="btn btn-sm" @click="exportSJXlsxTerpilih" title="Export semua yang dipilih jadi satu file Excel">
+          📊 Export Excel Terpilih
+        </button>
+        <button class="btn btn-sm btn-ghost" @click="selectedIds = []">Batal pilih</button>
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th class="checkbox-col">
+                <input type="checkbox" :checked="allSelected" @change="toggleSelectAll" />
+              </th>
               <th>No Surat Jalan</th>
               <th>Customer / Tujuan</th>
               <th>Jenis Barang</th>
@@ -339,6 +411,13 @@ onMounted(load);
 
           <tbody>
             <tr v-for="sj in list" :key="sj.id">
+              <td class="checkbox-col">
+                <input
+                  type="checkbox"
+                  :checked="selectedIds.includes(sj.id)"
+                  @change="toggleSelectOne(sj.id)"
+                />
+              </td>
               <td><span class="sj-number mono">{{ sj.no }}</span></td>
               <td>
                 <strong>{{ sj.customer?.nama || "-" }}</strong>
@@ -361,7 +440,8 @@ onMounted(load);
                   >
                     ✓ TTD
                   </button>
-                  <button class="btn btn-sm btn-ghost" @click="cetak(sj)">🖨</button>
+                  <button class="btn btn-sm btn-ghost" @click="cetak(sj)" title="Cetak lewat browser">🖨</button>
+                  <button class="btn btn-sm btn-ghost" @click="exportSJXlsx(sj)" title="Export ke Excel (buat cetak lewat Excel)">📊</button>
                   <button class="btn btn-sm btn-ghost" @click="openEdit(sj)">Edit</button>
                   <button class="btn btn-sm btn-danger" @click="removeSJ(sj)">Hapus</button>
                 </div>
@@ -512,6 +592,18 @@ onMounted(load);
 .sj-tujuan-sub { font-size: 11px; color: var(--ink-soft); max-width: 260px; }
 .sj-penerima-sub { font-size: 11px; color: var(--bms-blue-dark); font-weight: 600; max-width: 260px; }
 .sj-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.checkbox-col { width: 32px; text-align: center; }
+.sj-batch-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: #eef4ff;
+  border: 1px solid #cfe0fb;
+  border-radius: 8px;
+  font-size: 13px;
+}
 .sj-hint { margin-top: 10px; font-size: 11.5px; color: var(--ink-soft); }
 .row-4 { grid-template-columns: repeat(4, 1fr); }
 .m3-hint { font-size: 12.5px; color: var(--ink-soft); margin: 6px 0 12px; }

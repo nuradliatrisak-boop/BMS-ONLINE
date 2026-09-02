@@ -207,16 +207,26 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
       cell.alignment = {
         horizontal: colNumber === 5 ? "left" : "center",
         vertical: "middle",
-        wrapText: colNumber === 5, // "Alamat Kirim" boleh panjang - wrap, jangan kepotong
+        // "No SJ" (3), "Sopir" (4) & "Alamat Kirim" (5) boleh panjang -
+        // wrap TURUN ke bawah di kolom yang sama, jangan sampai kepotong
+        // kiri/kanan (sebelumnya "No SJ" & label tanggal/tanda tangan di
+        // bawah rawan kepotong di KEDUA sisi karena rata tengah & kolom
+        // kiri-kanannya sama-sama terisi, jadi tidak bisa meluber sama sekali).
+        wrapText: colNumber === 3 || colNumber === 4 || colNumber === 5,
       };
     });
     row.getCell(10).numFmt = '"Rp" #,##0';
     row.getCell(11).numFmt = '"Rp" #,##0';
-    // Kolom F/G/H/I (P/L/T/M3) di baris ini selalu terisi angka, jadi teks
-    // "Alamat Kirim" TIDAK BISA meluber ke kanan seperti sel kosong biasa -
-    // makanya wrapText di atas wajib dibarengi tinggi baris yang cukup di
-    // sini, kalau tidak isinya tetap kelihatan terpotong walau datanya utuh.
-    row.height = Math.max(row.height || 0, estimateWrapHeight(row.getCell(5).value, 26));
+    // Tinggi baris dihitung dari kolom TERPANJANG di antara No SJ / Sopir /
+    // Alamat Kirim (bukan cuma Alamat Kirim saja) - supaya No SJ yang
+    // panjang & wrap 2 baris juga tetap kebaca penuh, bukan cuma datanya
+    // yang lengkap tapi tampilannya kepotong karena barisnya kependekan.
+    row.height = Math.max(
+      row.height || 0,
+      estimateWrapHeight(row.getCell(3).value, 14),
+      estimateWrapHeight(row.getCell(4).value, 14),
+      estimateWrapHeight(row.getCell(5).value, 26)
+    );
   });
 
   ws.addRow([]);
@@ -258,15 +268,23 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
   ws.addRow([]);
   ws.addRow([]);
 
-  const rTgl = ws.addRow(["", "", "", "", "", "", "", `Jakarta, ${fmtDateLong(inv.tanggal)}`]);
-  rTgl.getCell(8).alignment = { horizontal: "center" };
+  // Sama seperti kasus "No SJ" di atas: teks ini rata TENGAH (center), jadi
+  // butuh ruang kosong di KEDUA sisi supaya bisa meluber tanpa kepotong.
+  // Sebelumnya cuma ditaruh di 1 sel (kolom H) dengan kolom G diisi "" -
+  // itu menutup jalur meluber ke kiri, jadi bagian awal teksnya
+  // ("Jakarta, ") kepotong hilang. Di-merge F:K supaya dapat ruang pasti,
+  // tidak bergantung sama sekali ke sel tetangga.
+  const rTgl = ws.addRow(["", "", "", "", "", `Jakarta, ${fmtDateLong(inv.tanggal)}`]);
+  ws.mergeCells(`F${rTgl.number}:K${rTgl.number}`);
+  rTgl.getCell(6).alignment = { horizontal: "center" };
 
   ws.addRow([]);
   ws.addRow([]);
 
-  const rSign = ws.addRow(["", "", "", "", "", "", "", signerName || "Hormat Kami"]);
-  rSign.getCell(8).font = { bold: true, underline: true };
-  rSign.getCell(8).alignment = { horizontal: "center" };
+  const rSign = ws.addRow(["", "", "", "", "", signerName || "Hormat Kami"]);
+  ws.mergeCells(`F${rSign.number}:K${rSign.number}`);
+  rSign.getCell(6).font = { bold: true, underline: true };
+  rSign.getCell(6).alignment = { horizontal: "center" };
 
   return wb;
 }

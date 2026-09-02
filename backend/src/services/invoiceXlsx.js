@@ -23,10 +23,36 @@ import ExcelJS from "exceljs";
 //     printer driver yang berbeda-beda) - orang tinggal atur sendiri
 //     "Page Setup > Paper Size" di Excel sesuai kertas fisik yang
 //     dipakai (caranya sama seperti dulu), lalu print seperti biasa.
+//
+// PERUBAHAN KHUSUS DOT MATRIX:
+//   - Font utama menggunakan Courier New agar bentuk karakter jelas
+//     pada printer dot matrix.
+//   - Ukuran font isi dinaikkan menjadi 10 pt.
+//   - Header tabel dibuat 10 pt bold.
+//   - Informasi invoice penting dibuat 10-11 pt.
+//   - Total tagihan dibuat 11 pt bold.
+//   - Tidak mengubah struktur kolom, merge, margin, atau data invoice.
 // ============================================================
 
-const MM_TO_PT = 2.83464567; // 1 mm dalam point (satuan tinggi baris Excel)
-const MM_TO_IN = 1 / 25.4; // 1 mm dalam inch (satuan margin halaman Excel)
+const MM_TO_PT = 2.83464567; // 1 mm dalam point
+const MM_TO_IN = 1 / 25.4; // 1 mm dalam inch
+
+// ------------------------------------------------------------
+// FONT KHUSUS DOT MATRIX
+// ------------------------------------------------------------
+// Courier New dipilih karena karakter memiliki lebar yang konsisten
+// dan bentuknya sederhana, sehingga relatif mudah dibaca pada hasil
+// cetak dot matrix Windows/Excel.
+//
+// Jangan terlalu besar karena invoice menggunakan continuous form.
+// 10 pt untuk isi dan 11 pt untuk bagian penting adalah kompromi
+// antara keterbacaan dan menjaga layout tetap muat.
+// ------------------------------------------------------------
+const DOT_FONT = "Courier New";
+const FONT_BODY = 10;
+const FONT_SMALL = 9;
+const FONT_IMPORTANT = 10;
+const FONT_TOTAL = 11;
 
 function rupiah(n) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
@@ -50,253 +76,759 @@ function fmtDateLong(v) {
   });
 }
 
-const THIN = { style: "thin", color: { argb: "FF111111" } };
-const BOX = { top: THIN, bottom: THIN, left: THIN, right: THIN };
+const THIN = {
+  style: "thin",
+  color: { argb: "FF111111" },
+};
 
-// Perkiraan tinggi baris (dalam point) yang dibutuhkan supaya teks dengan
-// wrapText tetap kebaca penuh (tidak kepotong tinggi barisnya), berdasarkan
-// panjang teks dibagi kira-kira jumlah karakter yang muat per baris untuk
-// lebar kolom (dalam satuan "lebar kolom Excel") yang diberikan. Excel/Google
-// Sheets tidak selalu auto-fit tinggi baris untuk sel yang tingginya sudah
-// di-set eksplisit dari kode, jadi tinggi ini sengaja dihitung manual supaya
-// aman di kedua aplikasi tersebut, bukan cuma mengandalkan auto-fit Excel.
-function estimateWrapHeight(text, colWidthChars, lineHeightPt = 14) {
+const BOX = {
+  top: THIN,
+  bottom: THIN,
+  left: THIN,
+  right: THIN,
+};
+
+// ------------------------------------------------------------
+// Helper font
+// ------------------------------------------------------------
+// Menghindari penggantian properti font yang sudah ada.
+// Jadi bold / italic / underline yang sudah dipakai di invoice
+// tetap dipertahankan.
+// ------------------------------------------------------------
+function applyFont(cell, options = {}) {
+  cell.font = {
+    name: DOT_FONT,
+    size: options.size ?? FONT_BODY,
+    bold: options.bold ?? false,
+    italic: options.italic ?? false,
+    underline: options.underline ?? false,
+    color: options.color,
+  };
+}
+
+// Perkiraan tinggi baris berdasarkan panjang teks.
+// Tetap dipertahankan agar teks wrap tidak kepotong.
+function estimateWrapHeight(
+  text,
+  colWidthChars,
+  lineHeightPt = 15
+) {
   const len = String(text ?? "").length;
+
   if (!len) return lineHeightPt;
-  const charsPerLine = Math.max(6, Math.floor(colWidthChars));
-  const lines = Math.max(1, Math.ceil(len / charsPerLine));
+
+  const charsPerLine = Math.max(
+    6,
+    Math.floor(colWidthChars)
+  );
+
+  const lines = Math.max(
+    1,
+    Math.ceil(len / charsPerLine)
+  );
+
   return lines * lineHeightPt;
 }
 
-export async function buildInvoiceWorkbook(inv, calib, signerName) {
+export async function buildInvoiceWorkbook(
+  inv,
+  calib,
+  signerName
+) {
   const wb = new ExcelJS.Workbook();
+
   const ws = wb.addWorksheet("Invoice", {
     pageSetup: {
       orientation: "portrait",
-      // Margin diambil dari kalibrasi yang sama dipakai halaman Kalibrasi
-      // Cetak (mm -> inch), supaya satu sumber angka untuk dua cara cetak.
+
+      // Margin diambil dari kalibrasi yang sama dipakai halaman
+      // Kalibrasi Cetak (mm -> inch).
       margins: {
-        top: (Number(calib?.topMargin ?? 21) + Number(calib?.offsetY || 0)) * MM_TO_IN,
-        left: (8 + Number(calib?.offsetX || 0)) * MM_TO_IN,
+        top:
+          (
+            Number(calib?.topMargin ?? 21) +
+            Number(calib?.offsetY || 0)
+          ) * MM_TO_IN,
+
+        left:
+          (
+            8 +
+            Number(calib?.offsetX || 0)
+          ) * MM_TO_IN,
+
         right: 8 * MM_TO_IN,
         bottom: 6 * MM_TO_IN,
+
         header: 0,
         footer: 0,
       },
-      // Kolom A-K (11 kolom) totalnya kadang sedikit lebih lebar dari
-      // area cetak efektif kertas yang dipakai - kalau dibiarkan
-      // fitToPage:false, Excel akan memotong kolom I-K itu ke HALAMAN
-      // BARU (bukan ke kanan, tapi ke kertas berikutnya karena urutan
-      // cetak default "ke bawah dulu"), jadi boros kertas continuous
-      // form. fitToWidth:1 + fitToHeight:0 memaksa SEMUA kolom (A-K)
-      // selalu muat di satu halaman lebar kertas (Excel yang otomatis
-      // sedikit menyusutkan skalanya kalau perlu), sementara tinggi
-      // tetap bebas mengalir apa adanya (tidak dipaksa 1 halaman tinggi)
-      // - jadi tidak akan lagi ada halaman baru gara-gara kolom kepotong.
+
+      // Tetap 1 halaman lebar agar kolom A-K tidak terlempar
+      // ke halaman berikutnya.
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: 0,
-      // Paper size sengaja tidak dipaksa di sini - atur sendiri lewat
-      // Page Layout > Size di Excel sesuai kertas fisik yang dipakai
-      // (persis seperti alur lama), supaya tidak bentrok dengan printer
-      // yang beda-beda tiap kantor/komputer.
     },
   });
 
-  // Kolom kira-kira sepadan dengan tabel di versi cetak browser:
-  // No | Tgl Kirim | No SJ | Sopir | Alamat Kirim | P | L | T | M3 | Harga | Jumlah
+  // ============================================================
+  // KOLOM
+  // ============================================================
+  //
+  // TIDAK DIUBAH supaya posisi horizontal invoice tetap sama.
+  //
   ws.columns = [
-    { width: 4 }, // A No
+    { width: 4 },  // A No
     { width: 10 }, // B Tgl Kirim
     { width: 14 }, // C No SJ
     { width: 14 }, // D Sopir
     { width: 26 }, // E Alamat Kirim
-    { width: 7 }, // F P
-    { width: 7 }, // G L
-    { width: 7 }, // H T
-    { width: 8 }, // I M3
+    { width: 7 },  // F P
+    { width: 7 },  // G L
+    { width: 7 },  // H T
+    { width: 8 },  // I M3
     { width: 13 }, // J Harga
     { width: 15 }, // K Jumlah
   ];
 
-  const LASTCOL = 11; // kolom K
+  const LASTCOL = 11;
 
-  // ---- baris kosong pengganti "topMargin" kalibrasi (tinggi disamakan
-  // supaya konsisten dengan versi cetak browser - kop surat fisik sudah
-  // ada di area ini, jadi sengaja tidak ditumpuk tulisan apapun) ----
-  ws.addRow([]).height = Number(calib?.topMargin ?? 21) * MM_TO_PT * 0.6;
+  // ============================================================
+  // BARIS KOSONG UNTUK AREA KOP SURAT
+  // ============================================================
 
-  // ---- Kepada Yth (kiri) & Halaman/No Invoice/Tanggal (kanan) ----
-  // Label-label ini digabung (merge) A:D biar dapat ruang lebar sendiri -
-  // TIDAK mengandalkan "teks meluber ke kolom kosong sebelahnya", karena
-  // kolom A sengaja dibuat sempit (lebar 4) untuk nomor urut tabel item
-  // di bawah, jadi kalau cuma mengandalkan overflow, label panjang di
-  // sini bisa kepotong (terutama di Google Sheets yang penanganan
-  // overflow-nya kadang beda dari Excel).
-  // Label di kolom I ("Halaman" / "No. Invoice" / "Tanggal") di-merge I:J
-  // (bukan cuma mengandalkan overflow ke kolom J yang kosong), karena kalau
-  // kolom J kebetulan tetap "ada isinya" (walau cuma string kosong "") teks
-  // label yang lebih panjang dari lebar kolom I saja (mis. "No. Invoice")
-  // akan KEPOTONG persis di batas kolom I/J - itulah yang bikin sebelumnya
-  // muncul sebagai "No. Invoic" di hasil export.
-  const rKepada = ws.addRow(["Kepada Yth", "", "", "", "", "", "", "", "Halaman", "", inv.halaman ?? 1]);
-  ws.mergeCells(`A${rKepada.number}:D${rKepada.number}`);
-  ws.mergeCells(`I${rKepada.number}:J${rKepada.number}`);
-  rKepada.getCell(1).font = { size: 9, color: { argb: "FF555555" } };
-  rKepada.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
-  rKepada.getCell(11).font = { bold: true };
+  const topBlank = ws.addRow([]);
 
-  const rNamaCust = ws.addRow([inv.customer?.nama || "", "", "", "", "", "", "", "", "No. Invoice", "", inv.no || ""]);
-  ws.mergeCells(`A${rNamaCust.number}:D${rNamaCust.number}`);
-  ws.mergeCells(`I${rNamaCust.number}:J${rNamaCust.number}`);
-  rNamaCust.getCell(1).font = { bold: true };
-  rNamaCust.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
-  rNamaCust.getCell(11).font = { bold: true };
+  topBlank.height =
+    Number(calib?.topMargin ?? 21) *
+    MM_TO_PT *
+    0.6;
 
-  const rAlamatCust = ws.addRow([inv.customer?.alamat || "", "", "", "", "", "", "", "", "Tanggal", "", fmtDateShort(inv.tanggal)]);
-  ws.mergeCells(`A${rAlamatCust.number}:D${rAlamatCust.number}`);
-  ws.mergeCells(`I${rAlamatCust.number}:J${rAlamatCust.number}`);
-  rAlamatCust.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
-  rAlamatCust.getCell(11).font = { bold: true };
+  // ============================================================
+  // KEPADA YTH + INFORMASI INVOICE
+  // ============================================================
 
-  ws.addRow([]);
+  const rKepada = ws.addRow([
+    "Kepada Yth",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "Halaman",
+    "",
+    inv.halaman ?? 1,
+  ]);
 
-  // ---- Kode / Nama / Alamat customer ----
+  ws.mergeCells(
+    `A${rKepada.number}:D${rKepada.number}`
+  );
+
+  ws.mergeCells(
+    `I${rKepada.number}:J${rKepada.number}`
+  );
+
+  applyFont(rKepada.getCell(1), {
+    size: FONT_SMALL,
+    color: "FF444444",
+  });
+
+  applyFont(rKepada.getCell(9), {
+    size: FONT_SMALL,
+    color: "FF444444",
+  });
+
+  applyFont(rKepada.getCell(11), {
+    size: FONT_IMPORTANT,
+    bold: true,
+  });
+
+  rKepada.height = 16;
+
+  // ------------------------------------------------------------
+
+  const rNamaCust = ws.addRow([
+    inv.customer?.nama || "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "No. Invoice",
+    "",
+    inv.no || "",
+  ]);
+
+  ws.mergeCells(
+    `A${rNamaCust.number}:D${rNamaCust.number}`
+  );
+
+  ws.mergeCells(
+    `I${rNamaCust.number}:J${rNamaCust.number}`
+  );
+
+  applyFont(rNamaCust.getCell(1), {
+    size: FONT_IMPORTANT,
+    bold: true,
+  });
+
+  applyFont(rNamaCust.getCell(9), {
+    size: FONT_SMALL,
+    color: "FF444444",
+  });
+
+  applyFont(rNamaCust.getCell(11), {
+    size: FONT_IMPORTANT,
+    bold: true,
+  });
+
+  rNamaCust.height = 17;
+
+  // ------------------------------------------------------------
+
+  const rAlamatCust = ws.addRow([
+    inv.customer?.alamat || "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "Tanggal",
+    "",
+    fmtDateShort(inv.tanggal),
+  ]);
+
+  ws.mergeCells(
+    `A${rAlamatCust.number}:D${rAlamatCust.number}`
+  );
+
+  ws.mergeCells(
+    `I${rAlamatCust.number}:J${rAlamatCust.number}`
+  );
+
+  applyFont(rAlamatCust.getCell(1), {
+    size: FONT_BODY,
+  });
+
+  applyFont(rAlamatCust.getCell(9), {
+    size: FONT_SMALL,
+    color: "FF444444",
+  });
+
+  applyFont(rAlamatCust.getCell(11), {
+    size: FONT_IMPORTANT,
+    bold: true,
+  });
+
+  rAlamatCust.getCell(1).alignment = {
+    vertical: "middle",
+    wrapText: true,
+  };
+
+  rAlamatCust.height = Math.max(
+    17,
+    estimateWrapHeight(
+      inv.customer?.alamat || "",
+      32,
+      15
+    )
+  );
+
+  // Spasi
+  ws.addRow([]).height = 8;
+
+  // ============================================================
+  // KODE / NAMA / ALAMAT CUSTOMER
+  // ============================================================
+
   const idRows = [
     ["Kode Customer", inv.customer?.kode || "-"],
     ["Nama Customer", inv.customer?.nama || "-"],
     ["Alamat", inv.customer?.alamat || "-"],
   ];
+
   for (const [label, val] of idRows) {
-    const r = ws.addRow([label, "", "", ":", val]);
-    ws.mergeCells(`A${r.number}:C${r.number}`); // label dapat ruang A:C, kolom D tetap buat ":"
-    // Nilainya (terutama Alamat) di-merge E:K & wrapText, bukan mengandalkan
-    // overflow saja - alamat yang panjang bisa lebih lebar dari kolom E (26)
-    // ditambah sisa kolom kosong di kanannya, jadi perlu wrap + tinggi baris
-    // yang menyesuaikan supaya tidak ada bagian teks yang hilang dari tampilan.
-    ws.mergeCells(`E${r.number}:K${r.number}`);
-    r.getCell(1).font = { size: 9, color: { argb: "FF555555" } };
-    r.getCell(5).font = { bold: true };
-    r.getCell(5).alignment = { wrapText: true, vertical: "middle" };
-    r.height = Math.max(r.height || 0, estimateWrapHeight(val, 83));
+    const r = ws.addRow([
+      label,
+      "",
+      "",
+      ":",
+      val,
+    ]);
+
+    ws.mergeCells(
+      `A${r.number}:C${r.number}`
+    );
+
+    ws.mergeCells(
+      `E${r.number}:K${r.number}`
+    );
+
+    // Label
+    applyFont(r.getCell(1), {
+      size: FONT_SMALL,
+      color: "FF444444",
+    });
+
+    // Nilai
+    applyFont(r.getCell(5), {
+      size: FONT_BODY,
+      bold: true,
+    });
+
+    r.getCell(5).alignment = {
+      wrapText: true,
+      vertical: "middle",
+    };
+
+    r.getCell(4).alignment = {
+      horizontal: "center",
+      vertical: "middle",
+    };
+
+    r.height = Math.max(
+      17,
+      estimateWrapHeight(
+        val,
+        83,
+        15
+      )
+    );
   }
 
-  ws.addRow([]);
+  // Spasi
+  ws.addRow([]).height = 8;
 
-  // ---- tabel item ----
-  const header = ["No", "Tgl Kirim", "No SJ", "Sopir", "Alamat Kirim", "P", "L", "T", "M3", "Harga", "Jumlah"];
+  // ============================================================
+  // TABEL ITEM
+  // ============================================================
+
+  const header = [
+    "No",
+    "Tgl Kirim",
+    "No SJ",
+    "Sopir",
+    "Alamat Kirim",
+    "P",
+    "L",
+    "T",
+    "M3",
+    "Harga",
+    "Jumlah",
+  ];
+
   const rHeader = ws.addRow(header);
-  rHeader.eachCell((cell, colNumber) => {
-    if (colNumber > LASTCOL) return;
-    cell.font = { bold: true };
-    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEEEEEE" } };
-    cell.border = BOX;
-  });
+
+  rHeader.eachCell(
+    (cell, colNumber) => {
+      if (colNumber > LASTCOL) return;
+
+      applyFont(cell, {
+        size: FONT_IMPORTANT,
+        bold: true,
+      });
+
+      cell.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+        wrapText: true,
+      };
+
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: {
+          argb: "FFEEEEEE",
+        },
+      };
+
+      cell.border = BOX;
+    }
+  );
+
+  // Tinggi header sedikit dinaikkan supaya font 10 pt
+  // tidak terlalu rapat pada printer dot matrix.
+  rHeader.height = 24;
+
+  // ============================================================
+  // DATA ITEM
+  // ============================================================
 
   let totalM3 = 0;
-  (inv.items || []).forEach((it, i) => {
-    const sj = it.suratJalan;
-    const jumlah = Number(it.qty) * Number(it.hargaSatuan);
-    totalM3 += Number(sj?.m3 || 0);
 
-    const row = ws.addRow([
-      i + 1,
-      sj ? fmtDateShort(sj.tanggal) : "-",
-      sj ? sj.no : "-",
-      sj ? sj.sopir || sj.armada?.sopir || "" : "",
-      sj ? sj.tujuan : it.keterangan,
-      sj ? Number(sj.panjang ?? 0) : "",
-      sj ? Number(sj.lebar ?? 0) : "",
-      sj ? Number(sj.tinggi ?? 0) : "",
-      sj ? Number(sj.m3 || 0) : Number(it.qty),
-      Number(it.hargaSatuan),
-      jumlah,
-    ]);
-    row.eachCell((cell, colNumber) => {
-      if (colNumber > LASTCOL) return;
-      cell.border = BOX;
-      cell.alignment = {
-        horizontal: colNumber === 5 ? "left" : "center",
-        vertical: "middle",
-        // "No SJ" (3), "Sopir" (4) & "Alamat Kirim" (5) boleh panjang -
-        // wrap TURUN ke bawah di kolom yang sama, jangan sampai kepotong
-        // kiri/kanan (sebelumnya "No SJ" & label tanggal/tanda tangan di
-        // bawah rawan kepotong di KEDUA sisi karena rata tengah & kolom
-        // kiri-kanannya sama-sama terisi, jadi tidak bisa meluber sama sekali).
-        wrapText: colNumber === 3 || colNumber === 4 || colNumber === 5,
-      };
-    });
-    row.getCell(10).numFmt = '"Rp" #,##0';
-    row.getCell(11).numFmt = '"Rp" #,##0';
-    // Tinggi baris dihitung dari kolom TERPANJANG di antara No SJ / Sopir /
-    // Alamat Kirim (bukan cuma Alamat Kirim saja) - supaya No SJ yang
-    // panjang & wrap 2 baris juga tetap kebaca penuh, bukan cuma datanya
-    // yang lengkap tapi tampilannya kepotong karena barisnya kependekan.
-    row.height = Math.max(
-      row.height || 0,
-      estimateWrapHeight(row.getCell(3).value, 14),
-      estimateWrapHeight(row.getCell(4).value, 14),
-      estimateWrapHeight(row.getCell(5).value, 26)
+  (inv.items || []).forEach(
+    (it, i) => {
+      const sj = it.suratJalan;
+
+      const jumlah =
+        Number(it.qty) *
+        Number(it.hargaSatuan);
+
+      totalM3 += Number(
+        sj?.m3 || 0
+      );
+
+      const row = ws.addRow([
+        i + 1,
+        sj
+          ? fmtDateShort(sj.tanggal)
+          : "-",
+        sj
+          ? sj.no
+          : "-",
+        sj
+          ? sj.sopir ||
+            sj.armada?.sopir ||
+            ""
+          : "",
+        sj
+          ? sj.tujuan
+          : it.keterangan,
+        sj
+          ? Number(
+              sj.panjang ?? 0
+            )
+          : "",
+        sj
+          ? Number(
+              sj.lebar ?? 0
+            )
+          : "",
+        sj
+          ? Number(
+              sj.tinggi ?? 0
+            )
+          : "",
+        sj
+          ? Number(
+              sj.m3 || 0
+            )
+          : Number(it.qty),
+        Number(it.hargaSatuan),
+        jumlah,
+      ]);
+
+      row.eachCell(
+        (cell, colNumber) => {
+          if (colNumber > LASTCOL) return;
+
+          applyFont(cell, {
+            size: FONT_BODY,
+          });
+
+          cell.border = BOX;
+
+          cell.alignment = {
+            horizontal:
+              colNumber === 5
+                ? "left"
+                : "center",
+
+            vertical: "middle",
+
+            wrapText:
+              colNumber === 3 ||
+              colNumber === 4 ||
+              colNumber === 5,
+          };
+        }
+      );
+
+      // Harga
+      row.getCell(10).numFmt =
+        '"Rp" #,##0';
+
+      // Jumlah
+      row.getCell(11).numFmt =
+        '"Rp" #,##0';
+
+      // Harga dan jumlah dibuat sedikit lebih tegas.
+      applyFont(
+        row.getCell(10),
+        {
+          size: FONT_BODY,
+          bold: true,
+        }
+      );
+
+      applyFont(
+        row.getCell(11),
+        {
+          size: FONT_BODY,
+          bold: true,
+        }
+      );
+
+      // Tinggi baris mengikuti teks terpanjang.
+      row.height = Math.max(
+        19,
+
+        estimateWrapHeight(
+          row.getCell(3).value,
+          14,
+          15
+        ),
+
+        estimateWrapHeight(
+          row.getCell(4).value,
+          14,
+          15
+        ),
+
+        estimateWrapHeight(
+          row.getCell(5).value,
+          26,
+          15
+        )
+      );
+    }
+  );
+
+  // ============================================================
+  // TOTAL M3
+  // ============================================================
+
+  ws.addRow([]).height = 8;
+
+  const total =
+    inv.total ??
+    (inv.items || []).reduce(
+      (s, i) =>
+        s +
+        i.qty *
+          i.hargaSatuan,
+      0
     );
-  });
 
-  ws.addRow([]);
+  const rTotalM3 = ws.addRow([
+    `Total M3: ${totalM3.toFixed(3)}`,
+  ]);
 
-  // ---- total & terbilang (kiri) + kotak total tagihan (kanan) ----
-  const total = inv.total ?? (inv.items || []).reduce((s, i) => s + i.qty * i.hargaSatuan, 0);
+  applyFont(
+    rTotalM3.getCell(1),
+    {
+      size: FONT_IMPORTANT,
+      bold: true,
+    }
+  );
 
-  const rTotalM3 = ws.addRow([`Total M3: ${totalM3.toFixed(3)}`]);
-  rTotalM3.getCell(1).font = { bold: true };
+  rTotalM3.height = 18;
+
+  // ============================================================
+  // CATATAN
+  // ============================================================
 
   if (inv.catatan) {
-    const rCatatan = ws.addRow([`Catatan: ${inv.catatan}`]);
-    rCatatan.getCell(1).font = { size: 8, italic: true };
+    const rCatatan = ws.addRow([
+      `Catatan: ${inv.catatan}`,
+    ]);
+
+    applyFont(
+      rCatatan.getCell(1),
+      {
+        size: FONT_SMALL,
+        italic: true,
+      }
+    );
+
+    rCatatan.getCell(1).alignment = {
+      wrapText: true,
+      vertical: "middle",
+    };
+
+    rCatatan.height = Math.max(
+      17,
+      estimateWrapHeight(
+        `Catatan: ${inv.catatan}`,
+        80,
+        14
+      )
+    );
   }
 
-  ws.addRow([]);
+  // Spasi
+  ws.addRow([]).height = 8;
+
+  // ============================================================
+  // BOX TOTAL TAGIHAN
+  // ============================================================
 
   const boxRows = [
-    ["Jumlah Total Tagihan", total],
-    ["Sudah Dibayar", inv.dibayar],
-    ["Sisa", inv.sisaTagihan],
+    [
+      "Jumlah Total Tagihan",
+      total,
+    ],
+    [
+      "Sudah Dibayar",
+      inv.dibayar,
+    ],
+    [
+      "Sisa",
+      inv.sisaTagihan,
+    ],
   ];
-  for (const [label, val] of boxRows) {
-    const r = ws.addRow(["", "", "", "", "", "", "", "", label, "", val]);
-    // Sama seperti label "No. Invoice" di atas: "Jumlah Total Tagihan" &
-    // "Sudah Dibayar" lebih panjang dari lebar kolom I saja, jadi di-merge
-    // I:J supaya tidak kepotong (sebelumnya muncul sebagai "Jumlah T" /
-    // "Sudah Di"). Border kotaknya diikutkan ke kolom J juga biar kotaknya
-    // menyatu, bukan cuma mengelilingi kolom I.
-    ws.mergeCells(`I${r.number}:J${r.number}`);
+
+  for (
+    const [label, val]
+    of boxRows
+  ) {
+    const r = ws.addRow([
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      label,
+      "",
+      val,
+    ]);
+
+    ws.mergeCells(
+      `I${r.number}:J${r.number}`
+    );
+
+    // Label total
+    applyFont(
+      r.getCell(9),
+      {
+        size: FONT_IMPORTANT,
+        bold: true,
+      }
+    );
+
+    r.getCell(9).alignment = {
+      horizontal: "left",
+      vertical: "middle",
+    };
+
+    // Border label
     r.getCell(9).border = BOX;
     r.getCell(10).border = BOX;
-    r.getCell(9).alignment = { horizontal: "left", vertical: "middle" };
+
+    // Nilai
+    applyFont(
+      r.getCell(11),
+      {
+        size: FONT_TOTAL,
+        bold: true,
+      }
+    );
+
     r.getCell(11).border = BOX;
-    r.getCell(11).numFmt = '"Rp" #,##0';
-    r.getCell(11).alignment = { horizontal: "right" };
+
+    r.getCell(11).numFmt =
+      '"Rp" #,##0';
+
+    r.getCell(11).alignment = {
+      horizontal: "right",
+      vertical: "middle",
+    };
+
+    r.height = 20;
   }
 
-  ws.addRow([]);
-  ws.addRow([]);
+  // ============================================================
+  // TANGGAL
+  // ============================================================
 
-  // Sama seperti kasus "No SJ" di atas: teks ini rata TENGAH (center), jadi
-  // butuh ruang kosong di KEDUA sisi supaya bisa meluber tanpa kepotong.
-  // Sebelumnya cuma ditaruh di 1 sel (kolom H) dengan kolom G diisi "" -
-  // itu menutup jalur meluber ke kiri, jadi bagian awal teksnya
-  // ("Jakarta, ") kepotong hilang. Di-merge F:K supaya dapat ruang pasti,
-  // tidak bergantung sama sekali ke sel tetangga.
-  const rTgl = ws.addRow(["", "", "", "", "", `Jakarta, ${fmtDateLong(inv.tanggal)}`]);
-  ws.mergeCells(`F${rTgl.number}:K${rTgl.number}`);
-  rTgl.getCell(6).alignment = { horizontal: "center" };
+  ws.addRow([]).height = 8;
+  ws.addRow([]).height = 8;
 
-  ws.addRow([]);
-  ws.addRow([]);
+  const rTgl = ws.addRow([
+    "",
+    "",
+    "",
+    "",
+    "",
+    `Jakarta, ${fmtDateLong(
+      inv.tanggal
+    )}`,
+  ]);
 
-  const rSign = ws.addRow(["", "", "", "", "", signerName || "Hormat Kami"]);
-  ws.mergeCells(`F${rSign.number}:K${rSign.number}`);
-  rSign.getCell(6).font = { bold: true, underline: true };
-  rSign.getCell(6).alignment = { horizontal: "center" };
+  ws.mergeCells(
+    `F${rTgl.number}:K${rTgl.number}`
+  );
+
+  applyFont(
+    rTgl.getCell(6),
+    {
+      size: FONT_BODY,
+    }
+  );
+
+  rTgl.getCell(6).alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
+
+  rTgl.height = 18;
+
+  // ============================================================
+  // TANDA TANGAN
+  // ============================================================
+
+  ws.addRow([]).height = 8;
+  ws.addRow([]).height = 8;
+
+  const rSign = ws.addRow([
+    "",
+    "",
+    "",
+    "",
+    "",
+    signerName ||
+      "Hormat Kami",
+  ]);
+
+  ws.mergeCells(
+    `F${rSign.number}:K${rSign.number}`
+  );
+
+  applyFont(
+    rSign.getCell(6),
+    {
+      size: FONT_IMPORTANT,
+      bold: true,
+      underline: true,
+    }
+  );
+
+  rSign.getCell(6).alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
+
+  rSign.height = 20;
+
+  // ============================================================
+  // PENGATURAN PRINT
+  // ============================================================
+  //
+  // Penting:
+  // Jangan mengubah ukuran kertas dari kode.
+  //
+  // User tetap memilih:
+  // Page Layout > Size
+  //
+  // sesuai ukuran continuous form pada PC Windows XP
+  // dan printer dot matrix yang digunakan.
+  //
+  // fitToWidth tetap 1 agar kolom A-K tidak pindah ke halaman
+  // berikutnya.
+  // ============================================================
+
+  ws.pageSetup.fitToPage = true;
+  ws.pageSetup.fitToWidth = 1;
+  ws.pageSetup.fitToHeight = 0;
 
   return wb;
 }

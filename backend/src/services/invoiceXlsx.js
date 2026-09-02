@@ -28,6 +28,18 @@ import ExcelJS from "exceljs";
 const MM_TO_PT = 2.83464567; // 1 mm dalam point (satuan tinggi baris Excel)
 const MM_TO_IN = 1 / 25.4; // 1 mm dalam inch (satuan margin halaman Excel)
 
+// Font dibuat eksplisit "Courier New" di SEMUA sel (bukan dibiarkan pakai
+// font bawaan Excel/Calibri) karena inilah alasan tulisan invoice hasil
+// export kelihatan kecil & kurang jelas kalau dicetak lewat printer dot
+// matrix: Calibri garisnya tipis dan gampang putus-putus di hasil dot
+// matrix, sedangkan Courier New goresannya rata (monospace, mirip huruf
+// mesin ketik/dot matrix asli) jadi lebih tebal & jelas kebaca. Ukuran juga
+// dinaikkan dari sebelumnya supaya tidak kekecilan.
+const FONT_NAME = "Courier New";
+const FONT_BASE = { name: FONT_NAME, size: 11 };
+const FONT_LABEL = { name: FONT_NAME, size: 9.5, color: { argb: "FF555555" } };
+const FONT_BOLD = { name: FONT_NAME, size: 11, bold: true };
+
 function rupiah(n) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
 }
@@ -60,10 +72,18 @@ const BOX = { top: THIN, bottom: THIN, left: THIN, right: THIN };
 // Sheets tidak selalu auto-fit tinggi baris untuk sel yang tingginya sudah
 // di-set eksplisit dari kode, jadi tinggi ini sengaja dihitung manual supaya
 // aman di kedua aplikasi tersebut, bukan cuma mengandalkan auto-fit Excel.
-function estimateWrapHeight(text, colWidthChars, lineHeightPt = 14) {
+//
+// lineHeightPt dinaikkan (14 -> 16) dan colWidthChars yang dikirim pemanggil
+// fungsi ini sekarang dipangkas ~20% oleh pemanggilnya sebelum sampai sini -
+// karena sejak semua sel dipaksa pakai font "Courier New" (monospace, demi
+// kejelasan cetak dot matrix), goresan hurufnya lebih LEBAR dibanding font
+// bawaan Excel (Calibri) yang dipakai waktu angka-angka ambang ini pertama
+// dikalibrasi. Kalau ambangnya tidak disesuaikan, teks yang wrap 2 baris
+// bisa kehitung cuma butuh 1 baris tinggi, lalu sebagian kepotong.
+function estimateWrapHeight(text, colWidthChars, lineHeightPt = 16) {
   const len = String(text ?? "").length;
   if (!len) return lineHeightPt;
-  const charsPerLine = Math.max(6, Math.floor(colWidthChars));
+  const charsPerLine = Math.max(5, Math.floor(colWidthChars * 0.8));
   const lines = Math.max(1, Math.ceil(len / charsPerLine));
   return lines * lineHeightPt;
 }
@@ -105,18 +125,27 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
 
   // Kolom kira-kira sepadan dengan tabel di versi cetak browser:
   // No | Tgl Kirim | No SJ | Sopir | Alamat Kirim | P | L | T | M3 | Harga | Jumlah
+  //
+  // Total lebar 11 kolom ini SENGAJA dijaga cukup sempit (~108 satuan
+  // lebar Excel) supaya secara fisik sudah muat di satu halaman lebar
+  // kertas TANPA harus mengandalkan scaling "fit to page" (yang di
+  // atas sudah diaktifkan juga sebagai lapis kedua) - karena scaling
+  // itu kadang tidak konsisten kebaca di semua versi Excel / printer
+  // driver yang berbeda-beda tiap komputer/kantor. Kolom yang isinya
+  // sudah wrapText (No SJ, Sopir, Alamat Kirim) aman disempitkan
+  // karena teks panjang akan turun ke bawah, bukan kepotong.
   ws.columns = [
     { width: 4 }, // A No
-    { width: 10 }, // B Tgl Kirim
-    { width: 14 }, // C No SJ
-    { width: 14 }, // D Sopir
-    { width: 26 }, // E Alamat Kirim
-    { width: 7 }, // F P
-    { width: 7 }, // G L
-    { width: 7 }, // H T
-    { width: 8 }, // I M3
-    { width: 13 }, // J Harga
-    { width: 15 }, // K Jumlah
+    { width: 9 }, // B Tgl Kirim
+    { width: 12 }, // C No SJ
+    { width: 11 }, // D Sopir
+    { width: 22 }, // E Alamat Kirim
+    { width: 6 }, // F P
+    { width: 6 }, // G L
+    { width: 6 }, // H T
+    { width: 7 }, // I M3
+    { width: 12 }, // J Harga
+    { width: 13 }, // K Jumlah
   ];
 
   const LASTCOL = 11; // kolom K
@@ -142,22 +171,23 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
   const rKepada = ws.addRow(["Kepada Yth", "", "", "", "", "", "", "", "Halaman", "", inv.halaman ?? 1]);
   ws.mergeCells(`A${rKepada.number}:D${rKepada.number}`);
   ws.mergeCells(`I${rKepada.number}:J${rKepada.number}`);
-  rKepada.getCell(1).font = { size: 9, color: { argb: "FF555555" } };
-  rKepada.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
-  rKepada.getCell(11).font = { bold: true };
+  rKepada.getCell(1).font = FONT_LABEL;
+  rKepada.getCell(9).font = FONT_LABEL;
+  rKepada.getCell(11).font = FONT_BOLD;
 
   const rNamaCust = ws.addRow([inv.customer?.nama || "", "", "", "", "", "", "", "", "No. Invoice", "", inv.no || ""]);
   ws.mergeCells(`A${rNamaCust.number}:D${rNamaCust.number}`);
   ws.mergeCells(`I${rNamaCust.number}:J${rNamaCust.number}`);
-  rNamaCust.getCell(1).font = { bold: true };
-  rNamaCust.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
-  rNamaCust.getCell(11).font = { bold: true };
+  rNamaCust.getCell(1).font = FONT_BOLD;
+  rNamaCust.getCell(9).font = FONT_LABEL;
+  rNamaCust.getCell(11).font = FONT_BOLD;
 
   const rAlamatCust = ws.addRow([inv.customer?.alamat || "", "", "", "", "", "", "", "", "Tanggal", "", fmtDateShort(inv.tanggal)]);
   ws.mergeCells(`A${rAlamatCust.number}:D${rAlamatCust.number}`);
   ws.mergeCells(`I${rAlamatCust.number}:J${rAlamatCust.number}`);
-  rAlamatCust.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
-  rAlamatCust.getCell(11).font = { bold: true };
+  rAlamatCust.getCell(1).font = FONT_BASE;
+  rAlamatCust.getCell(9).font = FONT_LABEL;
+  rAlamatCust.getCell(11).font = FONT_BOLD;
 
   ws.addRow([]);
 
@@ -175,8 +205,8 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
     // ditambah sisa kolom kosong di kanannya, jadi perlu wrap + tinggi baris
     // yang menyesuaikan supaya tidak ada bagian teks yang hilang dari tampilan.
     ws.mergeCells(`E${r.number}:K${r.number}`);
-    r.getCell(1).font = { size: 9, color: { argb: "FF555555" } };
-    r.getCell(5).font = { bold: true };
+    r.getCell(1).font = FONT_LABEL;
+    r.getCell(5).font = FONT_BOLD;
     r.getCell(5).alignment = { wrapText: true, vertical: "middle" };
     r.height = Math.max(r.height || 0, estimateWrapHeight(val, 83));
   }
@@ -188,7 +218,7 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
   const rHeader = ws.addRow(header);
   rHeader.eachCell((cell, colNumber) => {
     if (colNumber > LASTCOL) return;
-    cell.font = { bold: true };
+    cell.font = FONT_BOLD;
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEEEEEE" } };
     cell.border = BOX;
@@ -215,6 +245,7 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
     ]);
     row.eachCell((cell, colNumber) => {
       if (colNumber > LASTCOL) return;
+      cell.font = FONT_BASE;
       cell.border = BOX;
       cell.alignment = {
         horizontal: colNumber === 5 ? "left" : "center",
@@ -247,11 +278,11 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
   const total = inv.total ?? (inv.items || []).reduce((s, i) => s + i.qty * i.hargaSatuan, 0);
 
   const rTotalM3 = ws.addRow([`Total M3: ${totalM3.toFixed(3)}`]);
-  rTotalM3.getCell(1).font = { bold: true };
+  rTotalM3.getCell(1).font = FONT_BOLD;
 
   if (inv.catatan) {
     const rCatatan = ws.addRow([`Catatan: ${inv.catatan}`]);
-    rCatatan.getCell(1).font = { size: 8, italic: true };
+    rCatatan.getCell(1).font = { name: FONT_NAME, size: 9.5, italic: true };
   }
 
   ws.addRow([]);
@@ -269,9 +300,11 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
     // "Sudah Di"). Border kotaknya diikutkan ke kolom J juga biar kotaknya
     // menyatu, bukan cuma mengelilingi kolom I.
     ws.mergeCells(`I${r.number}:J${r.number}`);
+    r.getCell(9).font = FONT_BASE;
     r.getCell(9).border = BOX;
     r.getCell(10).border = BOX;
     r.getCell(9).alignment = { horizontal: "left", vertical: "middle" };
+    r.getCell(11).font = FONT_BOLD;
     r.getCell(11).border = BOX;
     r.getCell(11).numFmt = '"Rp" #,##0';
     r.getCell(11).alignment = { horizontal: "right" };
@@ -288,6 +321,7 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
   // tidak bergantung sama sekali ke sel tetangga.
   const rTgl = ws.addRow(["", "", "", "", "", `Jakarta, ${fmtDateLong(inv.tanggal)}`]);
   ws.mergeCells(`F${rTgl.number}:K${rTgl.number}`);
+  rTgl.getCell(6).font = FONT_BASE;
   rTgl.getCell(6).alignment = { horizontal: "center" };
 
   ws.addRow([]);
@@ -295,7 +329,7 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
 
   const rSign = ws.addRow(["", "", "", "", "", signerName || "Hormat Kami"]);
   ws.mergeCells(`F${rSign.number}:K${rSign.number}`);
-  rSign.getCell(6).font = { bold: true, underline: true };
+  rSign.getCell(6).font = { name: FONT_NAME, size: 11, bold: true, underline: true };
   rSign.getCell(6).alignment = { horizontal: "center" };
 
   return wb;

@@ -1374,7 +1374,7 @@ function printInvoice(inv) {
         // Font dibuat sedikit lebih lega.
         'font-family:"Courier New",Courier,monospace;' +
 
-        'font-size:10pt;' +
+        'font-size:11.5pt;' +
 
         'letter-spacing:0.12pt;' +
 
@@ -1426,7 +1426,7 @@ function printInvoice(inv) {
 
       '.label{' +
 
-        'font-size:8.5pt;' +
+        'font-size:10pt;' +
 
         'line-height:1.35;' +
 
@@ -1439,7 +1439,7 @@ function printInvoice(inv) {
 
         'font-weight:700;' +
 
-        'font-size:9.5pt;' +
+        'font-size:11pt;' +
 
         'letter-spacing:0.12pt;' +
 
@@ -1456,7 +1456,7 @@ function printInvoice(inv) {
 
         'margin:1.5mm 0 2mm 0;' +
 
-        'font-size:8.8pt;' +
+        'font-size:10pt;' +
 
         'line-height:1.4;' +
 
@@ -1500,7 +1500,7 @@ function printInvoice(inv) {
 
         'font-family:"Courier New",Courier,monospace;' +
 
-        'font-size:8.5pt;' +
+        'font-size:10pt;' +
 
         'line-height:1.3;' +
 
@@ -1609,7 +1609,7 @@ function printInvoice(inv) {
 
         'width:100%;' +
 
-        'font-size:8pt;' +
+        'font-size:9.5pt;' +
 
         'line-height:1.4;' +
 
@@ -1634,7 +1634,7 @@ function printInvoice(inv) {
 
       '.note{' +
 
-        'font-size:7.4pt;' +
+        'font-size:8.5pt;' +
 
         'line-height:1.4;' +
 
@@ -1653,7 +1653,7 @@ function printInvoice(inv) {
 
         'width:100%;' +
 
-        'font-size:7.6pt;' +
+        'font-size:9pt;' +
 
       '}' +
 
@@ -1684,7 +1684,7 @@ function printInvoice(inv) {
 
         'width:45mm;' +
 
-        'font-size:8.5pt;' +
+        'font-size:10pt;' +
 
         'line-height:1.4;' +
 

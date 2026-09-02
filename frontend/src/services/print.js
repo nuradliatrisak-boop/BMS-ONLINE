@@ -254,15 +254,15 @@ export async function printInvoice(inv) {
     <style>
       @page{size:${c.w}mm ${c.h}mm;margin:0}
       html,body{margin:0;padding:0;width:${c.w}mm;height:${c.h}mm}
-      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 8mm 6mm ${8 + left}mm;font:10.5pt "Courier New",Courier,monospace;color:#111;line-height:1.35}
+      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 8mm 6mm ${8 + left}mm;font:13pt "Courier New",Courier,monospace;color:#111;line-height:1.4}
       .head{display:flex;justify-content:space-between;margin-bottom:4mm}
       .head .right{text-align:right}
-      .label{font-size:9.5pt;color:#555}
+      .label{font-size:11pt;color:#555}
       .val{font-weight:700}
       .idrow{margin:3mm 0 5mm}
       .idrow div{margin-bottom:1.5mm}
-      .idrow .label{display:inline-block;width:34mm}
-      .tbl{border-collapse:collapse;width:100%;font-size:9.5pt}
+      .idrow .label{display:inline-block;width:38mm}
+      .tbl{border-collapse:collapse;width:100%;font-size:11pt}
       .tbl th,.tbl td{border:1px solid #111;padding:1.8mm;text-align:center}
       .tbl th{background:#eee}
       .tbl td.left{text-align:left}
@@ -270,7 +270,7 @@ export async function printInvoice(inv) {
       .bottom{display:flex;justify-content:space-between;margin-top:3mm}
       .sign{text-align:center;margin-top:9mm;margin-left:auto;width:48mm}
       .signline{border-top:1px solid #111;padding-top:1.5mm;margin-top:14mm}
-      .note{font-size:7.5pt;margin-top:2mm}
+      .note{font-size:9pt;margin-top:2mm}
       .totalbox td{border:1px solid #111;padding:1.5mm 3mm}
     </style>
     <div class="sheet">

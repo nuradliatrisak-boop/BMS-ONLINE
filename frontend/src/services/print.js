@@ -115,6 +115,20 @@ export async function printSJ(sjOrList) {
     )}</div>`;
   };
 
+  // "Tujuan" bisa berupa alamat panjang. Field lain aman pakai nowrap
+  // (posisinya jauh dari elemen lain), tapi Tujuan ada di baris yang
+  // sejajar dengan kolom Nomor/Tanggal/Jam di kanan atas - kalau
+  // dibiarkan nowrap, teks panjang akan memanjang terus ke kanan dan
+  // menabrak kolom itu. Jadi Tujuan dibuat wrap (turun ke bawah),
+  // dibatasi lebarnya supaya berhenti sebelum kolom Nomor/Tanggal/Jam.
+  const fieldTujuan = (text) => {
+    const t = `${LBL.tujuan} : ${text || "-"}`;
+    const maxWidth = Math.max(40, p.no.x - p.tujuan.x - 6);
+    return `<div class="f f-wrap" style="left:${p.tujuan.x}mm;top:${p.tujuan.y}mm;font-size:${p.tujuan.size}pt;width:${maxWidth}mm">${esc(
+      t
+    )}</div>`;
+  };
+
   const sheets = list
     .map((sj, i) => {
       const namaCustomer = sj.customer
@@ -132,7 +146,7 @@ export async function printSJ(sjOrList) {
         ${field("no", sj.no, true)}
         ${field("tanggal", fmtDateShort(sj.tanggal), true)}
         ${field("jam", sj.jam || "", true)}
-        ${field("tujuan", sj.tujuan || sj.customer?.alamat || "", true)}
+        ${fieldTujuan(sj.tujuan || sj.customer?.alamat || "")}
         ${field("jenis", sj.jenisBarang || "", true)}
         ${field("nopol", sj.noPolisi || sj.armada?.nopol || "")}
         ${field("bak", ukuran)}
@@ -150,6 +164,7 @@ export async function printSJ(sjOrList) {
       *{box-sizing:border-box}
       .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;background:#fff;font-family:"Courier New",Courier,monospace;color:#111}
       .f{position:absolute;white-space:nowrap;font-family:"Courier New",Courier,monospace}
+      .f-wrap{white-space:normal;word-break:break-word;line-height:1.25}
     </style>
     ${sheets}
   `);

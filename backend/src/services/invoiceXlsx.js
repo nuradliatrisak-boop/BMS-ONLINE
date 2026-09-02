@@ -83,7 +83,19 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
         header: 0,
         footer: 0,
       },
-      fitToPage: false,
+      // Kolom A-K (11 kolom) totalnya kadang sedikit lebih lebar dari
+      // area cetak efektif kertas yang dipakai - kalau dibiarkan
+      // fitToPage:false, Excel akan memotong kolom I-K itu ke HALAMAN
+      // BARU (bukan ke kanan, tapi ke kertas berikutnya karena urutan
+      // cetak default "ke bawah dulu"), jadi boros kertas continuous
+      // form. fitToWidth:1 + fitToHeight:0 memaksa SEMUA kolom (A-K)
+      // selalu muat di satu halaman lebar kertas (Excel yang otomatis
+      // sedikit menyusutkan skalanya kalau perlu), sementara tinggi
+      // tetap bebas mengalir apa adanya (tidak dipaksa 1 halaman tinggi)
+      // - jadi tidak akan lagi ada halaman baru gara-gara kolom kepotong.
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
       // Paper size sengaja tidak dipaksa di sini - atur sendiri lewat
       // Page Layout > Size di Excel sesuai kertas fisik yang dipakai
       // (persis seperti alur lama), supaya tidak bentrok dengan printer

@@ -100,17 +100,26 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
   ws.addRow([]).height = Number(calib?.topMargin ?? 21) * MM_TO_PT * 0.6;
 
   // ---- Kepada Yth (kiri) & Halaman/No Invoice/Tanggal (kanan) ----
+  // Label-label ini digabung (merge) A:D biar dapat ruang lebar sendiri -
+  // TIDAK mengandalkan "teks meluber ke kolom kosong sebelahnya", karena
+  // kolom A sengaja dibuat sempit (lebar 4) untuk nomor urut tabel item
+  // di bawah, jadi kalau cuma mengandalkan overflow, label panjang di
+  // sini bisa kepotong (terutama di Google Sheets yang penanganan
+  // overflow-nya kadang beda dari Excel).
   const rKepada = ws.addRow(["Kepada Yth", "", "", "", "", "", "", "", "Halaman", "", inv.halaman ?? 1]);
+  ws.mergeCells(`A${rKepada.number}:D${rKepada.number}`);
   rKepada.getCell(1).font = { size: 9, color: { argb: "FF555555" } };
   rKepada.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
   rKepada.getCell(11).font = { bold: true };
 
   const rNamaCust = ws.addRow([inv.customer?.nama || "", "", "", "", "", "", "", "", "No. Invoice", "", inv.no || ""]);
+  ws.mergeCells(`A${rNamaCust.number}:D${rNamaCust.number}`);
   rNamaCust.getCell(1).font = { bold: true };
   rNamaCust.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
   rNamaCust.getCell(11).font = { bold: true };
 
   const rAlamatCust = ws.addRow([inv.customer?.alamat || "", "", "", "", "", "", "", "", "Tanggal", "", fmtDateShort(inv.tanggal)]);
+  ws.mergeCells(`A${rAlamatCust.number}:D${rAlamatCust.number}`);
   rAlamatCust.getCell(9).font = { size: 9, color: { argb: "FF555555" } };
   rAlamatCust.getCell(11).font = { bold: true };
 
@@ -124,6 +133,7 @@ export async function buildInvoiceWorkbook(inv, calib, signerName) {
   ];
   for (const [label, val] of idRows) {
     const r = ws.addRow([label, "", "", ":", val]);
+    ws.mergeCells(`A${r.number}:C${r.number}`); // label dapat ruang A:C, kolom D tetap buat ":"
     r.getCell(1).font = { size: 9, color: { argb: "FF555555" } };
     r.getCell(5).font = { bold: true };
   }

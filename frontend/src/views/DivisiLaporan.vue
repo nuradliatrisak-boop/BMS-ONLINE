@@ -341,6 +341,45 @@ const solarHapusBukti = ref(false);
 const solarMasukList = computed(() => solarData.value.items.filter((t) => t.tipe === "MASUK"));
 const solarKeluarList = computed(() => solarData.value.items.filter((t) => t.tipe === "KELUAR"));
 
+// --- Rekap Solar Keluar per Wilayah/Lokasi ---
+// "Lokasi" diisi bebas di form (mis. "Cimanggis 2", "Kp. Rambutan"), jadi
+// daftar wilayah untuk filter & rekap diambil dari data yang sudah ada,
+// bukan daftar tetap.
+const solarWilayah = ref(""); // "" = semua wilayah
+
+const solarWilayahOptions = computed(() => {
+  const seen = new Set();
+  for (const t of solarKeluarList.value) {
+    const lok = (t.lokasi || "").trim();
+    if (lok) seen.add(lok);
+  }
+  return [...seen].sort((a, b) => a.localeCompare(b));
+});
+
+const solarKeluarListFiltered = computed(() => {
+  if (!solarWilayah.value) return solarKeluarList.value;
+  return solarKeluarList.value.filter((t) => (t.lokasi || "").trim() === solarWilayah.value);
+});
+
+const totalKeluarFiltered = computed(() =>
+  solarKeluarListFiltered.value.reduce((s, t) => s + t.liter, 0)
+);
+
+// Rekap per wilayah selalu dihitung dari SELURUH data bulan itu (tidak ikut
+// filter di atas), supaya tetap bisa lihat perbandingan semua wilayah
+// sekaligus meski sedang memfilter tabel ke satu wilayah tertentu.
+const rekapPerWilayah = computed(() => {
+  const map = new Map();
+  for (const t of solarKeluarList.value) {
+    const lok = (t.lokasi || "").trim() || "(Tanpa lokasi)";
+    if (!map.has(lok)) map.set(lok, { lokasi: lok, liter: 0, jumlah: 0 });
+    const row = map.get(lok);
+    row.liter += t.liter;
+    row.jumlah += 1;
+  }
+  return [...map.values()].sort((a, b) => b.liter - a.liter);
+});
+
 async function loadSolar() {
   if (!bulan.value) return;
   solarLoading.value = true;
@@ -449,6 +488,7 @@ function exportSolarWord() {
 
 watch(tab, (t) => {
   if (t === "solar" && !solarData.value.items.length) loadSolar();
+  if (t !== "solar") solarWilayah.value = "";
 });
 watch(bulan, () => {
   if (tab.value === "solar") loadSolar();
@@ -682,9 +722,57 @@ onMounted(async () => {
       </div>
 
       <div class="card" style="margin-bottom: 20px">
-        <div class="section-title">Solar Keluar &mdash; Bulan {{ bulanLabel }}</div>
+        <div class="section-title">Rekap Solar Keluar per Wilayah &mdash; Bulan {{ bulanLabel }}</div>
         <div v-if="solarLoading" class="empty">Memuat...</div>
-        <div v-else-if="!solarKeluarList.length" class="empty">Belum ada catatan solar keluar bulan ini.</div>
+        <div v-else-if="!rekapPerWilayah.length" class="empty">Belum ada catatan solar keluar bulan ini.</div>
+        <div v-else class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Wilayah / Lokasi</th>
+                <th class="num">Jumlah Transaksi</th>
+                <th class="num">Total Liter</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="w in rekapPerWilayah"
+                :key="w.lokasi"
+                style="cursor: pointer"
+                :class="{ mono: false }"
+                @click="solarWilayah = w.lokasi === '(Tanpa lokasi)' ? '' : (solarWilayah === w.lokasi ? '' : w.lokasi)"
+              >
+                <td>{{ w.lokasi }}</td>
+                <td class="num mono">{{ w.jumlah }}</td>
+                <td class="num mono">{{ w.liter }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td><b>Total</b></td>
+                <td class="num mono"><b>{{ solarKeluarList.length }}</b></td>
+                <td class="num mono"><b>{{ solarData.totalKeluar }}</b></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="desc" style="margin-top: 8px">Klik salah satu wilayah untuk memfilter tabel di bawah.</div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="topbar" style="padding: 0; margin-bottom: 14px; align-items: center">
+          <div class="section-title" style="margin-bottom: 0">Solar Keluar &mdash; Bulan {{ bulanLabel }}</div>
+          <div class="field" style="max-width: 260px; width: 100%">
+            <select v-model="solarWilayah">
+              <option value="">Semua Wilayah</option>
+              <option v-for="w in solarWilayahOptions" :key="w" :value="w">{{ w }}</option>
+            </select>
+          </div>
+        </div>
+        <div v-if="solarLoading" class="empty">Memuat...</div>
+        <div v-else-if="!solarKeluarListFiltered.length" class="empty">
+          {{ solarWilayah ? `Belum ada catatan solar keluar untuk wilayah "${solarWilayah}" bulan ini.` : "Belum ada catatan solar keluar bulan ini." }}
+        </div>
         <div v-else class="table-wrap">
           <table>
             <thead>
@@ -700,7 +788,7 @@ onMounted(async () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="t in solarKeluarList" :key="t.id">
+              <tr v-for="t in solarKeluarListFiltered" :key="t.id">
                 <td class="mono">{{ t.no }}</td>
                 <td>{{ new Date(t.tanggal).toLocaleDateString("id-ID") }}</td>
                 <td>{{ t.nama }}</td>
@@ -719,8 +807,8 @@ onMounted(async () => {
             </tbody>
             <tfoot>
               <tr>
-                <td colspan="3"><b>Total Keluar</b></td>
-                <td class="num mono"><b>{{ solarData.totalKeluar }}</b></td>
+                <td colspan="3"><b>Total {{ solarWilayah ? "Keluar (wilayah ini)" : "Keluar" }}</b></td>
+                <td class="num mono"><b>{{ totalKeluarFiltered }}</b></td>
                 <td colspan="4"></td>
               </tr>
             </tfoot>

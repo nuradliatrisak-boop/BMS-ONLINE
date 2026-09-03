@@ -18,28 +18,46 @@ router.get("/", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { nama, satuan, hargaSatuan, divisi } = req.body;
+    const { kode, nama, satuan, hargaSatuan, divisi } = req.body;
     if (!nama || !satuan || !divisi) {
       return res.status(400).json({ error: "Nama, satuan, dan divisi wajib diisi" });
     }
     const material = await prisma.material.create({
-      data: { nama, satuan, hargaSatuan: Number(hargaSatuan) || 0, divisi },
+      data: {
+        kode: kode ? String(kode).trim().toUpperCase() : null,
+        nama,
+        satuan,
+        hargaSatuan: Number(hargaSatuan) || 0,
+        divisi,
+      },
     });
     res.status(201).json(material);
   } catch (e) {
+    if (e.code === "P2002") {
+      return res.status(409).json({ error: "Kode material ini sudah dipakai material lain" });
+    }
     next(e);
   }
 });
 
 router.put("/:id", async (req, res, next) => {
   try {
-    const { nama, satuan, hargaSatuan, divisi } = req.body;
+    const { kode, nama, satuan, hargaSatuan, divisi } = req.body;
     const material = await prisma.material.update({
       where: { id: req.params.id },
-      data: { nama, satuan, hargaSatuan: Number(hargaSatuan) || 0, divisi },
+      data: {
+        kode: kode ? String(kode).trim().toUpperCase() : null,
+        nama,
+        satuan,
+        hargaSatuan: Number(hargaSatuan) || 0,
+        divisi,
+      },
     });
     res.json(material);
   } catch (e) {
+    if (e.code === "P2002") {
+      return res.status(409).json({ error: "Kode material ini sudah dipakai material lain" });
+    }
     next(e);
   }
 });

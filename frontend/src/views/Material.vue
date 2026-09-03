@@ -1,16 +1,19 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
+const CUSTOM_OPT = "__custom__";
 
 const list = ref([]);
 const showModal = ref(false);
 const loading = ref(true);
 const editingId = ref(null);
+const kodeCustom = ref(false); // true = lagi ketik kode baru manual (bukan pilih dari dropdown)
 
 const emptyForm = () => ({
+  kode: "",
   nama: "",
   satuan: "",
   hargaSatuan: 0,
@@ -18,6 +21,31 @@ const emptyForm = () => ({
 });
 
 const form = ref(emptyForm());
+
+// Daftar kode yang sudah pernah dipakai material lain, buat dropdown -- supaya
+// kode yang sudah ada bisa dipilih ulang/dicek, dan tetap bisa ketik kode baru
+// lewat opsi "+ Kode baru" (sama seperti pola dropdown kategori di menu lain).
+const kodeOptions = computed(() => {
+  const seen = new Set();
+  const opts = [];
+  for (const m of list.value) {
+    if (m.kode && !seen.has(m.kode)) {
+      seen.add(m.kode);
+      opts.push(m.kode);
+    }
+  }
+  return opts.sort((a, b) => a.localeCompare(b));
+});
+
+function onKodeSelect(val) {
+  if (val === CUSTOM_OPT) {
+    kodeCustom.value = true;
+    form.value.kode = "";
+  } else {
+    kodeCustom.value = false;
+    form.value.kode = val;
+  }
+}
 
 function rupiah(n) {
   return "Rp " + Math.round(n || 0).toLocaleString("id-ID");
@@ -38,17 +66,20 @@ async function load() {
 function openModal() {
   editingId.value = null;
   form.value = emptyForm();
+  kodeCustom.value = !kodeOptions.value.length; // belum ada kode terdaftar -> langsung mode ketik manual
   showModal.value = true;
 }
 
 function openEdit(m) {
   editingId.value = m.id;
   form.value = {
+    kode: m.kode || "",
     nama: m.nama,
     satuan: m.satuan,
     hargaSatuan: m.hargaSatuan,
     divisi: m.divisi,
   };
+  kodeCustom.value = !!form.value.kode && !kodeOptions.value.includes(form.value.kode);
   showModal.value = true;
 }
 
@@ -61,12 +92,14 @@ async function submit() {
     return toast("Nama dan satuan wajib diisi");
   }
 
+  const payload = { ...form.value, kode: form.value.kode?.trim() || null };
+
   try {
     if (editingId.value) {
-      await api.put(`/material/${editingId.value}`, form.value);
+      await api.put(`/material/${editingId.value}`, payload);
       toast("Material berhasil diperbarui");
     } else {
-      await api.post("/material", form.value);
+      await api.post("/material", payload);
       toast("Material berhasil ditambahkan");
     }
 
@@ -135,6 +168,7 @@ onMounted(load);
       <table>
         <thead>
           <tr>
+            <th>Kode</th>
             <th>Nama Material</th>
             <th>Satuan</th>
             <th class="num">Harga Satuan</th>
@@ -145,6 +179,9 @@ onMounted(load);
 
         <tbody>
           <tr v-for="m in list" :key="m.id">
+            <td class="mono">
+              {{ m.kode || "-" }}
+            </td>
             <td>
               {{ m.nama }}
             </td>
@@ -204,6 +241,39 @@ onMounted(load);
 
       <div class="row">
         <div class="field">
+          <label>Kode Material (opsional)</label>
+
+          <select
+            v-if="!kodeCustom"
+            :value="form.kode"
+            @change="onKodeSelect($event.target.value)"
+          >
+            <option value="">Tanpa kode</option>
+            <option
+              v-for="k in kodeOptions"
+              :key="k"
+              :value="k"
+            >
+              {{ k }}
+            </option>
+            <option :value="CUSTOM_OPT">+ Kode baru (ketik manual)</option>
+          </select>
+          <input
+            v-else
+            v-model="form.kode"
+            placeholder="Contoh: BS"
+            style="text-transform: uppercase"
+          />
+          <div
+            v-if="kodeCustom && kodeOptions.length"
+            class="desc"
+            style="margin-top: 4px"
+          >
+            <a href="#" @click.prevent="kodeCustom = false; form.kode = ''">← Pilih dari kode yang sudah ada</a>
+          </div>
+        </div>
+
+        <div class="field">
           <label>Nama Material</label>
 
           <input
@@ -211,7 +281,9 @@ onMounted(load);
             placeholder="Contoh: Batu Split"
           />
         </div>
+      </div>
 
+      <div class="row">
         <div class="field">
           <label>Satuan</label>
 

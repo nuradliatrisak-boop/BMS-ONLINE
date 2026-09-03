@@ -154,6 +154,7 @@ model Armada {
 
 model Material {
   id        String   @id @default(cuid())
+  kode      String?  @unique
   nama      String
   satuan    String
   hargaSatuan Float  @default(0)

@@ -1,16 +1,21 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
-const CUSTOM_OPT = "__custom__";
 
 const list = ref([]);
+const stockMasterList = ref([]); // daftar kode master (sama yang dipakai di Surat Jalan)
 const showModal = ref(false);
 const loading = ref(true);
 const editingId = ref(null);
-const kodeCustom = ref(false); // true = lagi ketik kode baru manual (bukan pilih dari dropdown)
+
+// Tambah/kelola kode di dalam form Material, sama seperti pola "Kode Stock"
+// di menu Customers (dropdown -> "+ kode belum ada" -> "kelola kode")
+const showNewStock = ref(false);
+const newStock = ref({ kode: "", nama: "" });
+const showStockManager = ref(false);
 
 const emptyForm = () => ({
   kode: "",
@@ -21,31 +26,6 @@ const emptyForm = () => ({
 });
 
 const form = ref(emptyForm());
-
-// Daftar kode yang sudah pernah dipakai material lain, buat dropdown -- supaya
-// kode yang sudah ada bisa dipilih ulang/dicek, dan tetap bisa ketik kode baru
-// lewat opsi "+ Kode baru" (sama seperti pola dropdown kategori di menu lain).
-const kodeOptions = computed(() => {
-  const seen = new Set();
-  const opts = [];
-  for (const m of list.value) {
-    if (m.kode && !seen.has(m.kode)) {
-      seen.add(m.kode);
-      opts.push(m.kode);
-    }
-  }
-  return opts.sort((a, b) => a.localeCompare(b));
-});
-
-function onKodeSelect(val) {
-  if (val === CUSTOM_OPT) {
-    kodeCustom.value = true;
-    form.value.kode = "";
-  } else {
-    kodeCustom.value = false;
-    form.value.kode = val;
-  }
-}
 
 function rupiah(n) {
   return "Rp " + Math.round(n || 0).toLocaleString("id-ID");
@@ -63,10 +43,65 @@ async function load() {
   }
 }
 
+async function loadStockMaster() {
+  try {
+    stockMasterList.value = await api.get("/stock-master?all=1");
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// Waktu kode dipilih dari dropdown, otomatis isi Nama Material kalau
+// nama-nya masih kosong (biar tidak menimpa nama yang sudah diketik user)
+function onKodeChange() {
+  if (form.value.nama) return;
+  const found = stockMasterList.value.find((s) => s.kode === form.value.kode);
+  if (found) form.value.nama = found.nama;
+}
+
+async function saveNewStock() {
+  if (!newStock.value.kode.trim() || !newStock.value.nama.trim()) {
+    return toast("Kode dan nama wajib diisi");
+  }
+  try {
+    const created = await api.post("/stock-master", newStock.value);
+    toast("Kode baru berhasil ditambahkan");
+    await loadStockMaster();
+    form.value.kode = created.kode;
+    if (!form.value.nama) form.value.nama = created.nama;
+    newStock.value = { kode: "", nama: "" };
+    showNewStock.value = false;
+  } catch (e) {
+    toast(e?.message || "Gagal menambahkan kode");
+  }
+}
+
+async function updateStock(item) {
+  try {
+    await api.put(`/stock-master/${item.id}`, { kode: item.kode, nama: item.nama });
+    toast("Kode berhasil diperbarui");
+    await loadStockMaster();
+  } catch (e) {
+    toast(e?.message || "Gagal memperbarui kode");
+  }
+}
+
+async function deleteStock(item) {
+  if (!confirm(`Hapus kode ${item.kode} - ${item.nama} dari daftar?`)) return;
+  try {
+    await api.delete(`/stock-master/${item.id}`);
+    toast("Kode berhasil dihapus");
+    await loadStockMaster();
+  } catch (e) {
+    toast(e?.message || "Gagal menghapus kode");
+  }
+}
+
 function openModal() {
   editingId.value = null;
   form.value = emptyForm();
-  kodeCustom.value = !kodeOptions.value.length; // belum ada kode terdaftar -> langsung mode ketik manual
+  showNewStock.value = false;
+  showStockManager.value = false;
   showModal.value = true;
 }
 
@@ -79,7 +114,8 @@ function openEdit(m) {
     hargaSatuan: m.hargaSatuan,
     divisi: m.divisi,
   };
-  kodeCustom.value = !!form.value.kode && !kodeOptions.value.includes(form.value.kode);
+  showNewStock.value = false;
+  showStockManager.value = false;
   showModal.value = true;
 }
 
@@ -124,7 +160,10 @@ async function remove(id) {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  load();
+  loadStockMaster();
+});
 </script>
 
 <template>
@@ -243,33 +282,37 @@ onMounted(load);
         <div class="field">
           <label>Kode Material (opsional)</label>
 
-          <select
-            v-if="!kodeCustom"
-            :value="form.kode"
-            @change="onKodeSelect($event.target.value)"
-          >
+          <select v-model="form.kode" @change="onKodeChange">
             <option value="">Tanpa kode</option>
             <option
-              v-for="k in kodeOptions"
-              :key="k"
-              :value="k"
+              v-for="s in stockMasterList.filter((x) => x.aktif !== false)"
+              :key="s.id"
+              :value="s.kode"
             >
-              {{ k }}
+              {{ s.kode }} — {{ s.nama }}
             </option>
-            <option :value="CUSTOM_OPT">+ Kode baru (ketik manual)</option>
           </select>
-          <input
-            v-else
-            v-model="form.kode"
-            placeholder="Contoh: BS"
-            style="text-transform: uppercase"
-          />
-          <div
-            v-if="kodeCustom && kodeOptions.length"
-            class="desc"
-            style="margin-top: 4px"
-          >
-            <a href="#" @click.prevent="kodeCustom = false; form.kode = ''">← Pilih dari kode yang sudah ada</a>
+          <div class="stock-actions">
+            <button type="button" class="link-btn" @click="showNewStock = !showNewStock">+ Kode belum ada di daftar?</button>
+            <button type="button" class="link-btn" @click="showStockManager = !showStockManager">Kelola kode</button>
+          </div>
+
+          <div v-if="showNewStock" class="inline-add-box">
+            <div class="row">
+              <div class="field"><label>Kode Baru</label><input v-model="newStock.kode" placeholder="Contoh: BS" style="text-transform: uppercase" /></div>
+              <div class="field"><label>Nama</label><input v-model="newStock.nama" placeholder="Contoh: Batu Split" /></div>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" @click="saveNewStock">Simpan Kode</button>
+          </div>
+
+          <div v-if="showStockManager" class="inline-add-box stock-manager">
+            <div class="msub" style="margin-bottom: 8px">Edit nama atau hapus kode yang sudah ada.</div>
+            <div class="stock-manage-row" v-for="s in stockMasterList" :key="s.id">
+              <input v-model="s.kode" class="stock-kode-input" style="text-transform: uppercase" />
+              <input v-model="s.nama" class="stock-nama-input" />
+              <button type="button" class="btn btn-sm btn-ghost" @click="updateStock(s)">Simpan</button>
+              <button type="button" class="btn btn-sm btn-danger" @click="deleteStock(s)">Hapus</button>
+            </div>
           </div>
         </div>
 
@@ -346,3 +389,13 @@ onMounted(load);
     </div>
   </div>
 </template>
+
+<style scoped>
+.stock-actions { display: flex; gap: 12px; margin-top: 5px; }
+.link-btn { background: none; border: none; padding: 0; color: var(--bms-blue-dark, #1d4ed8); font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: underline; }
+.inline-add-box { background: #f7f9fc; border: 1px dashed var(--line); border-radius: 9px; padding: 12px; margin: 8px 0 4px; }
+.stock-manager { max-height: 220px; overflow-y: auto; }
+.stock-manage-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.stock-kode-input { width: 60px; flex-shrink: 0; }
+.stock-nama-input { flex: 1; }
+</style>

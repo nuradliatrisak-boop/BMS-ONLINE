@@ -469,13 +469,13 @@ async function removeSolar(t) {
 }
 
 function exportSolarExcel() {
-  exportSolarStokExcel({ bulanLabel: bulanLabel.value, ...solarData.value });
+  exportSolarStokExcel(buildSolarExportData());
 }
 const exportingSolarPdf = ref(false);
 async function exportSolarPdf() {
   exportingSolarPdf.value = true;
   try {
-    await exportSolarStokPdf({ bulanLabel: bulanLabel.value, ...solarData.value });
+    await exportSolarStokPdf(buildSolarExportData());
   } catch (e) {
     toast("Gagal membuat PDF: " + (e?.message || String(e)));
   } finally {
@@ -483,7 +483,27 @@ async function exportSolarPdf() {
   }
 }
 function exportSolarWord() {
-  exportSolarStokWord({ bulanLabel: bulanLabel.value, ...solarData.value });
+  exportSolarStokWord(buildSolarExportData());
+}
+
+// Kalau lagi difilter per wilayah, export (Excel/PDF/Word) ikut hanya
+// menampilkan Solar Keluar wilayah itu -- Solar Masuk & saldo saat ini tetap
+// apa adanya karena tidak berkaitan dengan wilayah tujuan.
+function buildSolarExportData() {
+  const wilayah = solarWilayah.value;
+  if (!wilayah) {
+    return { bulanLabel: bulanLabel.value, ...solarData.value };
+  }
+  const items = solarData.value.items.filter(
+    (t) => t.tipe === "MASUK" || (t.lokasi || "").trim() === wilayah
+  );
+  return {
+    bulanLabel: `${bulanLabel.value} — Wilayah: ${wilayah}`,
+    items,
+    totalMasuk: solarData.value.totalMasuk,
+    totalKeluar: totalKeluarFiltered.value,
+    saldoSaatIni: solarData.value.saldoSaatIni,
+  };
 }
 
 watch(tab, (t) => {
@@ -514,7 +534,8 @@ onMounted(async () => {
       </button>
       <button class="btn btn-primary" @click="openModal">+ Catat Transaksi</button>
     </div>
-    <div style="display: flex; gap: 8px; flex-wrap: wrap" v-else>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center" v-else>
+      <span v-if="solarWilayah" class="tag" style="margin-right: 4px">Filter: {{ solarWilayah }}</span>
       <button class="btn btn-ghost" @click="exportSolarExcel">⬇ Excel</button>
       <button class="btn btn-ghost" :disabled="exportingSolarPdf" @click="exportSolarPdf">
         {{ exportingSolarPdf ? "Membuat PDF..." : "⬇ PDF" }}

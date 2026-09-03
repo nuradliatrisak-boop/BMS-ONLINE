@@ -50,12 +50,25 @@ function serialize(tx) {
   };
 }
 
-// GET /api/solar-tx?bulan=YYYY-MM  -> daftar + total real-time
+// GET /api/solar-tx?bulan=YYYY-MM              -> filter satu bulan
+// GET /api/solar-tx?dari=YYYY-MM-DD&sampai=YYYY-MM-DD -> filter rentang tanggal (inklusif)
+// GET /api/solar-tx                             -> semua waktu (tanpa filter)
 router.get("/", async (req, res, next) => {
   try {
-    const { bulan } = req.query;
+    const { bulan, dari, sampai } = req.query;
     const list = await prisma.solarTx.findMany({ orderBy: [{ tanggal: "desc" }, { createdAt: "desc" }] });
-    const filtered = bulan ? list.filter((t) => t.tanggal.toISOString().slice(0, 7) === bulan) : list;
+
+    let filtered = list;
+    if (bulan) {
+      filtered = list.filter((t) => t.tanggal.toISOString().slice(0, 7) === bulan);
+    } else if (dari || sampai) {
+      const dariMs = dari ? new Date(dari + "T00:00:00").getTime() : -Infinity;
+      const sampaiMs = sampai ? new Date(sampai + "T23:59:59.999").getTime() : Infinity;
+      filtered = list.filter((t) => {
+        const ms = new Date(t.tanggal).getTime();
+        return ms >= dariMs && ms <= sampaiMs;
+      });
+    }
 
     const totalMasuk = filtered.filter((t) => t.tipe === "MASUK").reduce((s, t) => s + t.liter, 0);
     const totalKeluar = filtered.filter((t) => t.tipe === "KELUAR").reduce((s, t) => s + t.liter, 0);

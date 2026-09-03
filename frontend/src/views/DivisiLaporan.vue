@@ -341,6 +341,24 @@ const solarHapusBukti = ref(false);
 const solarMasukList = computed(() => solarData.value.items.filter((t) => t.tipe === "MASUK"));
 const solarKeluarList = computed(() => solarData.value.items.filter((t) => t.tipe === "KELUAR"));
 
+// --- Filter waktu tab Solar: "Per Bulan" (pakai `bulan` di atas), "Rentang
+// Tanggal" (dari - sampai bebas), atau "Semua Waktu" (tanpa filter tanggal
+// sama sekali). Independen dari tab Laba Rugi yang selalu per bulan. ---
+const solarPeriodeMode = ref("bulan"); // "bulan" | "rentang" | "semua"
+const solarDari = ref(new Date().toISOString().slice(0, 10));
+const solarSampai = ref(new Date().toISOString().slice(0, 10));
+
+const solarPeriodeLabel = computed(() => {
+  if (solarPeriodeMode.value === "semua") return "Semua Waktu";
+  if (solarPeriodeMode.value === "rentang") {
+    if (!solarDari.value && !solarSampai.value) return "Semua Waktu";
+    const d = solarDari.value ? new Date(solarDari.value).toLocaleDateString("id-ID") : "awal";
+    const s = solarSampai.value ? new Date(solarSampai.value).toLocaleDateString("id-ID") : "sekarang";
+    return `${d} s/d ${s}`;
+  }
+  return bulanLabel.value;
+});
+
 // --- Rekap Solar Keluar per Wilayah/Lokasi ---
 // "Lokasi" diisi bebas di form (mis. "Cimanggis 2", "Kp. Rambutan"), jadi
 // daftar wilayah untuk filter & rekap diambil dari data yang sudah ada,
@@ -381,10 +399,22 @@ const rekapPerWilayah = computed(() => {
 });
 
 async function loadSolar() {
-  if (!bulan.value) return;
+  const mode = solarPeriodeMode.value;
+  if (mode === "bulan" && !bulan.value) return;
+
+  const params = new URLSearchParams();
+  if (mode === "bulan") {
+    params.set("bulan", bulan.value);
+  } else if (mode === "rentang") {
+    if (solarDari.value) params.set("dari", solarDari.value);
+    if (solarSampai.value) params.set("sampai", solarSampai.value);
+  }
+  // mode "semua" -> tanpa parameter sama sekali
+
   solarLoading.value = true;
   try {
-    solarData.value = await api.get(`/solar-tx?bulan=${bulan.value}`);
+    const qs = params.toString();
+    solarData.value = await api.get(`/solar-tx${qs ? `?${qs}` : ""}`);
   } finally {
     solarLoading.value = false;
   }
@@ -492,13 +522,13 @@ function exportSolarWord() {
 function buildSolarExportData() {
   const wilayah = solarWilayah.value;
   if (!wilayah) {
-    return { bulanLabel: bulanLabel.value, ...solarData.value };
+    return { bulanLabel: solarPeriodeLabel.value, ...solarData.value };
   }
   const items = solarData.value.items.filter(
     (t) => t.tipe === "MASUK" || (t.lokasi || "").trim() === wilayah
   );
   return {
-    bulanLabel: `${bulanLabel.value} — Wilayah: ${wilayah}`,
+    bulanLabel: `${solarPeriodeLabel.value} — Wilayah: ${wilayah}`,
     items,
     totalMasuk: solarData.value.totalMasuk,
     totalKeluar: totalKeluarFiltered.value,
@@ -511,7 +541,13 @@ watch(tab, (t) => {
   if (t !== "solar") solarWilayah.value = "";
 });
 watch(bulan, () => {
+  if (tab.value === "solar" && solarPeriodeMode.value === "bulan") loadSolar();
+});
+watch(solarPeriodeMode, () => {
   if (tab.value === "solar") loadSolar();
+});
+watch([solarDari, solarSampai], () => {
+  if (tab.value === "solar" && solarPeriodeMode.value === "rentang") loadSolar();
 });
 
 onMounted(async () => {
@@ -570,8 +606,29 @@ onMounted(async () => {
       <div class="field"><label>Bulan</label><input v-model="bulan" type="month" /></div>
     </div>
 
-    <div class="row" style="max-width: 220px; margin-bottom: 20px" v-else>
-      <div class="field"><label>Bulan</label><input v-model="bulan" type="month" /></div>
+    <div class="row" style="margin-bottom: 20px; align-items: flex-end" v-else>
+      <div class="field" style="max-width: 200px">
+        <label>Filter Waktu</label>
+        <select v-model="solarPeriodeMode">
+          <option value="bulan">Per Bulan</option>
+          <option value="rentang">Rentang Tanggal</option>
+          <option value="semua">Semua Waktu</option>
+        </select>
+      </div>
+      <div class="field" style="max-width: 200px" v-if="solarPeriodeMode === 'bulan'">
+        <label>Bulan</label>
+        <input v-model="bulan" type="month" />
+      </div>
+      <template v-if="solarPeriodeMode === 'rentang'">
+        <div class="field" style="max-width: 180px">
+          <label>Dari Tanggal</label>
+          <input v-model="solarDari" type="date" />
+        </div>
+        <div class="field" style="max-width: 180px">
+          <label>Sampai Tanggal</label>
+          <input v-model="solarSampai" type="date" />
+        </div>
+      </template>
     </div>
 
     <template v-if="tab === 'laba-rugi'">
@@ -683,11 +740,11 @@ onMounted(async () => {
       <div class="card" style="margin-bottom: 20px">
         <div class="row" style="max-width: 640px">
           <div class="field">
-            <label>Total Solar Masuk (bulan ini)</label>
+            <label>Total Solar Masuk ({{ solarPeriodeLabel }})</label>
             <input :value="`${solarData.totalMasuk} Liter`" disabled class="mono" />
           </div>
           <div class="field">
-            <label>Total Solar Keluar (bulan ini)</label>
+            <label>Total Solar Keluar ({{ solarPeriodeLabel }})</label>
             <input :value="`${solarData.totalKeluar} Liter`" disabled class="mono" />
           </div>
           <div class="field">
@@ -698,9 +755,9 @@ onMounted(async () => {
       </div>
 
       <div class="card" style="margin-bottom: 20px">
-        <div class="section-title">Solar Masuk &mdash; Bulan {{ bulanLabel }}</div>
+        <div class="section-title">Solar Masuk &mdash; {{ solarPeriodeLabel }}</div>
         <div v-if="solarLoading" class="empty">Memuat...</div>
-        <div v-else-if="!solarMasukList.length" class="empty">Belum ada catatan solar masuk bulan ini.</div>
+        <div v-else-if="!solarMasukList.length" class="empty">Belum ada catatan solar masuk pada periode ini.</div>
         <div v-else class="table-wrap">
           <table>
             <thead>
@@ -743,9 +800,9 @@ onMounted(async () => {
       </div>
 
       <div class="card" style="margin-bottom: 20px">
-        <div class="section-title">Rekap Solar Keluar per Wilayah &mdash; Bulan {{ bulanLabel }}</div>
+        <div class="section-title">Rekap Solar Keluar per Wilayah &mdash; {{ solarPeriodeLabel }}</div>
         <div v-if="solarLoading" class="empty">Memuat...</div>
-        <div v-else-if="!rekapPerWilayah.length" class="empty">Belum ada catatan solar keluar bulan ini.</div>
+        <div v-else-if="!rekapPerWilayah.length" class="empty">Belum ada catatan solar keluar pada periode ini.</div>
         <div v-else class="table-wrap">
           <table>
             <thead>
@@ -782,7 +839,7 @@ onMounted(async () => {
 
       <div class="card" style="margin-bottom: 20px">
         <div class="topbar" style="padding: 0; margin-bottom: 14px; align-items: center">
-          <div class="section-title" style="margin-bottom: 0">Solar Keluar &mdash; Bulan {{ bulanLabel }}</div>
+          <div class="section-title" style="margin-bottom: 0">Solar Keluar &mdash; {{ solarPeriodeLabel }}</div>
           <div class="field" style="max-width: 260px; width: 100%">
             <select v-model="solarWilayah">
               <option value="">Semua Wilayah</option>
@@ -792,7 +849,7 @@ onMounted(async () => {
         </div>
         <div v-if="solarLoading" class="empty">Memuat...</div>
         <div v-else-if="!solarKeluarListFiltered.length" class="empty">
-          {{ solarWilayah ? `Belum ada catatan solar keluar untuk wilayah "${solarWilayah}" bulan ini.` : "Belum ada catatan solar keluar bulan ini." }}
+          {{ solarWilayah ? `Belum ada catatan solar keluar untuk wilayah "${solarWilayah}" pada periode ini.` : "Belum ada catatan solar keluar pada periode ini." }}
         </div>
         <div v-else class="table-wrap">
           <table>

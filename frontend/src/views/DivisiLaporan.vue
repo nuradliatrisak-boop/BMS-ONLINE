@@ -3,8 +3,11 @@ import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { parseDivisiExcel } from "../utils/excelImport.js";
-import { exportLaporanDivisiExcel } from "../utils/excelExport.js";
-import { exportLaporanDivisiPdf } from "../utils/pdfExport.js";
+import { exportLaporanDivisiExcel, exportSolarStokExcel } from "../utils/excelExport.js";
+import { exportLaporanDivisiPdf, exportSolarStokPdf } from "../utils/pdfExport.js";
+import { exportSolarStokWord } from "../utils/wordExport.js";
+
+const tab = ref("laba-rugi"); // "laba-rugi" | "solar"
 
 const BULAN_NAMA = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -311,6 +314,146 @@ async function confirmImport() {
 
 watch([divisi, bulan], load);
 
+// ------------------------------------------------------------
+// Tab "Stok Solar (BBM)" -- catatan stok solar Alat Berat, terpisah dari
+// data keuangan DivisiTx (lihat backend/src/routes/solarTx.js). Dipakai
+// bareng "bulan" yang sama dengan tab Laba Rugi di atas.
+// ------------------------------------------------------------
+const solarData = ref({ items: [], totalMasuk: 0, totalKeluar: 0, saldoBulan: 0, saldoSaatIni: 0 });
+const solarLoading = ref(false);
+const showSolarModal = ref(false);
+const editingSolarId = ref(null);
+const solarFileInput = ref(null);
+const solarUploading = ref(false);
+
+const emptySolarForm = (tipe) => ({
+  tipe,
+  tanggal: new Date().toISOString().slice(0, 10),
+  nama: "",
+  liter: "",
+  lokasi: "",
+  keterangan: "",
+});
+const solarForm = ref(emptySolarForm("MASUK"));
+const solarExistingBukti = ref(null); // { url, nama } kalau lagi edit & sudah ada file
+const solarHapusBukti = ref(false);
+
+const solarMasukList = computed(() => solarData.value.items.filter((t) => t.tipe === "MASUK"));
+const solarKeluarList = computed(() => solarData.value.items.filter((t) => t.tipe === "KELUAR"));
+
+async function loadSolar() {
+  if (!bulan.value) return;
+  solarLoading.value = true;
+  try {
+    solarData.value = await api.get(`/solar-tx?bulan=${bulan.value}`);
+  } finally {
+    solarLoading.value = false;
+  }
+}
+
+function openSolarModal(tipe) {
+  editingSolarId.value = null;
+  solarForm.value = emptySolarForm(tipe);
+  solarExistingBukti.value = null;
+  solarHapusBukti.value = false;
+  if (solarFileInput.value) solarFileInput.value.value = "";
+  showSolarModal.value = true;
+}
+
+function openSolarEditModal(t) {
+  editingSolarId.value = t.id;
+  solarForm.value = {
+    tipe: t.tipe,
+    tanggal: new Date(t.tanggal).toISOString().slice(0, 10),
+    nama: t.nama,
+    liter: t.liter,
+    lokasi: t.lokasi || "",
+    keterangan: t.keterangan || "",
+  };
+  solarExistingBukti.value = t.buktiUrl ? { url: api.fileUrl(t.buktiUrl), nama: t.buktiNama } : null;
+  solarHapusBukti.value = false;
+  if (solarFileInput.value) solarFileInput.value.value = "";
+  showSolarModal.value = true;
+}
+
+function hapusBuktiExisting() {
+  solarExistingBukti.value = null;
+  solarHapusBukti.value = true;
+}
+
+async function submitSolar() {
+  if (!solarForm.value.nama || !solarForm.value.tanggal) {
+    return toast("Nama dan tanggal wajib diisi");
+  }
+  const literNum = Number(solarForm.value.liter);
+  if (!literNum || literNum <= 0) {
+    return toast("Jumlah liter wajib diisi dan lebih dari 0");
+  }
+  if (solarForm.value.tipe === "KELUAR" && !solarForm.value.lokasi) {
+    return toast("Lokasi/unit tujuan wajib diisi untuk Solar Keluar");
+  }
+
+  const fd = new FormData();
+  fd.append("tipe", solarForm.value.tipe);
+  fd.append("tanggal", solarForm.value.tanggal);
+  fd.append("nama", solarForm.value.nama);
+  fd.append("liter", String(literNum));
+  if (solarForm.value.tipe === "KELUAR") fd.append("lokasi", solarForm.value.lokasi);
+  if (solarForm.value.keterangan) fd.append("keterangan", solarForm.value.keterangan);
+  const file = solarFileInput.value?.files?.[0];
+  if (file) fd.append("bukti", file);
+  if (editingSolarId.value && solarHapusBukti.value) fd.append("hapusBukti", "true");
+
+  solarUploading.value = true;
+  try {
+    if (editingSolarId.value) {
+      await api.upload(`/solar-tx/${editingSolarId.value}`, fd, "PUT");
+      toast("Catatan solar berhasil diubah");
+    } else {
+      await api.upload("/solar-tx", fd, "POST");
+      toast(solarForm.value.tipe === "MASUK" ? "Solar masuk dicatat" : "Solar keluar dicatat");
+    }
+    showSolarModal.value = false;
+    await loadSolar();
+  } catch (e) {
+    toast("Gagal menyimpan: " + (e?.message || String(e)));
+  } finally {
+    solarUploading.value = false;
+  }
+}
+
+async function removeSolar(t) {
+  if (!confirm(`Hapus catatan ${t.tipe === "MASUK" ? "solar masuk" : "solar keluar"} "${t.nama}" (${t.liter} liter)?`)) return;
+  await api.delete(`/solar-tx/${t.id}`);
+  toast("Catatan dihapus");
+  await loadSolar();
+}
+
+function exportSolarExcel() {
+  exportSolarStokExcel({ bulanLabel: bulanLabel.value, ...solarData.value });
+}
+const exportingSolarPdf = ref(false);
+async function exportSolarPdf() {
+  exportingSolarPdf.value = true;
+  try {
+    await exportSolarStokPdf({ bulanLabel: bulanLabel.value, ...solarData.value });
+  } catch (e) {
+    toast("Gagal membuat PDF: " + (e?.message || String(e)));
+  } finally {
+    exportingSolarPdf.value = false;
+  }
+}
+function exportSolarWord() {
+  exportSolarStokWord({ bulanLabel: bulanLabel.value, ...solarData.value });
+}
+
+watch(tab, (t) => {
+  if (t === "solar" && !solarData.value.items.length) loadSolar();
+});
+watch(bulan, () => {
+  if (tab.value === "solar") loadSolar();
+});
+
 onMounted(async () => {
   await loadConfig();
   await load();
@@ -321,9 +464,9 @@ onMounted(async () => {
   <div class="topbar">
     <div>
       <h1>Laporan Divisi</h1>
-      <div class="desc">Laba rugi bulanan per divisi</div>
+      <div class="desc">Laba rugi bulanan per divisi &amp; stok solar (BBM) alat berat</div>
     </div>
-    <div style="display: flex; gap: 8px; flex-wrap: wrap">
+    <div style="display: flex; gap: 8px; flex-wrap: wrap" v-if="tab === 'laba-rugi'">
       <button class="btn btn-ghost" @click="openImportModal">Import dari Excel</button>
       <button class="btn btn-ghost" :disabled="!laporan" @click="exportExcel">⬇ Export Excel</button>
       <button class="btn btn-ghost" :disabled="!laporan || exportingPdf" @click="exportPdf">
@@ -331,10 +474,32 @@ onMounted(async () => {
       </button>
       <button class="btn btn-primary" @click="openModal">+ Catat Transaksi</button>
     </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap" v-else>
+      <button class="btn btn-ghost" @click="exportSolarExcel">⬇ Excel</button>
+      <button class="btn btn-ghost" :disabled="exportingSolarPdf" @click="exportSolarPdf">
+        {{ exportingSolarPdf ? "Membuat PDF..." : "⬇ PDF" }}
+      </button>
+      <button class="btn btn-ghost" @click="exportSolarWord">⬇ Word</button>
+      <button class="btn btn-primary" @click="openSolarModal('MASUK')">+ Solar Masuk</button>
+      <button class="btn btn-primary" @click="openSolarModal('KELUAR')">+ Solar Keluar</button>
+    </div>
   </div>
 
   <div class="content">
-    <div class="row" style="max-width: 420px; margin-bottom: 20px">
+    <div class="tabs" style="display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 1px solid var(--line)">
+      <button
+        class="tab-btn"
+        :class="{ active: tab === 'laba-rugi' }"
+        @click="tab = 'laba-rugi'"
+      >Laba Rugi</button>
+      <button
+        class="tab-btn"
+        :class="{ active: tab === 'solar' }"
+        @click="tab = 'solar'"
+      >Stok Solar (BBM)</button>
+    </div>
+
+    <div class="row" style="max-width: 420px; margin-bottom: 20px" v-if="tab === 'laba-rugi'">
       <div class="field">
         <label>Divisi</label>
         <select v-model="divisi">
@@ -344,6 +509,11 @@ onMounted(async () => {
       <div class="field"><label>Bulan</label><input v-model="bulan" type="month" /></div>
     </div>
 
+    <div class="row" style="max-width: 220px; margin-bottom: 20px" v-else>
+      <div class="field"><label>Bulan</label><input v-model="bulan" type="month" /></div>
+    </div>
+
+    <template v-if="tab === 'laba-rugi'">
     <div v-if="laporan" class="lr-doc">
       <div class="lr-head">
         <div class="lr-company">PT. BINTANG MUARA SEJATI</div>
@@ -446,6 +616,118 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+    </template>
+
+    <template v-else>
+      <div class="card" style="margin-bottom: 20px">
+        <div class="row" style="max-width: 640px">
+          <div class="field">
+            <label>Total Solar Masuk (bulan ini)</label>
+            <input :value="`${solarData.totalMasuk} Liter`" disabled class="mono" />
+          </div>
+          <div class="field">
+            <label>Total Solar Keluar (bulan ini)</label>
+            <input :value="`${solarData.totalKeluar} Liter`" disabled class="mono" />
+          </div>
+          <div class="field">
+            <label>Sisa Stok Saat Ini</label>
+            <input :value="`${solarData.saldoSaatIni} Liter`" disabled class="mono" style="font-weight: 700" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="section-title">Solar Masuk &mdash; Bulan {{ bulanLabel }}</div>
+        <div v-if="solarLoading" class="empty">Memuat...</div>
+        <div v-else-if="!solarMasukList.length" class="empty">Belum ada catatan solar masuk bulan ini.</div>
+        <div v-else class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Tanggal</th>
+                <th>Nama Sopir</th>
+                <th class="num">Liter</th>
+                <th>Keterangan</th>
+                <th>Bukti</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="t in solarMasukList" :key="t.id">
+                <td class="mono">{{ t.no }}</td>
+                <td>{{ new Date(t.tanggal).toLocaleDateString("id-ID") }}</td>
+                <td>{{ t.nama }}</td>
+                <td class="num mono">{{ t.liter }}</td>
+                <td>{{ t.keterangan || "-" }}</td>
+                <td>
+                  <a v-if="t.buktiUrl" :href="api.fileUrl(t.buktiUrl)" target="_blank" rel="noopener">Lihat</a>
+                  <span v-else>-</span>
+                </td>
+                <td style="white-space: nowrap">
+                  <button class="btn btn-ghost btn-sm" @click="openSolarEditModal(t)">Edit</button>
+                  <button class="btn btn-ghost btn-sm" @click="removeSolar(t)">Hapus</button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3"><b>Total Masuk</b></td>
+                <td class="num mono"><b>{{ solarData.totalMasuk }}</b></td>
+                <td colspan="3"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="section-title">Solar Keluar &mdash; Bulan {{ bulanLabel }}</div>
+        <div v-if="solarLoading" class="empty">Memuat...</div>
+        <div v-else-if="!solarKeluarList.length" class="empty">Belum ada catatan solar keluar bulan ini.</div>
+        <div v-else class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Tanggal</th>
+                <th>Nama Operator</th>
+                <th class="num">Liter</th>
+                <th>Lokasi</th>
+                <th>Keterangan</th>
+                <th>Bukti</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="t in solarKeluarList" :key="t.id">
+                <td class="mono">{{ t.no }}</td>
+                <td>{{ new Date(t.tanggal).toLocaleDateString("id-ID") }}</td>
+                <td>{{ t.nama }}</td>
+                <td class="num mono">{{ t.liter }}</td>
+                <td>{{ t.lokasi || "-" }}</td>
+                <td>{{ t.keterangan || "-" }}</td>
+                <td>
+                  <a v-if="t.buktiUrl" :href="api.fileUrl(t.buktiUrl)" target="_blank" rel="noopener">Lihat</a>
+                  <span v-else>-</span>
+                </td>
+                <td style="white-space: nowrap">
+                  <button class="btn btn-ghost btn-sm" @click="openSolarEditModal(t)">Edit</button>
+                  <button class="btn btn-ghost btn-sm" @click="removeSolar(t)">Hapus</button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3"><b>Total Keluar</b></td>
+                <td class="num mono"><b>{{ solarData.totalKeluar }}</b></td>
+                <td colspan="4"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </template>
   </div>
 
   <div v-if="showModal" class="modal-bg" @click.self="showModal = false">
@@ -583,9 +865,64 @@ onMounted(async () => {
       </div>
     </div>
   </div>
+
+  <div v-if="showSolarModal" class="modal-bg" @click.self="showSolarModal = false">
+    <div class="modal">
+      <button class="modal-close" @click="showSolarModal = false">×</button>
+      <h2>
+        {{ editingSolarId ? "Edit" : "Catat" }}
+        {{ solarForm.tipe === "MASUK" ? "Solar Masuk" : "Solar Keluar" }}
+      </h2>
+
+      <div class="row">
+        <div class="field"><label>Tanggal</label><input v-model="solarForm.tanggal" type="date" /></div>
+        <div class="field">
+          <label>{{ solarForm.tipe === "MASUK" ? "Nama Sopir" : "Nama Operator" }}</label>
+          <input v-model="solarForm.nama" :placeholder="solarForm.tipe === 'MASUK' ? 'Mis. Aceng' : 'Mis. Heri'" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field"><label>Jumlah Liter</label><input v-model.number="solarForm.liter" type="number" min="0" /></div>
+        <div class="field" v-if="solarForm.tipe === 'KELUAR'">
+          <label>Lokasi / Unit Tujuan</label>
+          <input v-model="solarForm.lokasi" placeholder="Mis. Cimanggis / Kp. Rambutan" />
+        </div>
+      </div>
+
+      <div class="field"><label>Catatan (opsional)</label><input v-model="solarForm.keterangan" /></div>
+
+      <div class="field">
+        <label>Bukti (foto surat jalan / dokumen pendukung, opsional)</label>
+        <div v-if="solarExistingBukti" style="margin-bottom: 8px">
+          <a :href="solarExistingBukti.url" target="_blank" rel="noopener">{{ solarExistingBukti.nama || "Lihat file saat ini" }}</a>
+          <button class="btn btn-ghost btn-sm" style="margin-left: 8px" @click="hapusBuktiExisting">Hapus file ini</button>
+        </div>
+        <input ref="solarFileInput" type="file" accept="image/*,.pdf" />
+        <div class="desc" style="margin-top: 4px">Format: foto (JPG/PNG) atau PDF, maks 10MB.</div>
+      </div>
+
+      <button class="btn btn-primary" :disabled="solarUploading" @click="submitSolar">
+        {{ solarUploading ? "Menyimpan..." : editingSolarId ? "Simpan Perubahan" : "Simpan" }}
+      </button>
+    </div>
+  </div>
 </template>
 
 <style scoped>
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.tab-btn.active {
+  color: var(--ink);
+  border-bottom-color: var(--accent, #2563eb);
+}
 .lr-doc {
   max-width: 820px;
 }

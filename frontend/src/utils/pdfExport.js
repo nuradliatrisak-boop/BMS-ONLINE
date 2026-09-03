@@ -223,3 +223,78 @@ export async function exportRekapKeseluruhanPdf(data) {
 
   doc.save(`rekap-keseluruhan-${(data.dari || "").slice(0, 10)}_${(data.sampai || "").slice(0, 10)}.pdf`);
 }
+
+// ------------------------------------------------------------
+// Stok Solar (BBM) - halaman Laporan Divisi tab "Stok Solar"
+// ------------------------------------------------------------
+export async function exportSolarStokPdf({ bulanLabel, items, totalMasuk, totalKeluar, saldoSaatIni }) {
+  const [kopImg, logoImg] = await Promise.all([loadImageDataUrl(KOP_SURAT_URL), loadImageDataUrl(LOGO_WATERMARK_URL)]);
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const margin = 14;
+
+  let y = drawSectionHeader(doc, {
+    kopImg,
+    logoImg,
+    margin,
+    title: "REKAP STOK SOLAR (BBM) \u2014 ALAT BERAT",
+    periodLabel: `Bulan ${bulanLabel}`,
+  });
+
+  const masuk = items.filter((t) => t.tipe === "MASUK");
+  const keluar = items.filter((t) => t.tipe === "KELUAR");
+
+  doc.setFont(undefined, "bold");
+  doc.setFontSize(9.5);
+  doc.text("Solar Masuk", margin, y);
+  autoTable(doc, {
+    startY: y + 2,
+    margin: { left: margin, right: margin },
+    head: [["No", "Tanggal", "Nama Sopir", "Liter", "Keterangan"]],
+    body: masuk.length
+      ? masuk.map((t) => [t.no, fmtDateID(t.tanggal), t.nama, t.liter, t.keterangan || "-"])
+      : [[{ content: "Belum ada data.", colSpan: 5, styles: { halign: "center", textColor: 130 } }]],
+    foot: [[{ content: "Total Masuk", colSpan: 3, styles: { fontStyle: "bold" } }, { content: String(totalMasuk), styles: { fontStyle: "bold" } }, ""]],
+    theme: "grid",
+    styles: { fontSize: 8.5, cellPadding: 1.6 },
+    headStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },
+    footStyles: { fillColor: [250, 250, 250], textColor: 20 },
+    columnStyles: { 3: { halign: "right" } },
+  });
+  y = doc.lastAutoTable.finalY + 8;
+
+  if (y > doc.internal.pageSize.getHeight() - 60) {
+    doc.addPage();
+    drawWatermark(doc, logoImg);
+    y = margin;
+  }
+
+  doc.setFont(undefined, "bold");
+  doc.setFontSize(9.5);
+  doc.text("Solar Keluar", margin, y);
+  autoTable(doc, {
+    startY: y + 2,
+    margin: { left: margin, right: margin },
+    head: [["No", "Tanggal", "Nama Operator", "Liter", "Lokasi", "Keterangan"]],
+    body: keluar.length
+      ? keluar.map((t) => [t.no, fmtDateID(t.tanggal), t.nama, t.liter, t.lokasi || "-", t.keterangan || "-"])
+      : [[{ content: "Belum ada data.", colSpan: 6, styles: { halign: "center", textColor: 130 } }]],
+    foot: [[{ content: "Total Keluar", colSpan: 3, styles: { fontStyle: "bold" } }, { content: String(totalKeluar), styles: { fontStyle: "bold" } }, "", ""]],
+    theme: "grid",
+    styles: { fontSize: 8.5, cellPadding: 1.6 },
+    headStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },
+    footStyles: { fillColor: [250, 250, 250], textColor: 20 },
+    columnStyles: { 3: { halign: "right" } },
+  });
+  y = doc.lastAutoTable.finalY + 8;
+
+  if (y > doc.internal.pageSize.getHeight() - 30) {
+    doc.addPage();
+    drawWatermark(doc, logoImg);
+    y = margin;
+  }
+  doc.setFont(undefined, "bold");
+  doc.setFontSize(10);
+  doc.text(`Sisa Stok Saat Ini: ${saldoSaatIni} Liter`, margin, y);
+
+  doc.save(`stok-solar-${bulanLabel.toLowerCase().replace(/\s+/g, "-")}.pdf`);
+}

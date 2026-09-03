@@ -17,6 +17,7 @@ import rekapPenjualanRoutes from "./routes/rekapPenjualan.js";
 import stockMasterRoutes from "./routes/stockMaster.js";
 import printCalibRoutes from "./routes/printCalib.js";
 import settingsRoutes from "./routes/settings.js";
+import solarTxRoutes from "./routes/solarTx.js";
 
 import { requireAuth } from "./middleware/auth.js";
 
@@ -31,6 +32,10 @@ const app = express();
 // Halaman ini memanggil API yang sama persis (path relatif /api/...),
 // jadi 1 origin dengan backend -> tidak perlu setting CORS terpisah.
 app.use("/simple", express.static(path.join(__dirname, "..", "public", "simple")));
+
+// File upload (foto/PDF bukti surat jalan Solar dst) - lihat catatan
+// penting soal storage ephemeral di src/middleware/upload.js.
+app.use("/uploads", express.static(path.join(__dirname, "..", "public", "uploads")));
 
 const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:5173")
   .split(",")
@@ -64,6 +69,7 @@ app.use("/api/rekap-penjualan", requireAuth, rekapPenjualanRoutes);
 app.use("/api/stock-master", requireAuth, stockMasterRoutes);
 app.use("/api/print-calib", requireAuth, printCalibRoutes);
 app.use("/api/settings", requireAuth, settingsRoutes);
+app.use("/api/solar-tx", requireAuth, solarTxRoutes);
 
 // Penanganan error terpusat
 app.use((err, req, res, next) => {

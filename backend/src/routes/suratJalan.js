@@ -6,14 +6,17 @@ import { DEFAULTS as PRINT_CALIB_DEFAULTS } from "./printCalib.js";
 
 const router = Router();
 
+// Nomor Surat Jalan dibuat PENDEK: "SJ-YYMM-XXX" (mis. "SJ-2609-001"),
+// diganti dari format lama "BMS-SJ-YYYYMM-XXXX" yang lebih panjang.
+// Urutan (XXX) reset tiap bulan, 3 digit cukup untuk >900 SJ/bulan.
 function generateNomorSuratJalan() {
   const now = new Date();
 
-  const year = now.getFullYear();
+  const year = String(now.getFullYear()).slice(-2);
   const month = String(now.getMonth() + 1).padStart(2, "0");
 
   return {
-    prefix: `BMS-SJ-${year}${month}`,
+    prefix: `SJ-${year}${month}`,
   };
 }
 
@@ -44,7 +47,7 @@ async function createNomorSuratJalan() {
     }
   }
 
-  return `${prefix}-${String(nomorUrut).padStart(4, "0")}`;
+  return `${prefix}-${String(nomorUrut).padStart(3, "0")}`;
 }
 
 // Hitung M3 dari Panjang x Lebar x Tinggi (dibulatkan 3 desimal, ikut cara

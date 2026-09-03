@@ -129,3 +129,41 @@ export function exportRekapKeseluruhanExcel(data) {
   const namaFile = `rekap-keseluruhan-${(data.dari || "").slice(0, 10)}_${(data.sampai || "").slice(0, 10)}.xlsx`;
   XLSX.writeFile(wb, namaFile);
 }
+
+// ------------------------------------------------------------
+// Stok Solar (BBM) - halaman Laporan Divisi tab "Stok Solar"
+// ------------------------------------------------------------
+export function exportSolarStokExcel({ bulanLabel, items, totalMasuk, totalKeluar, saldoSaatIni }) {
+  const masuk = items.filter((t) => t.tipe === "MASUK");
+  const keluar = items.filter((t) => t.tipe === "KELUAR");
+
+  const aoa = [
+    ["PT. BINTANG MUARA SEJATI"],
+    ["REKAP STOK SOLAR (BBM) - ALAT BERAT"],
+    [`Bulan ${bulanLabel}`],
+    [],
+    ["SOLAR MASUK"],
+    ["No", "Tanggal", "Nama Sopir", "Liter", "Keterangan"],
+    ...(masuk.length
+      ? masuk.map((t) => [t.no, fmtDateID(t.tanggal), t.nama, t.liter, t.keterangan || "-"])
+      : [["", "Belum ada data.", "", "", ""]]),
+    ["", "", "Total Masuk", totalMasuk, ""],
+    [],
+    ["SOLAR KELUAR"],
+    ["No", "Tanggal", "Nama Operator", "Liter", "Lokasi", "Keterangan"],
+    ...(keluar.length
+      ? keluar.map((t) => [t.no, fmtDateID(t.tanggal), t.nama, t.liter, t.lokasi || "-", t.keterangan || "-"])
+      : [["", "Belum ada data.", "", "", "", ""]]),
+    ["", "", "Total Keluar", totalKeluar, "", ""],
+    [],
+    ["Sisa Stok Saat Ini (Liter)", "", "", saldoSaatIni],
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"] = autoWidth(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Stok Solar");
+
+  const namaFile = `stok-solar-${bulanLabel.toLowerCase().replace(/\s+/g, "-")}.xlsx`;
+  XLSX.writeFile(wb, namaFile);
+}

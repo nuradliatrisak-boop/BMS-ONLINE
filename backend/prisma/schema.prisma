@@ -31,6 +31,11 @@ enum TipeTransaksi {
   PENGELUARAN
 }
 
+enum TipeSolar {
+  MASUK
+  KELUAR
+}
+
 model User {
   id        String   @id @default(cuid())
   username  String   @unique
@@ -245,6 +250,30 @@ model DivisiTx {
   createdAt   DateTime @default(now())
 
   @@index([divisi, kelompok, kategori])
+}
+
+// Rekapan Stok Solar (BBM) untuk Alat Berat -- mirror dari catatan kertas
+// "Stok Solar Masuk" (sopir truk tangki mengantar solar ke lokasi, dicatat
+// per nama sopir + jumlah liter) dan "Solar Keluar" (operator alat berat
+// mengambil solar untuk unitnya, dicatat per nama operator + jumlah liter +
+// lokasi alat beratnya). Saldo stok = total MASUK - total KELUAR, dihitung
+// realtime dari data ini (bukan disimpan sebagai angka statis), ditampilkan
+// di halaman Laporan Divisi tab "Stok Solar (BBM)".
+model SolarTx {
+  id         String    @id @default(cuid())
+  no         String    @unique // nomor pendek auto-generate, mis. "SM-260902-01" / "SK-260902-01"
+  tipe       TipeSolar
+  tanggal    DateTime
+  nama       String    // nama sopir (MASUK) atau nama operator (KELUAR)
+  liter      Float
+  lokasi     String?   // hanya untuk KELUAR (lokasi/unit alat berat tujuan solar)
+  keterangan String?
+  buktiFile  String?   // path file bukti (foto surat jalan / dokumen pendukung), disimpan di /uploads
+  buktiNama  String?   // nama file asli saat diupload (untuk ditampilkan)
+  divisi     String    @default("Alat Berat")
+  createdAt  DateTime  @default(now())
+
+  @@index([tipe, tanggal])
 }
 
 model PrintCalib {

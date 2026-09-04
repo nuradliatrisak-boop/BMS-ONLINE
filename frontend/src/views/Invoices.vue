@@ -16,7 +16,6 @@ const loading = ref(true);
 const saving = ref(false);
 const showModal = ref(false);
 const editingId = ref(null);
-const search = ref("");
 
 const emptyForm = () => ({
   divisi: DIVISI[0],
@@ -73,7 +72,7 @@ async function load() {
   loading.value = true;
   try {
     const [invoiceData, customerData] = await Promise.all([
-      api.get(`/invoices${search.value.trim() ? `?search=${encodeURIComponent(search.value.trim())}` : ""}`),
+      api.get("/invoices"),
       api.get("/customers"),
     ]);
     invoices.value = invoiceData;
@@ -222,21 +221,8 @@ onMounted(load);
 
     <div v-else class="card invoice-table-card">
       <div class="section-title">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span>Daftar Invoice</span>
-          <span class="tag">{{ invoices.length }} Invoice</span>
-        </div>
-      </div>
-
-      <div class="sj-searchbar">
-        <input
-          v-model="search"
-          type="search"
-          placeholder="🔎 Cari No Invoice atau nama customer..."
-          @keyup.enter="load"
-        />
-        <button class="btn btn-sm" @click="load">Cari</button>
-        <button v-if="search" class="btn btn-sm btn-ghost" @click="search = ''; load()">Reset</button>
+        Daftar Invoice
+        <span class="tag">{{ invoices.length }} Invoice</span>
       </div>
 
       <div class="table-wrap">
@@ -424,6 +410,4 @@ onMounted(load);
   .modal-actions .btn { width: 100%; justify-content: center; }
   .invoice-total-preview strong { font-size: 15px; }
 }
-.sj-searchbar { display:flex; gap:8px; align-items:center; margin:10px 0 14px; }
-.sj-searchbar input { flex:1; min-width:220px; padding:10px 12px; border:1px solid var(--border, #ddd); border-radius:8px; font-size:13px; }
 </style>

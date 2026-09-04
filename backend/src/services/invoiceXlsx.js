@@ -49,10 +49,10 @@ const MM_TO_IN = 1 / 25.4; // 1 mm dalam inch
 // antara keterbacaan dan menjaga layout tetap muat.
 // ------------------------------------------------------------
 const DOT_FONT = "Courier New";
-const FONT_BODY = 12;
-const FONT_SMALL = 10;
-const FONT_IMPORTANT = 12;
-const FONT_TOTAL = 13;
+const FONT_BODY = 10;
+const FONT_SMALL = 9;
+const FONT_IMPORTANT = 10;
+const FONT_TOTAL = 11;
 
 function rupiah(n) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
@@ -130,31 +130,6 @@ function estimateWrapHeight(
   return lines * lineHeightPt;
 }
 
-function terbilang(n) {
-  n = Math.round(Number(n) || 0);
-  if (n === 0) return "Nol";
-
-  const s = [
-    "", "Satu", "Dua", "Tiga", "Empat", "Lima",
-    "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas",
-  ];
-
-  function f(x) {
-    if (x < 12) return s[x];
-    if (x < 20) return f(x - 10) + " Belas";
-    if (x < 100) return f(Math.floor(x / 10)) + " Puluh" + (x % 10 ? " " + f(x % 10) : "");
-    if (x < 200) return "Seratus" + (x - 100 ? " " + f(x - 100) : "");
-    if (x < 1000) return f(Math.floor(x / 100)) + " Ratus" + (x % 100 ? " " + f(x % 100) : "");
-    if (x < 2000) return "Seribu" + (x - 1000 ? " " + f(x - 1000) : "");
-    if (x < 1000000) return f(Math.floor(x / 1000)) + " Ribu" + (x % 1000 ? " " + f(x % 1000) : "");
-    if (x < 1000000000) return f(Math.floor(x / 1000000)) + " Juta" + (x % 1000000 ? " " + f(x % 1000000) : "");
-    if (x < 1000000000000) return f(Math.floor(x / 1000000000)) + " Miliar" + (x % 1000000000 ? " " + f(x % 1000000000) : "");
-    return f(Math.floor(x / 1000000000000)) + " Triliun" + (x % 1000000000000 ? " " + f(x % 1000000000000) : "");
-  }
-
-  return f(n);
-}
-
 export async function buildInvoiceWorkbook(
   inv,
   calib,
@@ -228,13 +203,6 @@ export async function buildInvoiceWorkbook(
     Number(calib?.topMargin ?? 21) *
     MM_TO_PT *
     0.6;
-
-  // Judul invoice dibuat jelas dan benar-benar berada di tengah atas.
-  const rTitle = ws.addRow(["INVOICE"]);
-  ws.mergeCells(`A${rTitle.number}:K${rTitle.number}`);
-  applyFont(rTitle.getCell(1), { size: 16, bold: true });
-  rTitle.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
-  rTitle.height = 24;
 
   // ============================================================
   // KEPADA YTH + INFORMASI INVOICE
@@ -623,86 +591,34 @@ export async function buildInvoiceWorkbook(
   );
 
   // ============================================================
-  // TOTAL M3 + TOTAL TAGIHAN + TERBILANG
+  // TOTAL M3
   // ============================================================
 
-  ws.addRow([]).height = 6;
+  ws.addRow([]).height = 8;
 
   const total =
     inv.total ??
     (inv.items || []).reduce(
-      (sum, i) => sum + i.qty * i.hargaSatuan,
+      (s, i) =>
+        s +
+        i.qty *
+          i.hargaSatuan,
       0
     );
 
-  const rSummary = ws.addRow([
+  const rTotalM3 = ws.addRow([
     `Total M3: ${totalM3.toFixed(3)}`,
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "Jumlah Total Tagihan",
-    "",
-    "",
-    total,
   ]);
 
-  // Total tagihan dimulai dari kolom H = T (Tinggi), bukan terlalu ke kanan.
-  ws.mergeCells(`A${rSummary.number}:G${rSummary.number}`);
-  ws.mergeCells(`H${rSummary.number}:J${rSummary.number}`);
-
-  applyFont(rSummary.getCell(1), {
-    size: FONT_IMPORTANT,
-    bold: true,
-  });
-  applyFont(rSummary.getCell(8), {
-    size: FONT_IMPORTANT,
-    bold: true,
-  });
-  applyFont(rSummary.getCell(11), {
-    size: FONT_TOTAL,
-    bold: true,
-  });
-
-  rSummary.getCell(1).alignment = {
-    horizontal: "left",
-    vertical: "middle",
-  };
-  rSummary.getCell(8).alignment = {
-    horizontal: "left",
-    vertical: "middle",
-  };
-  rSummary.getCell(11).alignment = {
-    horizontal: "right",
-    vertical: "middle",
-  };
-
-  rSummary.getCell(8).border = BOX;
-  rSummary.getCell(9).border = BOX;
-  rSummary.getCell(10).border = BOX;
-  rSummary.getCell(11).border = BOX;
-  rSummary.getCell(11).numFmt = '"Rp" #,##0';
-  rSummary.height = 24;
-
-  const rTerbilang = ws.addRow([
-    `Terbilang: ${terbilang(total)} Rupiah`,
-  ]);
-  ws.mergeCells(`A${rTerbilang.number}:K${rTerbilang.number}`);
-  applyFont(rTerbilang.getCell(1), {
-    size: FONT_BODY,
-    italic: true,
-  });
-  rTerbilang.getCell(1).alignment = {
-    horizontal: "left",
-    vertical: "middle",
-    wrapText: true,
-  };
-  rTerbilang.height = Math.max(
-    20,
-    estimateWrapHeight(`Terbilang: ${terbilang(total)} Rupiah`, 95, 16)
+  applyFont(
+    rTotalM3.getCell(1),
+    {
+      size: FONT_IMPORTANT,
+      bold: true,
+    }
   );
+
+  rTotalM3.height = 18;
 
   // ============================================================
   // CATATAN
@@ -738,6 +654,87 @@ export async function buildInvoiceWorkbook(
 
   // Spasi
   ws.addRow([]).height = 8;
+
+  // ============================================================
+  // BOX TOTAL TAGIHAN
+  // ============================================================
+
+  const boxRows = [
+    [
+      "Jumlah Total Tagihan",
+      total,
+    ],
+    [
+      "Sudah Dibayar",
+      inv.dibayar,
+    ],
+    [
+      "Sisa",
+      inv.sisaTagihan,
+    ],
+  ];
+
+  for (
+    const [label, val]
+    of boxRows
+  ) {
+    const r = ws.addRow([
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      label,
+      "",
+      val,
+    ]);
+
+    ws.mergeCells(
+      `I${r.number}:J${r.number}`
+    );
+
+    // Label total
+    applyFont(
+      r.getCell(9),
+      {
+        size: FONT_IMPORTANT,
+        bold: true,
+      }
+    );
+
+    r.getCell(9).alignment = {
+      horizontal: "left",
+      vertical: "middle",
+    };
+
+    // Border label
+    r.getCell(9).border = BOX;
+    r.getCell(10).border = BOX;
+
+    // Nilai
+    applyFont(
+      r.getCell(11),
+      {
+        size: FONT_TOTAL,
+        bold: true,
+      }
+    );
+
+    r.getCell(11).border = BOX;
+
+    r.getCell(11).numFmt =
+      '"Rp" #,##0';
+
+    r.getCell(11).alignment = {
+      horizontal: "right",
+      vertical: "middle",
+    };
+
+    r.height = 20;
+  }
 
   // ============================================================
   // TANGGAL

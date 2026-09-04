@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { randomUUID } from "crypto";
 import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
 import { buildSJWorkbook } from "../services/suratJalanXlsx.js";
@@ -115,50 +114,10 @@ const includeRelasi = {
   customer: true,
 };
 
-// Kalau Penerima/Tujuan diketik manual, otomatis simpan ke master
-// CustomerRecipient agar pada input berikutnya langsung muncul di dropdown.
-async function simpanPenerimaManual(customerId, penerima, tujuan) {
-  if (!customerId || !penerima?.trim() || !tujuan?.trim()) return;
-
-  const nama = penerima.trim();
-  const alamat = tujuan.trim();
-
-  const existing = await prisma.customerRecipient.findFirst({
-    where: { customerId, nama, alamat },
-    select: { id: true },
-  });
-
-  if (!existing) {
-    await prisma.customerRecipient.create({
-      data: { customerId, nama, alamat },
-    });
-  }
-}
-
 router.get("/", async (req, res, next) => {
   try {
-    const { search } = req.query;
-    const keyword = String(search || "").trim();
-
-    const where = {
-      ...scopeDivisi(req),
-      ...(keyword
-        ? {
-            OR: [
-              { no: { contains: keyword, mode: "insensitive" } },
-              { penerima: { contains: keyword, mode: "insensitive" } },
-              { tujuan: { contains: keyword, mode: "insensitive" } },
-              { jenisBarang: { contains: keyword, mode: "insensitive" } },
-              { noPolisi: { contains: keyword, mode: "insensitive" } },
-              { sopir: { contains: keyword, mode: "insensitive" } },
-              { customer: { nama: { contains: keyword, mode: "insensitive" } } },
-            ],
-          }
-        : {}),
-    };
-
     const list = await prisma.suratJalan.findMany({
-      where,
+      where: scopeDivisi(req),
       include: includeRelasi,
       orderBy: {
         tanggal: "desc",
@@ -237,9 +196,6 @@ router.post("/", async (req, res, next) => {
     }
 
     const hasil = [];
-    // Semua SJ yang dibuat dari satu aksi "2 kertas", "3 kertas", dst.
-    // diberi ID kelompok yang sama. Nomornya tetap berbeda.
-    const batchId = jumlahSuratJalan > 1 ? randomUUID() : null;
 
     for (let index = 0; index < jumlahSuratJalan; index++) {
       let sj;
@@ -256,7 +212,6 @@ router.post("/", async (req, res, next) => {
             data: {
               no,
               divisi,
-              batchId,
               ...buildDataFields(req.body, { forCreate: true }),
             },
             include: includeRelasi,
@@ -277,9 +232,6 @@ router.post("/", async (req, res, next) => {
       hasil.push(sj);
     }
 
-    // Penerima/Tujuan manual otomatis masuk master CustomerRecipient.
-    await simpanPenerimaManual(req.body.customerId, req.body.penerima, req.body.tujuan);
-
     // Tetap mempertahankan respons lama untuk pembuatan 1 Surat Jalan agar
     // integrasi yang sudah ada tidak berubah. Jika jumlah > 1, kirim semua SJ.
     res.status(201).json(jumlahSuratJalan === 1 ? hasil[0] : hasil);
@@ -290,37 +242,11 @@ router.post("/", async (req, res, next) => {
 
 router.put("/:id", async (req, res, next) => {
   try {
-    const current = await prisma.suratJalan.findUnique({
-      where: { id: req.params.id },
-      select: { id: true, batchId: true, customerId: true },
-    });
-
-    if (!current) {
-      return res.status(404).json({ error: "Surat jalan tidak ditemukan" });
-    }
-
-    const data = buildDataFields(req.body, { forCreate: false });
-
-    // Jika SJ ini berasal dari pembuatan beberapa kertas sekaligus,
-    // perubahan P/L/T, M3, penerima, tujuan, armada, dll. diterapkan
-    // ke seluruh anggota batch. Nomor SJ masing-masing tetap berbeda.
-    const whereBatch = current.batchId
-      ? { batchId: current.batchId }
-      : { id: current.id };
-
-    await prisma.suratJalan.updateMany({
-      where: whereBatch,
-      data,
-    });
-
-    await simpanPenerimaManual(
-      req.body.customerId || current.customerId,
-      req.body.penerima,
-      req.body.tujuan
-    );
-
-    const sj = await prisma.suratJalan.findUnique({
-      where: { id: req.params.id },
+    const sj = await prisma.suratJalan.update({
+      where: {
+        id: req.params.id,
+      },
+      data: buildDataFields(req.body, { forCreate: false }),
       include: includeRelasi,
     });
 

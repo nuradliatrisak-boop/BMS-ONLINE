@@ -1,9 +1,8 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Daftar Surat Jalan</title><link rel="stylesheet" href="style.css"></head><body><div class="topbar"><h1>Daftar Surat Jalan</h1><div id="userbar" class="userbar"></div></div><div class="wrap"><a href="dashboard.html" class="btn secondary">&laquo; Dashboard</a> <a href="surat-jalan.html" class="btn">+ Buat Surat Jalan</a><div class="card"><div id="msg" class="msg" style="display:none"></div><div class="searchbar" style="display:flex;gap:8px;margin-bottom:12px"><input id="search" type="search" placeholder="🔎 Cari No SJ, customer, penerima, tujuan, barang, sopir, nopol..." style="flex:1;padding:9px"><button class="btn secondary" id="btnSearch">Cari</button><button class="btn secondary" id="btnResetSearch" style="display:none">Reset</button></div><div id="batchbar" style="display:none;margin-bottom:10px"><span id="batchcount"></span> &nbsp; <button class="btn secondary" id="btnCetakTerpilih">Cetak Terpilih</button> <button class="btn secondary" id="btnExcelTerpilih">Excel Terpilih</button> <button class="btn secondary" id="btnBatal">Batal pilih</button></div><div id="list" class="loading">Memuat...</div></div></div><script src="common.js"></script><script src="print.js"></script><script>(function(){
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Daftar Surat Jalan</title><link rel="stylesheet" href="style.css"></head><body><div class="topbar"><h1>Daftar Surat Jalan</h1><div id="userbar" class="userbar"></div></div><div class="wrap"><a href="dashboard.html" class="btn secondary">&laquo; Dashboard</a> <a href="surat-jalan.html" class="btn">+ Buat Surat Jalan</a><div class="card"><div id="msg" class="msg" style="display:none"></div><div id="batchbar" style="display:none;margin-bottom:10px"><span id="batchcount"></span> &nbsp; <button class="btn secondary" id="btnCetakTerpilih">Cetak Terpilih</button> <button class="btn secondary" id="btnExcelTerpilih">Excel Terpilih</button> <button class="btn secondary" id="btnBatal">Batal pilih</button></div><div id="list" class="loading">Memuat...</div></div></div><script src="common.js"></script><script src="print.js"></script><script>(function(){
 var u=requireLogin();if(!u)return;
 document.getElementById('userbar').textContent='Login sebagai: '+u.nama;
 var box=document.getElementById('list'),msg=document.getElementById('msg');
 var batchbar=document.getElementById('batchbar'),batchcount=document.getElementById('batchcount');
-var searchInput=document.getElementById('search'),btnSearch=document.getElementById('btnSearch'),btnResetSearch=document.getElementById('btnResetSearch');
 var data=[]; // data terakhir dari server, dipakai lagi biar tombol Terpilih tidak perlu fetch ulang
 var selected={}; // map id -> true
 
@@ -22,8 +21,7 @@ function updateBatchBar(){
 }
 
 function load(){
-  var q=searchInput.value.trim();
-  api.get('/surat-jalan'+(q?'?search='+encodeURIComponent(q):'')).then(function(a){
+  api.get('/surat-jalan').then(function(a){
     data=a; selected={}; updateBatchBar();
     var h='<table class="sj-table"><tr><th></th><th>No SJ</th><th>Tanggal</th><th>Customer</th><th>Barang</th><th>M3</th><th>Status</th><th>Aksi</th></tr>';
     for(var i=0;i<a.length;i++){
@@ -90,9 +88,5 @@ document.getElementById('btnBatal').onclick=function(){
   updateBatchBar();
 };
 
-btnSearch.onclick=load;
-searchInput.onkeyup=function(e){if(e.key==='Enter')load();};
-btnResetSearch.onclick=function(){searchInput.value='';load();};
-searchInput.oninput=function(){btnResetSearch.style.display=searchInput.value?'inline-block':'none';};
 load();
 })();</script></body></html>

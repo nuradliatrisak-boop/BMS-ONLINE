@@ -163,7 +163,7 @@ export async function printSJ(sjOrList) {
       html,body{margin:0;padding:0;width:${c.w}mm}
       *{box-sizing:border-box}
       .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;background:#fff;font-family:"Courier New",Courier,monospace;color:#111}
-      .f{position:absolute;white-space:nowrap;font-family:"Courier New",Courier,monospace;letter-spacing:.08mm}
+      .f{position:absolute;white-space:nowrap;font-family:"Courier New",Courier,monospace}
       .f-wrap{white-space:normal;word-break:break-word;line-height:1.25}
     </style>
     ${sheets}
@@ -225,7 +225,9 @@ export async function printInvoice(inv) {
     .map((it, i) => {
       const sj = it.suratJalan;
       const pltText = sj
-        ? `${Number(sj.panjang ?? 0).toFixed(2)} ${Number(sj.lebar ?? 0).toFixed(2)} ${Number(sj.tinggi ?? 0).toFixed(2)}`
+        ? `${Number(sj.panjang ?? 0).toFixed(2)} ${Number(sj.lebar ?? 0).toFixed(
+            2
+          )} ${Number(sj.tinggi ?? 0).toFixed(2)}`
         : `${it.qty} ${it.satuan || ""}`;
       const m3Text = sj ? Number(sj.m3 || 0).toFixed(3) : Number(it.qty).toFixed(3);
 
@@ -252,8 +254,7 @@ export async function printInvoice(inv) {
     <style>
       @page{size:${c.w}mm ${c.h}mm;margin:0}
       html,body{margin:0;padding:0;width:${c.w}mm;height:${c.h}mm}
-      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 8mm 6mm ${8 + left}mm;font:13pt "Courier New",Courier,monospace;color:#111;line-height:1.4;letter-spacing:.08mm}
-      .title{text-align:center;font-size:16pt;font-weight:700;letter-spacing:.3mm;margin-bottom:4mm}
+      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 8mm 6mm ${8 + left}mm;font:13pt "Courier New",Courier,monospace;color:#111;line-height:1.4}
       .head{display:flex;justify-content:space-between;margin-bottom:4mm}
       .head .right{text-align:right}
       .label{font-size:11pt;color:#555}
@@ -261,23 +262,18 @@ export async function printInvoice(inv) {
       .idrow{margin:3mm 0 5mm}
       .idrow div{margin-bottom:1.5mm}
       .idrow .label{display:inline-block;width:38mm}
-      .tbl{border-collapse:collapse;width:100%;font-size:12pt}
+      .tbl{border-collapse:collapse;width:100%;font-size:11pt}
       .tbl th,.tbl td{border:1px solid #111;padding:1.8mm;text-align:center}
       .tbl th{background:#eee}
       .tbl td.left{text-align:left}
-      .tbl td.num{text-align:right;white-space:nowrap}
-      .bottom{display:flex;justify-content:space-between;align-items:flex-start;margin-top:3mm;gap:3mm}
-      .bottom-left{width:52%}
-      .bottom-right{width:40%;margin-left:60%}
-      .note{font-size:10pt;margin-top:2mm;line-height:1.45}
-      .totalbox{width:100%;font-size:11pt}
-      .totalbox td{border:1px solid #111;padding:1.5mm 2.5mm}
-      .totalbox .amount{font-size:13pt}
-      .sign{text-align:center;margin-top:9mm;margin-left:auto;width:48mm;font-size:11pt}
+      .tbl td.num{text-align:right}
+      .bottom{display:flex;justify-content:space-between;margin-top:3mm}
+      .sign{text-align:center;margin-top:9mm;margin-left:auto;width:48mm}
       .signline{border-top:1px solid #111;padding-top:1.5mm;margin-top:14mm}
+      .note{font-size:9pt;margin-top:2mm}
+      .totalbox td{border:1px solid #111;padding:1.5mm 3mm}
     </style>
     <div class="sheet">
-      <div class="title">INVOICE</div>
       <div class="head">
         <div>
           <div class="label">Kepada Yth</div>
@@ -306,16 +302,16 @@ export async function printInvoice(inv) {
         ${rows}
       </table>
       <div class="bottom">
-        <div class="bottom-left">
+        <div>
           <b>Total M3:</b> ${totalM3.toFixed(3)}
           <div class="note"><b>Terbilang:</b> ${esc(terbilang(total))} Rupiah</div>
           ${inv.catatan ? `<div class="note"><b>Catatan:</b> ${esc(inv.catatan)}</div>` : ""}
         </div>
-        <div class="bottom-right">
-          <table class="tbl totalbox">
-            <tr><td><b>Jumlah Total Tagihan</b></td><td class="num amount"><b>${rupiah(total)}</b></td></tr>
-          </table>
-        </div>
+        <table class="tbl totalbox" style="width:62mm">
+          <tr><td><b>Jumlah Total Tagihan</b></td><td class="num"><b>${rupiah(total)}</b></td></tr>
+          <tr><td>Sudah Dibayar</td><td class="num">${rupiah(inv.dibayar)}</td></tr>
+          <tr><td>Sisa</td><td class="num">${rupiah(inv.sisaTagihan)}</td></tr>
+        </table>
       </div>
       <div class="sign">
         Jakarta, ${esc(fmtDate(inv.tanggal))}

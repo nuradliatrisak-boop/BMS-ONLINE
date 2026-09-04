@@ -376,21 +376,8 @@ onMounted(load);
 
     <div v-else class="card sj-table-card">
       <div class="section-title">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span>Daftar Surat Jalan</span>
-          <span class="tag">{{ list.length }} Dokumen</span>
-        </div>
-      </div>
-
-      <div class="sj-searchbar">
-        <input
-          v-model="search"
-          type="search"
-          placeholder="🔎 Cari No SJ, penerima, customer, tujuan, barang, sopir, atau nopol..."
-          @keyup.enter="load"
-        />
-        <button class="btn btn-sm" @click="load">Cari</button>
-        <button v-if="search" class="btn btn-sm btn-ghost" @click="search = ''; load()">Reset</button>
+        Daftar Surat Jalan
+        <span class="tag">{{ list.length }} Dokumen</span>
       </div>
 
       <div v-if="selectedIds.length" class="sj-batch-bar">
@@ -620,8 +607,6 @@ onMounted(load);
 .sj-hint { margin-top: 10px; font-size: 11.5px; color: var(--ink-soft); }
 .row-4 { grid-template-columns: repeat(4, 1fr); }
 .m3-hint { font-size: 12.5px; color: var(--ink-soft); margin: 6px 0 12px; }
-.sj-searchbar { display:flex; gap:8px; align-items:center; margin: 10px 0 14px; }
-.sj-searchbar input { flex:1; min-width:220px; padding:10px 12px; border:1px solid var(--border, #ddd); border-radius:8px; font-size:13px; }
 .draft-check { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 14px; cursor: pointer; }
 .draft-check input { margin-top: 3px; }
 .draft-check-sub { font-size: 11px; color: var(--ink-soft); }

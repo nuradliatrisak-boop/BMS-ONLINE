@@ -703,8 +703,6 @@ onMounted(load);
   >
     <div class="invoice-paper">
 
-      <div class="invoice-print-title">INVOICE</div>
-
       <!-- HEADER PERUSAHAAN -->
       <div class="invoice-header">
         <div class="company">
@@ -723,6 +721,10 @@ onMounted(load);
         </div>
 
         <div class="invoice-title">
+          <div class="invoice-label">
+            INVOICE
+          </div>
+
           <div class="invoice-number">
             {{ invoice.no }}
           </div>
@@ -846,13 +848,25 @@ onMounted(load);
 
         <div class="totals">
           <div class="total-row">
-            <span>JUMLAH TOTAL TAGIHAN</span>
+            <span>TOTAL</span>
             <strong>
               {{ rupiah(invoice.total) }}
             </strong>
           </div>
 
+          <div class="total-row">
+            <span>DIBAYAR</span>
+            <strong>
+              {{ rupiah(invoice.dibayar) }}
+            </strong>
+          </div>
 
+          <div class="total-row grand">
+            <span>SISA TAGIHAN</span>
+            <strong>
+              {{ rupiah(invoice.sisaTagihan) }}
+            </strong>
+          </div>
         </div>
       </div>
 
@@ -977,19 +991,9 @@ onMounted(load);
     width: 100%;
     min-height: 260mm;
     box-sizing: border-box;
-    font-family: "Courier New", Courier, monospace;
-    font-size: 13px;
-    letter-spacing: .08mm;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
     color: #111;
-  }
-
-  .invoice-print-title {
-    display: block;
-    text-align: center;
-    font-size: 16pt;
-    font-weight: 800;
-    letter-spacing: .3mm;
-    margin-bottom: 4mm;
   }
 
   .invoice-header {
@@ -1018,14 +1022,13 @@ onMounted(load);
   }
 
   .invoice-title {
-    text-align: center;
-    flex: 1;
+    text-align: right;
   }
 
   .invoice-label {
-    font-size: 16pt;
+    font-size: 28px;
     font-weight: 800;
-    letter-spacing: .3mm;
+    letter-spacing: 2px;
   }
 
   .invoice-number {
@@ -1087,7 +1090,7 @@ onMounted(load);
     background: #eee;
     border: 1px solid #999;
     padding: 8px 6px;
-    font-size: 12px;
+    font-size: 10px;
     text-transform: uppercase;
   }
 
@@ -1095,7 +1098,6 @@ onMounted(load);
     border: 1px solid #bbb;
     padding: 8px 6px;
     vertical-align: top;
-    font-size: 13px;
   }
 
   .center {
@@ -1129,7 +1131,7 @@ onMounted(load);
   }
 
   .totals {
-    width: 48%;
+    width: 300px;
   }
 
   .total-row {
@@ -1147,7 +1149,8 @@ onMounted(load);
   }
 
   .payment-history {
-    display: none !important;
+    margin-top: 25px;
+    width: 65%;
   }
 
   .payment-history table {

@@ -132,13 +132,22 @@ async function buildItemData(tx, it) {
 
 router.get("/", async (req, res, next) => {
   try {
-    const { customerId, dari, sampai, status, divisi } = req.query;
+    const { customerId, dari, sampai, status, divisi, search } = req.query;
+    const keyword = String(search || "").trim();
 
     const where = {
       ...scopeDivisi(req),
       ...(customerId ? { customerId } : {}),
       ...(status ? { status } : {}),
       ...(divisi ? { divisi } : {}),
+      ...(keyword
+        ? {
+            OR: [
+              { no: { contains: keyword, mode: "insensitive" } },
+              { customer: { nama: { contains: keyword, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
     };
 
     if (dari || sampai) {

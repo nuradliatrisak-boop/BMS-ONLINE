@@ -223,11 +223,13 @@ model SuratJalan {
   statusTTD   StatusTTD @default(BELUM_TTD)
   isDraft     Boolean  @default(false)
   detail      Json?    // daftar barang / muatan (fleksibel, mirror bentuk lama)
+  batchId      String?  // mengelompokkan beberapa SJ yang dibuat sekaligus; edit satu = edit seluruh batch
   createdAt   DateTime @default(now())
 
   invoiceItems InvoiceItem[]
 
   @@index([customerId])
+  @@index([batchId])
 }
 
 model DivisiTx {

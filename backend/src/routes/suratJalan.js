@@ -114,10 +114,30 @@ const includeRelasi = {
   customer: true,
 };
 
+// Search sederhana: ?search=kata kunci, cocok di nomor SJ, penerima,
+// tujuan, no. polisi, atau nama/kode customer. Dipakai kolom pencarian
+// di halaman daftar Surat Jalan.
 router.get("/", async (req, res, next) => {
   try {
+    const { search } = req.query;
+
     const list = await prisma.suratJalan.findMany({
-      where: scopeDivisi(req),
+      where: {
+        ...scopeDivisi(req),
+        ...(search
+          ? {
+              OR: [
+                { no: { contains: search, mode: "insensitive" } },
+                { penerima: { contains: search, mode: "insensitive" } },
+                { tujuan: { contains: search, mode: "insensitive" } },
+                { noPolisi: { contains: search, mode: "insensitive" } },
+                { jenisBarang: { contains: search, mode: "insensitive" } },
+                { customer: { nama: { contains: search, mode: "insensitive" } } },
+                { customer: { kode: { contains: search, mode: "insensitive" } } },
+              ],
+            }
+          : {}),
+      },
       include: includeRelasi,
       orderBy: {
         tanggal: "desc",
@@ -196,6 +216,9 @@ router.post("/", async (req, res, next) => {
     }
 
     const hasil = [];
+    // Kalau bikin lebih dari 1 sekaligus, semua dokumen ditandai satu
+    // "batchId" yang sama supaya nanti bisa di-edit bareng (lihat PUT /:id).
+    const batchId = jumlahSuratJalan > 1 ? `batch_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` : null;
 
     for (let index = 0; index < jumlahSuratJalan; index++) {
       let sj;
@@ -212,6 +235,7 @@ router.post("/", async (req, res, next) => {
             data: {
               no,
               divisi,
+              batchId,
               ...buildDataFields(req.body, { forCreate: true }),
             },
             include: includeRelasi,
@@ -242,15 +266,33 @@ router.post("/", async (req, res, next) => {
 
 router.put("/:id", async (req, res, next) => {
   try {
+    const data = buildDataFields(req.body, { forCreate: false });
+
     const sj = await prisma.suratJalan.update({
       where: {
         id: req.params.id,
       },
-      data: buildDataFields(req.body, { forCreate: false }),
+      data,
       include: includeRelasi,
     });
 
-    res.json(sj);
+    // Kalau dokumen ini bagian dari batch (dibuat bareng lewat "Jumlah
+    // Surat Jalan" > 1) dan user centang "terapkan ke semua", samakan
+    // datanya ke semua dokumen lain dalam batch yang sama - KECUALI
+    // "no" (nomor surat jalan) yang memang harus tetap unik per dokumen,
+    // dan "detail" tidak ikut dipaksa sama supaya muatan per-dokumen yang
+    // sudah diisi beda-beda tidak ketiban rata.
+    let updatedBatchCount = 0;
+    if (req.body.applyToBatch && sj.batchId) {
+      const { detail, ...dataTanpaDetail } = data;
+      const result = await prisma.suratJalan.updateMany({
+        where: { batchId: sj.batchId, id: { not: sj.id } },
+        data: dataTanpaDetail,
+      });
+      updatedBatchCount = result.count;
+    }
+
+    res.json({ ...sj, updatedBatchCount });
   } catch (e) {
     next(e);
   }

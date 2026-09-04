@@ -123,6 +123,7 @@ function openPrint(html) {
     'body{' +
       'font-family:"Courier New",Courier,monospace;' +
       'font-kerning:none;' +
+      'font-variant-ligatures:none;' +
       'text-rendering:auto;' +
     '}' +
 
@@ -872,6 +873,8 @@ function printSJ(sjOrList) {
         // Sedikit direnggangkan.
         'letter-spacing:0.15pt;' +
 
+        'font-variant-ligatures:none;' +
+
         'color:#111;' +
 
       '}' +
@@ -888,6 +891,8 @@ function printSJ(sjOrList) {
         // Tidak terlalu besar agar tidak mengubah
         // lebar koordinat field secara drastis.
         'letter-spacing:0.15pt;' +
+
+        'font-variant-ligatures:none;' +
 
         'line-height:1.2;' +
 

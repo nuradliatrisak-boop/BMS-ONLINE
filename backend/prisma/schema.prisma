@@ -224,10 +224,16 @@ model SuratJalan {
   isDraft     Boolean  @default(false)
   detail      Json?    // daftar barang / muatan (fleksibel, mirror bentuk lama)
   createdAt   DateTime @default(now())
+  // Dokumen yang dibuat bareng lewat "Jumlah Surat Jalan" > 1 (customer &
+  // tujuan sama, cuma nomor SJ beda-beda) berbagi batchId yang sama. Dipakai
+  // supaya waktu salah satu di-edit, datanya bisa disamakan ke semua anggota
+  // batch itu sekaligus tanpa harus edit satu-satu.
+  batchId     String?
 
   invoiceItems InvoiceItem[]
 
   @@index([customerId])
+  @@index([batchId])
 }
 
 model DivisiTx {

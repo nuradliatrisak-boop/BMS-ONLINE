@@ -34,6 +34,13 @@
 
             <!-- CUSTOMER -->
             <label>Customer</label>
+            <input
+                id="customerSearch"
+                type="text"
+                placeholder="Ketik nama / kode customer untuk cari..."
+                autocomplete="off"
+                style="margin-bottom:6px;"
+            >
             <select id="customerId">
                 <option value="">-- Pilih customer --</option>
             </select>
@@ -294,6 +301,62 @@
 
         var customers = [];
 
+        /* =========================================================
+           renderCustomerOptions(query)
+           Isi ulang <select id="customerId"> dari array "customers",
+           difilter berdasar nama/kode kalau "query" diisi. Dipakai
+           pertama kali waktu load, dan tiap kali user ngetik di kolom
+           search customer. Kalau customer yang lagi kepilih tidak
+           cocok dengan filter, tetap disisipkan supaya pilihan tidak
+           hilang.
+        ========================================================= */
+        function renderCustomerOptions(query){
+
+            var sel = $('customerId');
+            var currentValue = sel.value;
+            var q = (query || '').trim().toLowerCase();
+
+            sel.innerHTML = '';
+
+            var optEmpty = document.createElement('option');
+            optEmpty.value = '';
+            optEmpty.textContent = '-- Pilih customer --';
+            sel.appendChild(optEmpty);
+
+            var matched = false;
+
+            for(var i = 0; i < customers.length; i++){
+                var c = customers[i];
+                var hay = ((c.nama || '') + ' ' + (c.kode || '')).toLowerCase();
+
+                if(q && hay.indexOf(q) === -1) continue;
+
+                var o = document.createElement('option');
+                o.value = c.id;
+                o.textContent = (c.kode ? c.kode + ' - ' : '') + c.nama;
+                sel.appendChild(o);
+
+                if(c.id === currentValue) matched = true;
+            }
+
+            // Customer yang sudah kepilih tapi tidak cocok filter -
+            // tetap disisipkan supaya pilihan sebelumnya tidak hilang.
+            if(currentValue && !matched){
+                var kept = null;
+                for(var j = 0; j < customers.length; j++){
+                    if(customers[j].id === currentValue){ kept = customers[j]; break; }
+                }
+                if(kept){
+                    var ok = document.createElement('option');
+                    ok.value = kept.id;
+                    ok.textContent = (kept.kode ? kept.kode + ' - ' : '') + kept.nama;
+                    sel.appendChild(ok);
+                }
+            }
+
+            sel.value = currentValue;
+        }
+
         var stocks = [];
 
 
@@ -411,6 +474,14 @@
 
         }
 
+
+        /* =========================================================
+           SEARCH CUSTOMER
+        ========================================================= */
+
+        $('customerSearch').oninput = function(){
+            renderCustomerOptions(this.value);
+        };
 
         /* =========================================================
            SAAT CUSTOMER BERUBAH
@@ -1143,29 +1214,11 @@
 
             /* =====================================================
                LOAD CUSTOMER
+               (searchable - lihat renderCustomerOptions() &
+               listener #customerSearch)
             ===================================================== */
 
-            for(
-                var i = 0;
-                i < customers.length;
-                i++
-            ){
-
-                var o =
-                    document.createElement('option');
-
-
-                o.value =
-                    customers[i].id;
-
-
-                o.textContent =
-                    customers[i].nama;
-
-
-                $('customerId').appendChild(o);
-
-            }
+            renderCustomerOptions('');
 
 
             /* =====================================================

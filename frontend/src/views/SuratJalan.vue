@@ -15,6 +15,45 @@ const saving = ref(false);
 const showModal = ref(false);
 const selectedIds = ref([]); // buat pilih beberapa SJ sekaligus (cetak/export gabungan)
 const editingId = ref(null);
+const applyToBatch = ref(true); // default: sinkron ke semua SJ dalam grup yang sama
+const editingBatchMateCount = ref(0);
+
+// ---- search daftar Surat Jalan (cari No / Penerima / Customer / Tujuan / No.Polisi) ----
+// Hit ke backend (bukan cuma filter di browser) supaya tetap enak dipakai
+// walau datanya sudah banyak. Di-debounce biar ga nembak API tiap ketik 1 huruf.
+const searchQuery = ref("");
+let searchDebounce = null;
+function onSearchInput() {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => reloadList(), 350);
+}
+
+// ---- search customer di form Buat/Edit Surat Jalan ----
+// Dropdown customer biasa (<select>) susah dicari kalau customernya banyak,
+// jadi dibuat combobox simple: ketik buat filter, klik buat pilih.
+const customerSearch = ref("");
+const showCustomerOptions = ref(false);
+const filteredCustomers = computed(() => {
+  const q = customerSearch.value.trim().toLowerCase();
+  if (!q) return customers.value;
+  return customers.value.filter(
+    (c) =>
+      c.nama?.toLowerCase().includes(q) ||
+      c.kode?.toLowerCase().includes(q) ||
+      c.alamat?.toLowerCase().includes(q)
+  );
+});
+function pickCustomer(c) {
+  form.value.customerId = c.id;
+  customerSearch.value = `${c.kode} — ${c.nama}`;
+  showCustomerOptions.value = false;
+  onCustomerChange();
+}
+function clearCustomerPick() {
+  form.value.customerId = "";
+  customerSearch.value = "";
+  onCustomerChange();
+}
 
 const emptyForm = () => ({
   divisi: DIVISI[0],
@@ -83,11 +122,27 @@ function rupiah(n) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
 }
 
+// Ambil ulang daftar Surat Jalan saja (dipakai waktu ngetik di kolom
+// search), tanpa nge-fetch ulang armada/customer/stock yang jarang berubah.
+async function reloadList() {
+  loading.value = true;
+  try {
+    const q = searchQuery.value.trim();
+    list.value = await api.get(`/surat-jalan${q ? `?search=${encodeURIComponent(q)}` : ""}`);
+  } catch (error) {
+    console.error(error);
+    toast("Gagal memuat data surat jalan");
+  } finally {
+    loading.value = false;
+  }
+}
+
 async function load() {
   loading.value = true;
   try {
+    const q = searchQuery.value.trim();
     const [suratJalanData, armadaData, customerData, stockData] = await Promise.all([
-      api.get("/surat-jalan"),
+      api.get(`/surat-jalan${q ? `?search=${encodeURIComponent(q)}` : ""}`),
       api.get("/armada"),
       api.get("/customers"),
       api.get("/stock-master"),
@@ -107,11 +162,19 @@ async function load() {
 function openModal() {
   editingId.value = null;
   form.value = emptyForm();
+  customerSearch.value = "";
   showModal.value = true;
 }
 
 function openEdit(sj) {
   editingId.value = sj.id;
+  customerSearch.value = sj.customer ? `${sj.customer.kode} — ${sj.customer.nama}` : "";
+  // Hitung berapa SJ lain yang satu batch (dibuat bareng lewat "Jumlah
+  // Surat Jalan" > 1), buat tampilin opsi "terapkan ke semua".
+  editingBatchMateCount.value = sj.batchId
+    ? list.value.filter((x) => x.batchId === sj.batchId && x.id !== sj.id).length
+    : 0;
+  applyToBatch.value = true;
   form.value = {
     divisi: sj.divisi,
     customerId: sj.customerId || "",
@@ -218,11 +281,16 @@ async function submit() {
       jam: form.value.jam || null,
       isDraft: !!form.value.isDraft,
       ...(!editingId.value ? { jumlahSuratJalan: Number(form.value.jumlahSuratJalan) || 1 } : {}),
+      ...(editingId.value && editingBatchMateCount.value ? { applyToBatch: applyToBatch.value } : {}),
     };
 
     if (editingId.value) {
-      await api.put(`/surat-jalan/${editingId.value}`, payload);
-      toast("Surat jalan berhasil diperbarui");
+      const updated = await api.put(`/surat-jalan/${editingId.value}`, payload);
+      toast(
+        updated.updatedBatchCount
+          ? `Surat jalan diperbarui, ikut disamakan ke ${updated.updatedBatchCount} SJ lain dalam grup ini`
+          : "Surat jalan berhasil diperbarui"
+      );
     } else {
       const created = await api.post("/surat-jalan", payload);
       if (Array.isArray(created)) {
@@ -266,6 +334,11 @@ async function removeSJ(sj) {
 
 function cetak(sj) {
   printSJ(sj);
+}
+
+function batchMateCount(sj) {
+  if (!sj.batchId) return 0;
+  return list.value.filter((x) => x.batchId === sj.batchId && x.id !== sj.id).length;
 }
 
 // ---- pilih banyak SJ sekaligus ----
@@ -339,6 +412,16 @@ onMounted(load);
   </div>
 
   <div class="content">
+    <div class="sj-search">
+      <input
+        v-model="searchQuery"
+        @input="onSearchInput"
+        type="text"
+        placeholder="Cari No. Surat Jalan / Penerima / Customer / Tujuan / No. Polisi..."
+      />
+      <button v-if="searchQuery" class="btn btn-sm btn-ghost" @click="searchQuery = ''; reloadList()">✕</button>
+    </div>
+
     <!-- RINGKASAN -->
     <div v-if="!loading && list.length" class="sj-summary">
       <div class="sj-summary-card">
@@ -365,6 +448,11 @@ onMounted(load);
     </div>
 
     <div v-if="loading" class="empty">Memuat data…</div>
+
+    <div v-else-if="!list.length && searchQuery" class="empty">
+      <div class="big">🔍</div>
+      <div>Tidak ada surat jalan yang cocok dengan pencarian "{{ searchQuery }}".</div>
+    </div>
 
     <div v-else-if="!list.length" class="empty">
       <div class="big">📄</div>
@@ -418,7 +506,7 @@ onMounted(load);
                   @change="toggleSelectOne(sj.id)"
                 />
               </td>
-              <td><span class="sj-number mono">{{ sj.no }}</span></td>
+              <td><span class="sj-number mono">{{ sj.no }}</span><span v-if="batchMateCount(sj) > 0" class="sj-batch-badge" :title="`Satu grup dengan ${batchMateCount(sj)} SJ lain (dibuat bareng)`">🔗 {{ batchMateCount(sj) + 1 }}</span></td>
               <td>
                 <strong>{{ sj.customer?.nama || "-" }}</strong>
                 <div v-if="sj.penerima && sj.penerima !== sj.customer?.nama" class="sj-penerima-sub">→ {{ sj.penerima }}</div>
@@ -475,10 +563,35 @@ onMounted(load);
 
         <div class="field">
           <label>Customer <span class="optional">(A/P Dari)</span></label>
-          <select v-model="form.customerId" @change="onCustomerChange">
-            <option value="" disabled>Pilih customer</option>
-            <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.kode }} — {{ c.nama }}</option>
-          </select>
+          <div class="combobox">
+            <input
+              v-model="customerSearch"
+              type="text"
+              placeholder="Ketik nama / kode customer untuk cari..."
+              autocomplete="off"
+              @focus="showCustomerOptions = true"
+              @input="showCustomerOptions = true"
+              @blur="() => setTimeout(() => (showCustomerOptions = false), 150)"
+            />
+            <button
+              v-if="form.customerId"
+              type="button"
+              class="combobox-clear"
+              @mousedown.prevent="clearCustomerPick"
+              title="Hapus pilihan"
+            >×</button>
+            <div v-if="showCustomerOptions" class="combobox-options">
+              <div
+                v-for="c in filteredCustomers"
+                :key="c.id"
+                class="combobox-option"
+                @mousedown.prevent="pickCustomer(c)"
+              >
+                <strong>{{ c.kode }}</strong> — {{ c.nama }}
+              </div>
+              <div v-if="!filteredCustomers.length" class="combobox-empty">Customer tidak ditemukan</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -530,6 +643,17 @@ onMounted(load);
         <input v-model.number="form.jumlahSuratJalan" type="number" min="1" max="100" step="1" />
         <div class="field-hint">Untuk customer dan tujuan yang sama. Setiap surat jalan akan dibuat dengan nomor yang berbeda otomatis.</div>
       </div>
+
+      <label v-if="editingId && editingBatchMateCount" class="draft-check">
+        <input v-model="applyToBatch" type="checkbox" />
+        <div>
+          <div>Terapkan perubahan ini ke {{ editingBatchMateCount }} surat jalan lain dalam grup ini</div>
+          <div class="draft-check-sub">
+            Dokumen ini dibuat bareng lewat "Jumlah Surat Jalan" saat dibuat. Nomor SJ masing-masing tetap beda,
+            tapi data lain (customer, tujuan, ukuran, dll) bisa disamakan sekaligus. Uncentang kalau cuma mau ubah dokumen ini saja.
+          </div>
+        </div>
+      </label>
 
       <div class="row">
         <div class="field">
@@ -611,6 +735,35 @@ onMounted(load);
 .draft-check input { margin-top: 3px; }
 .draft-check-sub { font-size: 11px; color: var(--ink-soft); }
 .optional { font-weight: 400; color: var(--ink-soft); font-size: 11px; }
+.sj-search { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.sj-search input {
+  flex: 1;
+  max-width: 420px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.combobox { position: relative; }
+.combobox input { width: 100%; padding-right: 26px; }
+.combobox-clear {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  border: none; background: none; cursor: pointer; font-size: 16px; color: var(--ink-soft); line-height: 1;
+}
+.combobox-options {
+  position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0;
+  max-height: 220px; overflow-y: auto;
+  background: #fff; border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.08);
+}
+.combobox-option { padding: 8px 12px; font-size: 13px; cursor: pointer; }
+.combobox-option:hover { background: var(--bms-blue-soft); }
+.combobox-empty { padding: 8px 12px; font-size: 12px; color: var(--ink-soft); }
+.sj-batch-badge {
+  display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 600;
+  color: var(--bms-blue-dark); background: var(--bms-blue-soft);
+  border-radius: 999px; padding: 1px 7px;
+}
 .field-hint { margin-top: 5px; font-size: 11px; color: var(--ink-soft); line-height: 1.4; }
 
 @media (max-width: 700px) {

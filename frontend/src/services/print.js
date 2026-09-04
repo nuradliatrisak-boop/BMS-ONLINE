@@ -162,8 +162,14 @@ export async function printSJ(sjOrList) {
       @page{size:${c.w}mm ${c.h}mm;margin:0}
       html,body{margin:0;padding:0;width:${c.w}mm}
       *{box-sizing:border-box}
-      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;background:#fff;font-family:"Courier New",Courier,monospace;color:#111}
-      .f{position:absolute;white-space:nowrap;font-family:"Courier New",Courier,monospace}
+      /* letter-spacing, kerning, dan ligatures dimatikan eksplisit -
+         kalau tidak, saat kertas dicetak di PC yang tidak punya font
+         "Courier New" terpasang, browser akan mengganti ke font
+         pengganti tapi tetap memaksa lebar per-karakter ala monospace,
+         yang bikin huruf jadi kelihatan mepet/tabrakan terutama di
+         kalimat panjang (mis. Tujuan). Reset di bawah ini mencegah itu. */
+      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;background:#fff;font-family:"Courier New",Courier,monospace;color:#111;letter-spacing:normal;font-kerning:none;font-variant-ligatures:none;text-rendering:optimizeSpeed;-webkit-font-smoothing:antialiased}
+      .f{position:absolute;white-space:nowrap;font-family:"Courier New",Courier,monospace;letter-spacing:normal;font-kerning:none;font-variant-ligatures:none}
       .f-wrap{white-space:normal;word-break:break-word;line-height:1.25}
     </style>
     ${sheets}

@@ -18,8 +18,21 @@ const customerInclude = {
 
 router.get("/", async (req, res, next) => {
   try {
+    const { search } = req.query;
+
     const customers = await prisma.customer.findMany({
-      where: scopeDivisi(req),
+      where: {
+        ...scopeDivisi(req),
+        ...(search
+          ? {
+              OR: [
+                { nama: { contains: search, mode: "insensitive" } },
+                { kode: { contains: search, mode: "insensitive" } },
+                { alamat: { contains: search, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
       include: customerInclude,
       orderBy: { nama: "asc" },
     });

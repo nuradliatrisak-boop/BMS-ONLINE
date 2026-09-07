@@ -93,13 +93,20 @@ export async function printSJ(sjOrList) {
     x: Number(f[k]?.x ?? def.x) + ox,
     y: Number(f[k]?.y ?? def.y) + oy,
     size: Number(f[k]?.size ?? def.size),
+    // Lebar maksimal (mm) sebelum teks dilipat ke baris berikutnya
+    // (bukan dipotong/hilang). 0 = tidak dibatasi (nowrap, perilaku lama).
+    width: Number(f[k]?.width ?? def.width ?? 0),
   });
 
   const p = {
     apDari: pos("apDari", { x: 8, y: 10, size: 10 }),
     penerima: pos("penerima", { x: 8, y: 18, size: 10 }),
-    no: pos("no", { x: 175, y: 30, size: 11 }),
-    tanggal: pos("tanggal", { x: 175, y: 38, size: 11 }),
+    // Nomor & Tanggal dibatasi lebarnya (default 40mm, cukup untuk
+    // "Nomor : SJ-2609-0001" / "Tanggal : 07/09/26") - kalau nilainya
+    // lebih panjang dari itu, sisanya dilipat ke bawah (bukan kepotong
+    // di tepi kotak yang sudah tercetak di kertas).
+    no: pos("no", { x: 175, y: 30, size: 11, width: 40 }),
+    tanggal: pos("tanggal", { x: 175, y: 38, size: 11, width: 40 }),
     jam: pos("jam", { x: 175, y: 46, size: 11 }),
     tujuan: pos("tujuan", { x: 8, y: 26, size: 10 }),
     jenis: pos("jenisBarang", { x: 8, y: 34, size: 10 }),
@@ -125,6 +132,14 @@ export async function printSJ(sjOrList) {
 
   const field = (key, text, withLabel) => {
     const t = withLabel ? `${LBL[key]} : ${text || "-"}` : text;
+    const width = Number(p[key].width || 0);
+    // Kalau field ini punya batas lebar (misal Nomor/Tanggal), teks yang
+    // kepanjangan dilipat ke baris di bawahnya, bukan dipotong/hilang.
+    if (width > 0) {
+      return `<div class="f f-wrap" style="left:${p[key].x}mm;top:${p[key].y}mm;font-size:${p[key].size}pt;width:${width}mm">${esc(
+        t
+      )}</div>`;
+    }
     return `<div class="f" style="left:${p[key].x}mm;top:${p[key].y}mm;font-size:${p[key].size}pt">${esc(
       t
     )}</div>`;
@@ -270,6 +285,20 @@ export async function printInvoice(inv) {
   const top = Number(c.topMargin || 36) + Number(c.offsetY || 0);
   const left = Number(c.offsetX || 0);
 
+  // Baris total ditambahkan sebagai baris tabel biasa (bukan tabel/kotak
+  // terpisah) supaya kolomnya otomatis sejajar persis dengan kolom di
+  // atasnya: "Total M3" sejajar kolom Alamat Kirim (di tengah tabel),
+  // angka total M3 sejajar kolom M3, dan Jumlah Total Tagihan sejajar
+  // kolom Jumlah. Tidak ada lagi baris Sudah Dibayar / Sisa di cetakan.
+  const totalRow = `<tr class="total-row">
+    <td colspan="4"></td>
+    <td class="left"><b>Total M3</b></td>
+    <td></td>
+    <td><b>${totalM3.toFixed(3)}</b></td>
+    <td class="num"><b>Jumlah Total Tagihan</b></td>
+    <td class="num"><b>${rupiah(total)}</b></td>
+  </tr>`;
+
   openPrint(`
     <style>
       @page{size:${c.w}mm ${c.h}mm;margin:0}
@@ -304,11 +333,13 @@ export async function printInvoice(inv) {
       .tbl .c-m3{width:7%}
       .tbl .c-harga{width:10%}
       .tbl .c-jumlah{width:11%}
-      .bottom{display:flex;justify-content:space-between;margin-top:3mm}
+      /* Baris total: garis tegas di atas (pemisah dari baris item) -
+         garis bawah otomatis ikut aturan .tbl tr:last-child td di atas. */
+      .tbl tr.total-row td{border-top:1px solid #111;padding-top:2.2mm;padding-bottom:2.2mm}
+      .bottom{margin-top:2.5mm}
       .sign{text-align:center;margin-top:9mm;margin-left:auto;width:48mm}
       .signline{border-top:1px solid #111;padding-top:1.5mm;margin-top:14mm}
       .note{font-size:9pt;margin-top:2mm}
-      .totalbox td{border:1px solid #111;padding:1.5mm 3mm}
     </style>
     <div class="sheet">
       <div class="title">INVOICE</div>
@@ -338,18 +369,11 @@ export async function printInvoice(inv) {
           <th class="c-plt">P L T</th><th class="c-m3">M3</th><th class="c-harga">Harga</th><th class="c-jumlah">Jumlah</th>
         </tr>
         ${rows}
+        ${totalRow}
       </table>
       <div class="bottom">
-        <div>
-          <b>Total M3:</b> ${totalM3.toFixed(3)}
-          <div class="note"><b>Terbilang:</b> ${esc(terbilang(total))} Rupiah</div>
-          ${inv.catatan ? `<div class="note"><b>Catatan:</b> ${esc(inv.catatan)}</div>` : ""}
-        </div>
-        <table class="tbl totalbox" style="width:62mm">
-          <tr><td><b>Jumlah Total Tagihan</b></td><td class="num"><b>${rupiah(total)}</b></td></tr>
-          <tr><td>Sudah Dibayar</td><td class="num">${rupiah(inv.dibayar)}</td></tr>
-          <tr><td>Sisa</td><td class="num">${rupiah(inv.sisaTagihan)}</td></tr>
-        </table>
+        <div class="note"><b>Terbilang:</b> ${esc(terbilang(total))} Rupiah</div>
+        ${inv.catatan ? `<div class="note"><b>Catatan:</b> ${esc(inv.catatan)}</div>` : ""}
       </div>
       <div class="sign">
         Jakarta, ${esc(fmtDate(inv.tanggal))}

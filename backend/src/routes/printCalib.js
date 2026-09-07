@@ -11,6 +11,11 @@ export const DEFAULTS = {
     h: 108,
     offsetX: 0,
     offsetY: 0,
+    // Font & jarak antar huruf (letter-spacing) global untuk Surat
+    // Jalan, bisa diatur dari halaman Kalibrasi Cetak. letterSpacing
+    // dalam satuan mm (0 = normal / rapat sesuai default font).
+    fontFamily: "Courier New",
+    letterSpacing: 0,
     // Catatan: nilai default ini sengaja dibuat tidak terlalu rapat (jarak
     // antar baris & ukuran font diperbesar dibanding versi sebelumnya) dan
     // posisi Nomor/Tanggal/Jam digeser ke bawah supaya tidak menabrak judul

@@ -11,6 +11,14 @@ const saving = ref(false);
 const sj = ref(null);
 const inv = ref(null);
 
+const sjFontOptions = [
+  "Courier New",
+  "Consolas",
+  "Arial",
+  "Verdana",
+  "Times New Roman",
+];
+
 const sjFieldLabels = {
   apDari: "A/P Dari",
   penerima: "Penerima",
@@ -149,6 +157,19 @@ onMounted(load);
           <div class="field"><label>Tinggi kertas (mm)</label><input v-model.number="sj.h" type="number" step="0.1" /></div>
           <div class="field"><label>Geser semua ke kanan (mm)</label><input v-model.number="sj.offsetX" type="number" step="0.1" /></div>
           <div class="field"><label>Geser semua ke bawah (mm)</label><input v-model.number="sj.offsetY" type="number" step="0.1" /></div>
+        </div>
+
+        <div class="row4" style="margin-top:8px">
+          <div class="field">
+            <label>Font tulisan</label>
+            <select v-model="sj.fontFamily">
+              <option v-for="f in sjFontOptions" :key="f" :value="f">{{ f }}</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Jarak antar huruf (mm)</label>
+            <input v-model.number="sj.letterSpacing" type="number" step="0.05" />
+          </div>
         </div>
 
         <div class="form-section-title" style="margin-top:16px">Posisi Tiap Data</div>

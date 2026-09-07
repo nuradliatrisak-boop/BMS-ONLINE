@@ -74,6 +74,21 @@ export async function printSJ(sjOrList) {
   const oy = Number(c.offsetY || 0);
   const f = c.fields || {};
 
+  // Font & jarak antar huruf dipilih dari halaman Kalibrasi Cetak.
+  // Fallback generic family ikut jenis font terpilih supaya kalau PC
+  // yang dipakai cetak tidak punya font itu terpasang, browser tetap
+  // mengganti ke font pengganti yang mirip (monospace/serif/sans-serif).
+  const fontFamily = c.fontFamily || "Courier New";
+  const letterSpacing = Number(c.letterSpacing ?? 0);
+  const FONT_FALLBACK = {
+    "Courier New": "monospace",
+    Consolas: "monospace",
+    Arial: "sans-serif",
+    Verdana: "sans-serif",
+    "Times New Roman": "serif",
+  };
+  const fontStack = `"${fontFamily}",${FONT_FALLBACK[fontFamily] || "sans-serif"}`;
+
   const pos = (k, def) => ({
     x: Number(f[k]?.x ?? def.x) + ox,
     y: Number(f[k]?.y ?? def.y) + oy,
@@ -162,14 +177,13 @@ export async function printSJ(sjOrList) {
       @page{size:${c.w}mm ${c.h}mm;margin:0}
       html,body{margin:0;padding:0;width:${c.w}mm}
       *{box-sizing:border-box}
-      /* letter-spacing, kerning, dan ligatures dimatikan eksplisit -
-         kalau tidak, saat kertas dicetak di PC yang tidak punya font
-         "Courier New" terpasang, browser akan mengganti ke font
-         pengganti tapi tetap memaksa lebar per-karakter ala monospace,
-         yang bikin huruf jadi kelihatan mepet/tabrakan terutama di
-         kalimat panjang (mis. Tujuan). Reset di bawah ini mencegah itu. */
-      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;background:#fff;font-family:"Courier New",Courier,monospace;color:#111;letter-spacing:normal;font-kerning:none;font-variant-ligatures:none;text-rendering:optimizeSpeed;-webkit-font-smoothing:antialiased}
-      .f{position:absolute;white-space:nowrap;font-family:"Courier New",Courier,monospace;letter-spacing:normal;font-kerning:none;font-variant-ligatures:none}
+      /* kerning & ligatures dimatikan eksplisit supaya lebar huruf
+         tetap konsisten kalau PC yang dipakai cetak tidak punya font
+         terpilih terpasang (browser ganti ke font pengganti generik
+         di atas). Jarak antar huruf (letter-spacing) sekarang ikut
+         nilai dari Kalibrasi Cetak, bukan dipaksa "normal" lagi. */
+      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;background:#fff;font-family:${fontStack};color:#111;letter-spacing:${letterSpacing}mm;font-kerning:none;font-variant-ligatures:none;text-rendering:optimizeSpeed;-webkit-font-smoothing:antialiased}
+      .f{position:absolute;white-space:nowrap;font-family:${fontStack};letter-spacing:${letterSpacing}mm;font-kerning:none;font-variant-ligatures:none}
       .f-wrap{white-space:normal;word-break:break-word;line-height:1.25}
     </style>
     ${sheets}
@@ -260,19 +274,36 @@ export async function printInvoice(inv) {
     <style>
       @page{size:${c.w}mm ${c.h}mm;margin:0}
       html,body{margin:0;padding:0;width:${c.w}mm;height:${c.h}mm}
-      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 8mm 6mm ${8 + left}mm;font:13pt "Courier New",Courier,monospace;color:#111;line-height:1.4}
+      /* Font, ukuran (12pt), dan gaya tabel disamakan persis dengan
+         hasil Export ke Excel (lihat backend/services/invoiceXlsx.js)
+         supaya cetak langsung dari browser dan cetak lewat Excel
+         tampil sama ukurannya. */
+      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 8mm 6mm ${8 + left}mm;font:12pt "Times New Roman",Times,serif;color:#111;line-height:1.4}
+      .title{text-align:center;font-size:16pt;font-weight:700;margin-bottom:4mm}
       .head{display:flex;justify-content:space-between;margin-bottom:4mm}
       .head .right{text-align:right}
-      .label{font-size:11pt;color:#555}
+      .label{font-size:12pt;color:#555}
       .val{font-weight:700}
       .idrow{margin:3mm 0 5mm}
       .idrow div{margin-bottom:1.5mm}
       .idrow .label{display:inline-block;width:38mm}
-      .tbl{border-collapse:collapse;width:100%;font-size:11pt}
-      .tbl th,.tbl td{border:1px solid #111;padding:1.8mm;text-align:center}
-      .tbl th{background:#eee}
+      /* Tabel item polos - tanpa pembatas antar kolom, cuma garis di
+         atas & bawah header dan garis penutup di baris terakhir. */
+      .tbl{border-collapse:collapse;width:100%;font-size:12pt;table-layout:fixed}
+      .tbl th{border-top:1px solid #111;border-bottom:1px solid #111;padding:1.8mm;text-align:center;background:#eee}
+      .tbl td{padding:1.8mm;text-align:center;border:none}
+      .tbl tr:last-child td{border-bottom:1px solid #111}
       .tbl td.left{text-align:left}
       .tbl td.num{text-align:right}
+      .tbl .c-no{width:4%}
+      .tbl .c-tgl{width:8%}
+      .tbl .c-nosj{width:11%}
+      .tbl .c-sopir{width:12%}
+      .tbl .c-alamat{width:22%}
+      .tbl .c-plt{width:15%}
+      .tbl .c-m3{width:7%}
+      .tbl .c-harga{width:10%}
+      .tbl .c-jumlah{width:11%}
       .bottom{display:flex;justify-content:space-between;margin-top:3mm}
       .sign{text-align:center;margin-top:9mm;margin-left:auto;width:48mm}
       .signline{border-top:1px solid #111;padding-top:1.5mm;margin-top:14mm}
@@ -280,6 +311,7 @@ export async function printInvoice(inv) {
       .totalbox td{border:1px solid #111;padding:1.5mm 3mm}
     </style>
     <div class="sheet">
+      <div class="title">INVOICE</div>
       <div class="head">
         <div>
           <div class="label">Kepada Yth</div>
@@ -302,8 +334,8 @@ export async function printInvoice(inv) {
       </div>
       <table class="tbl">
         <tr>
-          <th>No</th><th>Tgl Kirim</th><th>No SJ</th><th>Sopir</th><th>Alamat Kirim</th>
-          <th>P L T</th><th>M3</th><th>Harga</th><th>Jumlah</th>
+          <th class="c-no">No</th><th class="c-tgl">Tgl Kirim</th><th class="c-nosj">No SJ</th><th class="c-sopir">Sopir</th><th class="c-alamat">Alamat Kirim</th>
+          <th class="c-plt">P L T</th><th class="c-m3">M3</th><th class="c-harga">Harga</th><th class="c-jumlah">Jumlah</th>
         </tr>
         ${rows}
       </table>

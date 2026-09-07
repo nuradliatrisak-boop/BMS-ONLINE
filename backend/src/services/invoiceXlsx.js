@@ -24,13 +24,14 @@ import ExcelJS from "exceljs";
 //     "Page Setup > Paper Size" di Excel sesuai kertas fisik yang
 //     dipakai (caranya sama seperti dulu), lalu print seperti biasa.
 //
-// PERUBAHAN KHUSUS DOT MATRIX:
-//   - Font utama menggunakan Courier New agar bentuk karakter jelas
-//     pada printer dot matrix.
-//   - Ukuran font isi dinaikkan menjadi 10 pt.
-//   - Header tabel dibuat 10 pt bold.
-//   - Informasi invoice penting dibuat 10-11 pt.
-//   - Total tagihan dibuat 11 pt bold.
+// PENGATURAN TAMPILAN TERKINI:
+//   - Font seragam Times New Roman 12pt di seluruh invoice.
+//   - Ada judul "INVOICE" rata tengah di bagian atas.
+//   - Tabel item dibuat polos (tanpa garis pembatas antar kolom),
+//     cuma garis horizontal di atas/bawah header & penutup baris
+//     item terakhir. Box total tagihan tetap pakai kotak penuh.
+//   - Lebar kolom & tinggi baris disesuaikan supaya teks 12pt tetap
+//     kebaca penuh (tidak kepotong / ke-wrap kependekan).
 //   - Tidak mengubah struktur kolom, merge, margin, atau data invoice.
 // ============================================================
 
@@ -53,6 +54,7 @@ const FONT_BODY = 12;
 const FONT_SMALL = 12;
 const FONT_IMPORTANT = 12;
 const FONT_TOTAL = 12;
+const FONT_TITLE = 16; // Judul "INVOICE" di tengah atas
 
 function rupiah(n) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
@@ -87,6 +89,13 @@ const BOX = {
   left: THIN,
   right: THIN,
 };
+
+// Tabel item dibuat polos (tanpa garis pembatas antar kolom) - cuma
+// garis horizontal di atas & bawah header, dan garis penutup di baris
+// item paling bawah. Box total tagihan (boxRows) tetap pakai BOX biasa
+// karena itu memang dimaksudkan tampil sebagai kotak.
+const ROW_BOTTOM = { bottom: THIN };
+const ROW_TOP_BOTTOM = { top: THIN, bottom: THIN };
 
 // ------------------------------------------------------------
 // Helper font
@@ -177,18 +186,21 @@ export async function buildInvoiceWorkbook(
   //
   // TIDAK DIUBAH supaya posisi horizontal invoice tetap sama.
   //
+  // Lebar sedikit dinaikkan dibanding versi Courier New 10pt supaya
+  // teks Times New Roman 12pt tetap muat & tidak kepotong (proporsi
+  // antar kolom dijaga tetap sama).
   ws.columns = [
-    { width: 4 },  // A No
-    { width: 10 }, // B Tgl Kirim
-    { width: 14 }, // C No SJ
-    { width: 14 }, // D Sopir
-    { width: 26 }, // E Alamat Kirim
+    { width: 5 },  // A No
+    { width: 11 }, // B Tgl Kirim
+    { width: 15 }, // C No SJ
+    { width: 16 }, // D Sopir
+    { width: 30 }, // E Alamat Kirim
     { width: 7 },  // F P
     { width: 7 },  // G L
     { width: 7 },  // H T
-    { width: 8 },  // I M3
-    { width: 13 }, // J Harga
-    { width: 15 }, // K Jumlah
+    { width: 9 },  // I M3
+    { width: 14 }, // J Harga
+    { width: 16 }, // K Jumlah
   ];
 
   const LASTCOL = 11;
@@ -203,6 +215,30 @@ export async function buildInvoiceWorkbook(
     Number(calib?.topMargin ?? 21) *
     MM_TO_PT *
     0.6;
+
+  // ============================================================
+  // JUDUL "INVOICE" (rata tengah)
+  // ============================================================
+
+  const rTitle = ws.addRow(["INVOICE"]);
+
+  ws.mergeCells(
+    `A${rTitle.number}:K${rTitle.number}`
+  );
+
+  applyFont(rTitle.getCell(1), {
+    size: FONT_TITLE,
+    bold: true,
+  });
+
+  rTitle.getCell(1).alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
+
+  rTitle.height = 26;
+
+  ws.addRow([]).height = 6;
 
   // ============================================================
   // KEPADA YTH + INFORMASI INVOICE
@@ -245,7 +281,7 @@ export async function buildInvoiceWorkbook(
     bold: true,
   });
 
-  rKepada.height = 16;
+  rKepada.height = 18;
 
   // ------------------------------------------------------------
 
@@ -286,7 +322,7 @@ export async function buildInvoiceWorkbook(
     bold: true,
   });
 
-  rNamaCust.height = 17;
+  rNamaCust.height = 19;
 
   // ------------------------------------------------------------
 
@@ -332,11 +368,11 @@ export async function buildInvoiceWorkbook(
   };
 
   rAlamatCust.height = Math.max(
-    17,
+    19,
     estimateWrapHeight(
       inv.customer?.alamat || "",
-      32,
-      15
+      28,
+      17
     )
   );
 
@@ -393,11 +429,11 @@ export async function buildInvoiceWorkbook(
     };
 
     r.height = Math.max(
-      17,
+      19,
       estimateWrapHeight(
         val,
-        83,
-        15
+        75,
+        17
       )
     );
   }
@@ -448,19 +484,21 @@ export async function buildInvoiceWorkbook(
         },
       };
 
-      cell.border = BOX;
+      // Hanya garis atas & bawah header (tanpa pembatas antar kolom).
+      cell.border = ROW_TOP_BOTTOM;
     }
   );
 
-  // Tinggi header sedikit dinaikkan supaya font 10 pt
-  // tidak terlalu rapat pada printer dot matrix.
-  rHeader.height = 24;
+  // Tinggi header dinaikkan supaya font 12 pt Times New Roman tidak
+  // terlalu rapat.
+  rHeader.height = 26;
 
   // ============================================================
   // DATA ITEM
   // ============================================================
 
   let totalM3 = 0;
+  let lastItemRow = null;
 
   (inv.items || []).forEach(
     (it, i) => {
@@ -514,6 +552,8 @@ export async function buildInvoiceWorkbook(
         jumlah,
       ]);
 
+      lastItemRow = row;
+
       row.eachCell(
         (cell, colNumber) => {
           if (colNumber > LASTCOL) return;
@@ -522,7 +562,10 @@ export async function buildInvoiceWorkbook(
             size: FONT_BODY,
           });
 
-          cell.border = BOX;
+          // Tabel dibuat polos, tanpa pembatas antar kolom. Garis
+          // penutup bawah ditambahkan belakangan di baris item
+          // terakhir saja.
+          cell.border = undefined;
 
           cell.alignment = {
             horizontal:
@@ -565,30 +608,41 @@ export async function buildInvoiceWorkbook(
         }
       );
 
-      // Tinggi baris mengikuti teks terpanjang.
+      // Tinggi baris mengikuti teks terpanjang. Angka "chars per
+      // line" & tinggi baris dinaikkan dibanding versi Courier New
+      // 10pt supaya teks Times New Roman 12pt yang lebih besar tetap
+      // kebaca penuh, tidak terpotong.
       row.height = Math.max(
-        19,
+        22,
 
         estimateWrapHeight(
           row.getCell(3).value,
-          14,
-          15
+          12,
+          17
         ),
 
         estimateWrapHeight(
           row.getCell(4).value,
-          14,
-          15
+          13,
+          17
         ),
 
         estimateWrapHeight(
           row.getCell(5).value,
-          26,
-          15
+          24,
+          17
         )
       );
     }
   );
+
+  // Garis penutup bawah tabel item (hanya di baris item terakhir).
+  if (lastItemRow) {
+    lastItemRow.eachCell((cell, colNumber) => {
+      if (colNumber > LASTCOL) return;
+      cell.border = ROW_BOTTOM;
+    });
+  }
 
   // ============================================================
   // TOTAL M3
@@ -618,7 +672,7 @@ export async function buildInvoiceWorkbook(
     }
   );
 
-  rTotalM3.height = 18;
+  rTotalM3.height = 20;
 
   // ============================================================
   // CATATAN
@@ -643,11 +697,11 @@ export async function buildInvoiceWorkbook(
     };
 
     rCatatan.height = Math.max(
-      17,
+      19,
       estimateWrapHeight(
         `Catatan: ${inv.catatan}`,
-        80,
-        14
+        72,
+        16
       )
     );
   }
@@ -733,7 +787,7 @@ export async function buildInvoiceWorkbook(
       vertical: "middle",
     };
 
-    r.height = 20;
+    r.height = 22;
   }
 
   // ============================================================
@@ -770,7 +824,7 @@ export async function buildInvoiceWorkbook(
     vertical: "middle",
   };
 
-  rTgl.height = 18;
+  rTgl.height = 20;
 
   // ============================================================
   // TANDA TANGAN
@@ -807,7 +861,7 @@ export async function buildInvoiceWorkbook(
     vertical: "middle",
   };
 
-  rSign.height = 20;
+  rSign.height = 22;
 
   // ============================================================
   // PENGATURAN PRINT

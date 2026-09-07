@@ -382,6 +382,42 @@ Y dari atas
                 </div>
 
 
+                <div class="row4" style="margin-top:8px">
+
+                    <div>
+
+                        <label>
+                            Font tulisan
+                        </label>
+
+                        <select id="sjFontFamily">
+                            <option value="Courier New">Courier New</option>
+                            <option value="Consolas">Consolas</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                        </select>
+
+                    </div>
+
+
+                    <div>
+
+                        <label>
+                            Jarak antar huruf (mm)
+                        </label>
+
+                        <input
+                            type="number"
+                            step="0.05"
+                            id="sjLetterSpacing"
+                        >
+
+                    </div>
+
+                </div>
+
+
                 <h2>
                     Posisi Tiap Data
                 </h2>
@@ -962,6 +998,37 @@ Y dari atas
                     sj.offsetY =
                         Number(
                             $('sjOffsetY').value || 0
+                        );
+
+                };
+
+
+            $('sjFontFamily').value =
+                sj.fontFamily || 'Courier New';
+
+
+            $('sjLetterSpacing').value =
+                sj.letterSpacing !== undefined
+                    ? sj.letterSpacing
+                    : 0;
+
+
+            $('sjFontFamily').onchange =
+                function(){
+
+                    sj.fontFamily =
+                        $('sjFontFamily').value ||
+                        'Courier New';
+
+                };
+
+
+            $('sjLetterSpacing').onchange =
+                function(){
+
+                    sj.letterSpacing =
+                        Number(
+                            $('sjLetterSpacing').value || 0
                         );
 
                 };

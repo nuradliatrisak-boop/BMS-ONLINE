@@ -205,6 +205,31 @@ function printSJ(sjOrList) {
 
 
     // --------------------------------------------------------
+    // FONT & JARAK ANTAR HURUF (dari Kalibrasi Cetak)
+    // --------------------------------------------------------
+
+    var sjFontFamily = c.fontFamily || "Courier New";
+
+    var sjLetterSpacing = Number(
+      c.letterSpacing !== undefined
+        ? c.letterSpacing
+        : 0
+    );
+
+    var SJ_FONT_FALLBACK = {
+      "Courier New": "monospace",
+      "Consolas": "monospace",
+      "Arial": "sans-serif",
+      "Verdana": "sans-serif",
+      "Times New Roman": "serif"
+    };
+
+    var sjFontStack =
+      '"' + sjFontFamily + '",' +
+      (SJ_FONT_FALLBACK[sjFontFamily] || "sans-serif");
+
+
+    // --------------------------------------------------------
     // AMBIL POSISI DARI KALIBRASI
     //
     // Jika posisi field sudah ada di menu kalibrasi:
@@ -866,12 +891,14 @@ function printSJ(sjOrList) {
 
         'background:#fff;' +
 
-        // Tetap memakai Courier New agar aman
-        // di Windows XP / Firefox ESR.
-        'font-family:"Courier New",Courier,monospace;' +
+        // Font & jarak antar huruf ikut pilihan di Kalibrasi Cetak.
+        'font-family:' +
+        sjFontStack +
+        ';' +
 
-        // Sedikit direnggangkan.
-        'letter-spacing:0.15pt;' +
+        'letter-spacing:' +
+        sjLetterSpacing +
+        'mm;' +
 
         'font-variant-ligatures:none;' +
 
@@ -886,11 +913,13 @@ function printSJ(sjOrList) {
 
         'white-space:nowrap;' +
 
-        'font-family:"Courier New",Courier,monospace;' +
+        'font-family:' +
+        sjFontStack +
+        ';' +
 
-        // Tidak terlalu besar agar tidak mengubah
-        // lebar koordinat field secara drastis.
-        'letter-spacing:0.15pt;' +
+        'letter-spacing:' +
+        sjLetterSpacing +
+        'mm;' +
 
         'font-variant-ligatures:none;' +
 
@@ -1376,18 +1405,32 @@ function printInvoice(inv) {
           (4 + left) +
           'mm;' +
 
-        // Font dibuat sedikit lebih lega.
-        'font-family:"Courier New",Courier,monospace;' +
+        // Font disamakan dengan hasil Export ke Excel: Times New
+        // Roman 12pt seragam di seluruh invoice.
+        'font-family:"Times New Roman",Times,serif;' +
 
-        'font-size:11.5pt;' +
+        'font-size:12pt;' +
 
-        'letter-spacing:0.12pt;' +
-
-        'line-height:1.45;' +
-
-        'font-kerning:none;' +
+        'line-height:1.4;' +
 
         'color:#111;' +
+
+      '}' +
+
+
+      // ------------------------------------------------------
+      // JUDUL "INVOICE"
+      // ------------------------------------------------------
+
+      '.invoice-title{' +
+
+        'text-align:center;' +
+
+        'font-size:16pt;' +
+
+        'font-weight:700;' +
+
+        'margin-bottom:2mm;' +
 
       '}' +
 
@@ -1431,11 +1474,11 @@ function printInvoice(inv) {
 
       '.label{' +
 
-        'font-size:10pt;' +
+        'font-size:12pt;' +
 
         'line-height:1.35;' +
 
-        'letter-spacing:0.08pt;' +
+        'color:#555;' +
 
       '}' +
 
@@ -1444,9 +1487,7 @@ function printInvoice(inv) {
 
         'font-weight:700;' +
 
-        'font-size:11pt;' +
-
-        'letter-spacing:0.12pt;' +
+        'font-size:12pt;' +
 
         'line-height:1.4;' +
 
@@ -1461,7 +1502,7 @@ function printInvoice(inv) {
 
         'margin:1.5mm 0 2mm 0;' +
 
-        'font-size:10pt;' +
+        'font-size:12pt;' +
 
         'line-height:1.4;' +
 
@@ -1503,20 +1544,21 @@ function printInvoice(inv) {
 
         'table-layout:fixed;' +
 
-        'font-family:"Courier New",Courier,monospace;' +
+        'font-family:"Times New Roman",Times,serif;' +
 
-        'font-size:10pt;' +
+        'font-size:12pt;' +
 
         'line-height:1.3;' +
-
-        'letter-spacing:0.04pt;' +
 
       '}' +
 
 
+      // Tabel polos - tanpa pembatas antar kolom. Cuma garis di atas
+      // & bawah header, dan garis penutup di baris item terakhir
+      // (disamakan dengan hasil Export ke Excel).
       '.tbl th,.tbl td{' +
 
-        'border:1px solid #111;' +
+        'border:none;' +
 
         'padding:1mm 0.6mm;' +
 
@@ -1539,6 +1581,17 @@ function printInvoice(inv) {
 
         'line-height:1.25;' +
 
+        'border-top:1px solid #111;' +
+
+        'border-bottom:1px solid #111;' +
+
+      '}' +
+
+
+      '.tbl tr:last-child td{' +
+
+        'border-bottom:1px solid #111;' +
+
       '}' +
 
 
@@ -1558,41 +1611,41 @@ function printInvoice(inv) {
       '}' +
 
 
-      // Lebar kolom agar tabel memenuhi seluruh kertas.
+      // Lebar kolom (proporsi disamakan dengan Vue print.js).
       '.col-no{' +
         'width:4%;' +
       '}' +
 
       '.col-tgl{' +
-        'width:10%;' +
+        'width:8%;' +
       '}' +
 
       '.col-sj{' +
-        'width:10%;' +
+        'width:11%;' +
       '}' +
 
       '.col-sopir{' +
-        'width:10%;' +
+        'width:12%;' +
       '}' +
 
       '.col-alamat{' +
-        'width:17%;' +
+        'width:22%;' +
       '}' +
 
       '.col-plt{' +
-        'width:10%;' +
+        'width:15%;' +
       '}' +
 
       '.col-m3{' +
-        'width:6%;' +
+        'width:7%;' +
       '}' +
 
       '.col-harga{' +
-        'width:16%;' +
+        'width:10%;' +
       '}' +
 
       '.col-jumlah{' +
-        'width:17%;' +
+        'width:11%;' +
       '}' +
 
 
@@ -1614,7 +1667,7 @@ function printInvoice(inv) {
 
         'width:100%;' +
 
-        'font-size:9.5pt;' +
+        'font-size:12pt;' +
 
         'line-height:1.4;' +
 
@@ -1639,7 +1692,7 @@ function printInvoice(inv) {
 
       '.note{' +
 
-        'font-size:8.5pt;' +
+        'font-size:9pt;' +
 
         'line-height:1.4;' +
 
@@ -1658,7 +1711,7 @@ function printInvoice(inv) {
 
         'width:100%;' +
 
-        'font-size:9pt;' +
+        'font-size:12pt;' +
 
       '}' +
 
@@ -1689,7 +1742,7 @@ function printInvoice(inv) {
 
         'width:45mm;' +
 
-        'font-size:10pt;' +
+        'font-size:12pt;' +
 
         'line-height:1.4;' +
 
@@ -1759,6 +1812,13 @@ function printInvoice(inv) {
 
 
       '<div class="invoice-sheet">' +
+
+
+      // ------------------------------------------------------
+      // JUDUL "INVOICE"
+      // ------------------------------------------------------
+
+      '<div class="invoice-title">INVOICE</div>' +
 
 
       // ------------------------------------------------------

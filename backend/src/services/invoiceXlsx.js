@@ -48,11 +48,11 @@ const MM_TO_IN = 1 / 25.4; // 1 mm dalam inch
 // 10 pt untuk isi dan 11 pt untuk bagian penting adalah kompromi
 // antara keterbacaan dan menjaga layout tetap muat.
 // ------------------------------------------------------------
-const DOT_FONT = "Courier New";
-const FONT_BODY = 10;
-const FONT_SMALL = 9;
-const FONT_IMPORTANT = 10;
-const FONT_TOTAL = 11;
+const DOT_FONT = "Times New Roman";
+const FONT_BODY = 12;
+const FONT_SMALL = 12;
+const FONT_IMPORTANT = 12;
+const FONT_TOTAL = 12;
 
 function rupiah(n) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");

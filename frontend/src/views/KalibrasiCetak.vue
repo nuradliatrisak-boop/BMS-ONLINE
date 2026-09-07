@@ -24,7 +24,7 @@ const sjFieldLabels = {
   penerima: "Penerima",
   no: "Nomor SJ",
   tanggal: "Tanggal",
-  jam: "Jam",
+  jam: "Jam (tidak dicetak lagi)",
   tujuan: "Tujuan",
   jenisBarang: "Jenis Barang",
   nopol: "Nomor Polisi",
@@ -174,14 +174,24 @@ onMounted(load);
 
         <div class="form-section-title" style="margin-top:16px">Posisi Tiap Data</div>
         <div class="calib-field-row calib-field-head">
-          <div>Data</div><div>X (mm)</div><div>Y (mm)</div><div>Ukuran font (pt)</div>
+          <div>Data</div><div>X (mm)</div><div>Y (mm)</div><div>Ukuran font (pt)</div><div>Lebar wrap (mm)</div>
         </div>
         <div class="calib-field-row" v-for="(label, key) in sjFieldLabels" :key="key">
           <div>{{ label }}</div>
           <input v-model.number="sj.fields[key].x" type="number" step="0.5" />
           <input v-model.number="sj.fields[key].y" type="number" step="0.5" />
           <input v-model.number="sj.fields[key].size" type="number" step="0.5" />
+          <input
+            v-if="key === 'no' || key === 'tanggal'"
+            v-model.number="sj.fields[key].width"
+            type="number"
+            step="0.5"
+            placeholder="40"
+            title="Lebar kotak sebelum teks turun ke baris bawah"
+          />
+          <div v-else></div>
         </div>
+        <div class="calib-hint">Kolom "Lebar wrap" cuma berlaku untuk Nomor SJ &amp; Tanggal - kalau teksnya kepanjangan untuk kotak fisik di kertas, sisanya otomatis turun ke baris bawah alih-alih terpotong.</div>
 
         <div class="calib-actions">
           <button class="btn btn-ghost" @click="cetakGridSJ">Cetak Kotak Bantu (grid 5mm)</button>
@@ -220,8 +230,9 @@ onMounted(load);
 .calib-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
 .calib-card { max-width: 780px; }
 .row4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 4px; }
-.calib-field-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+.calib-field-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
 .calib-field-head { font-weight: 700; color: var(--ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; border-bottom: 2px solid var(--line); }
+.calib-hint { font-size: 11.5px; color: var(--ink-soft); margin-top: 8px; line-height: 1.5; }
 .calib-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
 @media (max-width: 700px) {
   .row4 { grid-template-columns: repeat(2, 1fr); }

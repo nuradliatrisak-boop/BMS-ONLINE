@@ -26,8 +26,14 @@ export const DEFAULTS = {
       penerima: { x: 8, y: 18, size: 10 },
       tujuan: { x: 8, y: 26, size: 10 },
       jenisBarang: { x: 8, y: 34, size: 10 },
-      no: { x: 175, y: 30, size: 11 },
-      tanggal: { x: 175, y: 38, size: 11 },
+      // "width" (mm) dipakai supaya Nomor & Tanggal bisa wrap turun ke
+      // baris bawah kalau teksnya kepanjangan untuk kotak fisik di
+      // kertas - lihat printSJ() di frontend/src/services/print.js.
+      no: { x: 175, y: 30, size: 11, width: 40 },
+      tanggal: { x: 175, y: 38, size: 11, width: 40 },
+      // "jam" sengaja tidak lagi dicetak (lihat printSJ()), tapi field
+      // posisinya dipertahankan di sini kalau-kalau suatu saat mau
+      // diaktifkan lagi.
       jam: { x: 175, y: 46, size: 11 },
       nopol: { x: 14, y: 62, size: 13 },
       ukuranBak: { x: 90, y: 62, size: 13 },

@@ -50,10 +50,13 @@ const MM_TO_IN = 1 / 25.4; // 1 mm dalam inch
 // antara keterbacaan dan menjaga layout tetap muat.
 // ------------------------------------------------------------
 const DOT_FONT = "Times New Roman";
-const FONT_BODY = 12;
+// FONT_BODY (isi tabel item) sedikit digedein dibanding sebelumnya
+// (12pt) supaya tetap kebaca jelas, tapi tinggi baris & lebar kolom
+// dijaga cukup supaya sampai 6 baris tagihan tetap muat rapi.
+const FONT_BODY = 13;
 const FONT_SMALL = 12;
 const FONT_IMPORTANT = 12;
-const FONT_TOTAL = 12;
+const FONT_TOTAL = 13;
 const FONT_TITLE = 16; // Judul "INVOICE" di tengah atas
 
 function rupiah(n) {
@@ -76,6 +79,47 @@ function fmtDateLong(v) {
     month: "long",
     year: "numeric",
   });
+}
+
+// Terbilang (angka rupiah -> teks) - disamakan persis dengan versi
+// cetak browser (lihat terbilang() di frontend/src/services/print.js)
+// supaya hasil Excel & cetak langsung selalu menampilkan teks yang sama.
+function terbilang(n) {
+  n = Math.round(Number(n) || 0);
+  if (n === 0) return "Nol";
+  const s = [
+    "",
+    "Satu",
+    "Dua",
+    "Tiga",
+    "Empat",
+    "Lima",
+    "Enam",
+    "Tujuh",
+    "Delapan",
+    "Sembilan",
+    "Sepuluh",
+    "Sebelas",
+  ];
+  const f = (x) =>
+    x < 12
+      ? s[x]
+      : x < 20
+      ? f(x - 10) + " Belas"
+      : x < 100
+      ? f(Math.floor(x / 10)) + " Puluh" + (x % 10 ? " " + f(x % 10) : "")
+      : x < 200
+      ? "Seratus" + (x % 100 ? " " + f(x % 100) : "")
+      : x < 1000
+      ? f(Math.floor(x / 100)) + " Ratus" + (x % 100 ? " " + f(x % 100) : "")
+      : x < 2000
+      ? "Seribu" + (x % 1000 ? " " + f(x % 1000) : "")
+      : x < 1e6
+      ? f(Math.floor(x / 1000)) + " Ribu" + (x % 1000 ? " " + f(x % 1000) : "")
+      : x < 1e9
+      ? f(Math.floor(x / 1e6)) + " Juta" + (x % 1e6 ? " " + f(x % 1e6) : "")
+      : f(Math.floor(x / 1e9)) + " Miliar" + (x % 1e9 ? " " + f(x % 1e9) : "");
+  return f(n);
 }
 
 const THIN = {
@@ -645,10 +689,13 @@ export async function buildInvoiceWorkbook(
   }
 
   // ============================================================
-  // TOTAL M3
+  // BARIS TOTAL - sejajar dengan kolom tabel item di atas: "Total M3"
+  // sejajar kolom Alamat Kirim (E), angka Total M3-nya sejajar kolom
+  // M3 (I), dan jumlah total tagihan sejajar kolom Jumlah (K) - semua
+  // dalam satu baris. Menggantikan kotak "Jumlah Total Tagihan /
+  // Sudah Dibayar / Sisa" yang lama (field itu tidak lagi ditampilkan
+  // di invoice cetak - lihat juga printInvoice() di frontend).
   // ============================================================
-
-  ws.addRow([]).height = 8;
 
   const total =
     inv.total ??
@@ -660,135 +707,110 @@ export async function buildInvoiceWorkbook(
       0
     );
 
-  const rTotalM3 = ws.addRow([
-    `Total M3: ${totalM3.toFixed(3)}`,
+  const rTotal = ws.addRow([
+    "",
+    "",
+    "",
+    "",
+    "Total M3",
+    "",
+    "",
+    "",
+    totalM3.toFixed(3),
+    "",
+    total,
   ]);
 
+  rTotal.eachCell(
+    (cell, colNumber) => {
+      if (colNumber > LASTCOL) return;
+      cell.border = { top: THIN };
+    }
+  );
+
+  // Label "Total M3" - sejajar kolom Alamat Kirim.
+  applyFont(rTotal.getCell(5), {
+    size: FONT_IMPORTANT,
+    bold: true,
+  });
+
+  rTotal.getCell(5).alignment = {
+    horizontal: "left",
+    vertical: "middle",
+  };
+
+  // Angka Total M3 - sejajar kolom M3.
+  applyFont(rTotal.getCell(9), {
+    size: FONT_BODY,
+    bold: true,
+  });
+
+  rTotal.getCell(9).alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
+
+  // Jumlah Total Tagihan - sejajar kolom Jumlah.
+  applyFont(rTotal.getCell(11), {
+    size: FONT_TOTAL,
+    bold: true,
+  });
+
+  rTotal.getCell(11).numFmt =
+    '"Rp" #,##0';
+
+  rTotal.getCell(11).alignment = {
+    horizontal: "right",
+    vertical: "middle",
+  };
+
+  rTotal.height = 24;
+
+  // ============================================================
+  // TERBILANG (+ CATATAN)
+  // ============================================================
+
+  const terbilangText = `Terbilang: ${terbilang(
+    total
+  )} Rupiah${
+    inv.catatan
+      ? `      Catatan: ${inv.catatan}`
+      : ""
+  }`;
+
+  const rTerbilang = ws.addRow([
+    terbilangText,
+  ]);
+
+  ws.mergeCells(
+    `A${rTerbilang.number}:K${rTerbilang.number}`
+  );
+
   applyFont(
-    rTotalM3.getCell(1),
+    rTerbilang.getCell(1),
     {
-      size: FONT_IMPORTANT,
+      size: FONT_SMALL,
       bold: true,
     }
   );
 
-  rTotalM3.height = 20;
+  rTerbilang.getCell(1).alignment = {
+    horizontal: "left",
+    vertical: "middle",
+    wrapText: true,
+  };
 
-  // ============================================================
-  // CATATAN
-  // ============================================================
-
-  if (inv.catatan) {
-    const rCatatan = ws.addRow([
-      `Catatan: ${inv.catatan}`,
-    ]);
-
-    applyFont(
-      rCatatan.getCell(1),
-      {
-        size: FONT_SMALL,
-        italic: true,
-      }
-    );
-
-    rCatatan.getCell(1).alignment = {
-      wrapText: true,
-      vertical: "middle",
-    };
-
-    rCatatan.height = Math.max(
-      19,
-      estimateWrapHeight(
-        `Catatan: ${inv.catatan}`,
-        72,
-        16
-      )
-    );
-  }
+  rTerbilang.height = Math.max(
+    18,
+    estimateWrapHeight(
+      terbilangText,
+      100,
+      16
+    )
+  );
 
   // Spasi
   ws.addRow([]).height = 8;
-
-  // ============================================================
-  // BOX TOTAL TAGIHAN
-  // ============================================================
-
-  const boxRows = [
-    [
-      "Jumlah Total Tagihan",
-      total,
-    ],
-    [
-      "Sudah Dibayar",
-      inv.dibayar,
-    ],
-    [
-      "Sisa",
-      inv.sisaTagihan,
-    ],
-  ];
-
-  for (
-    const [label, val]
-    of boxRows
-  ) {
-    const r = ws.addRow([
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      label,
-      "",
-      val,
-    ]);
-
-    ws.mergeCells(
-      `I${r.number}:J${r.number}`
-    );
-
-    // Label total
-    applyFont(
-      r.getCell(9),
-      {
-        size: FONT_IMPORTANT,
-        bold: true,
-      }
-    );
-
-    r.getCell(9).alignment = {
-      horizontal: "left",
-      vertical: "middle",
-    };
-
-    // Border label
-    r.getCell(9).border = BOX;
-    r.getCell(10).border = BOX;
-
-    // Nilai
-    applyFont(
-      r.getCell(11),
-      {
-        size: FONT_TOTAL,
-        bold: true,
-      }
-    );
-
-    r.getCell(11).border = BOX;
-
-    r.getCell(11).numFmt =
-      '"Rp" #,##0';
-
-    r.getCell(11).alignment = {
-      horizontal: "right",
-      vertical: "middle",
-    };
-
-    r.height = 22;
-  }
 
   // ============================================================
   // TANGGAL

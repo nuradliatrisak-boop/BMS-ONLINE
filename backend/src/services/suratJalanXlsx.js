@@ -58,8 +58,17 @@ const FIELD_DEFS = {
   penerima: { x: 8, y: 18, size: 10, label: "Penerima" },
   tujuan: { x: 8, y: 26, size: 10, label: "Tujuan" },
   jenisBarang: { x: 8, y: 34, size: 10, label: "Jenis Brg" },
-  no: { x: 175, y: 30, size: 11, label: "Nomor" },
-  tanggal: { x: 175, y: 38, size: 11, label: "Tanggal" },
+  // "no" & "tanggal" dibuat wrap (lihat WRAP_FIELDS & PRINTED_FIELDS
+  // di bawah) - kalau teksnya kepanjangan untuk kotak fisik di
+  // kertas, sisanya turun ke baris bawah dalam sel yang sama alih-
+  // alih terpotong. "width" (mm, disamakan dengan printCalib.js &
+  // print.js) menentukan lebar sel sebelum teks wrap.
+  no: { x: 175, y: 30, size: 11, label: "Nomor", width: 40 },
+  tanggal: { x: 175, y: 38, size: 11, label: "Tanggal", width: 40 },
+  // "jam" sengaja tidak lagi dicetak (lihat printSJ() di
+  // frontend/src/services/print.js) - definisinya dipertahankan di
+  // sini kalau-kalau suatu saat mau diaktifkan lagi, tapi tidak
+  // dimasukkan ke PRINTED_FIELDS di bawah supaya tidak ikut ditulis.
   jam: { x: 175, y: 46, size: 11, label: "Jam" },
   nopol: { x: 14, y: 62, size: 13, label: null },
   ukuranBak: { x: 90, y: 62, size: 13, label: null },
@@ -67,6 +76,14 @@ const FIELD_DEFS = {
   sopirNama: { x: 150, y: 98, size: 11, label: null },
   hormatKamiNama: { x: 226, y: 102, size: 11, label: null },
 };
+
+// Field yang benar-benar ditulis ke Excel (semua field di FIELD_DEFS
+// kecuali "jam", yang sudah tidak dicetak lagi).
+const PRINTED_FIELDS = Object.keys(FIELD_DEFS).filter((k) => k !== "jam");
+
+// Field yang wrap (bisa turun ke baris bawah dalam sel yang sama)
+// kalau teksnya kepanjangan untuk lebar "width" yang dikalibrasi.
+const WRAP_FIELDS = new Set(["no", "tanggal"]);
 
 function fmtDateShort(v) {
   if (!v) return "-";
@@ -92,13 +109,14 @@ export async function buildSJWorkbook(sjOrList, calib, signerName) {
       x: Number(f[key]?.x ?? d.x) + ox,
       y: Number(f[key]?.y ?? d.y) + oy,
       size: Number(f[key]?.size ?? d.size),
+      width: Number(f[key]?.width ?? d.width ?? 0),
       label: d.label,
     };
   };
 
   list.forEach((sj, idx) => {
     const p = {};
-    for (const key of Object.keys(FIELD_DEFS)) p[key] = pos(key);
+    for (const key of PRINTED_FIELDS) p[key] = pos(key);
 
     const namaCustomer = sj.customer
       ? `${sj.customer.nama}${sj.customer.kode ? " / " + sj.customer.kode : ""}`
@@ -146,7 +164,7 @@ export async function buildSJWorkbook(sjOrList, calib, signerName) {
     ws.columns = Array.from({ length: nCols }, () => ({ width: MM_TO_COLWIDTH }));
 
     // ---- Sumbu Y: baris "cascading" (lihat penjelasan panjang di atas) ----
-    const fieldsByY = Object.keys(FIELD_DEFS)
+    const fieldsByY = PRINTED_FIELDS
       .map((key) => ({ key, ...p[key] }))
       .sort((a, b) => a.y - b.y);
 
@@ -163,8 +181,12 @@ export async function buildSJWorkbook(sjOrList, calib, signerName) {
         cursorY = fld.y;
       }
       // tinggi minimum supaya font tidak kepotong (baris pas-pasan bikin
-      // teks terpotong di Excel, beda dari lebar kolom yang boleh meluber)
-      const minNeededMm = (fld.size * 1.35) / MM_TO_PT;
+      // teks terpotong di Excel, beda dari lebar kolom yang boleh meluber).
+      // Field yang wrap (no/tanggal) dicadangkan tinggi 2 baris supaya
+      // kalau teksnya kepanjangan dan turun ke baris bawah, tetap tidak
+      // kepotong.
+      const lineCount = WRAP_FIELDS.has(fld.key) ? 2 : 1;
+      const minNeededMm = (fld.size * 1.35 * lineCount) / MM_TO_PT;
       const rowHeightMm = Math.max(minNeededMm, 1);
       ws.getRow(rowIdx).height = rowHeightMm * MM_TO_PT;
       rowOfField[fld.key] = rowIdx;
@@ -179,11 +201,26 @@ export async function buildSJWorkbook(sjOrList, calib, signerName) {
       ws.getRow(rowIdx).height = (totalHmm - cursorY) * MM_TO_PT;
     }
 
-    for (const key of Object.keys(FIELD_DEFS)) {
+    for (const key of PRINTED_FIELDS) {
       const fld = p[key];
       const col = Math.max(1, Math.round(fld.x));
       const row = rowOfField[key];
       const text = fld.label ? `${fld.label} : ${VAL[key] ?? "-"}` : String(VAL[key] ?? "");
+
+      if (WRAP_FIELDS.has(key) && fld.width > 0) {
+        // Merge beberapa kolom sesuai lebar kalibrasi & aktifkan
+        // wrapText supaya teks yang kepanjangan turun ke baris bawah
+        // dalam sel yang sama, bukan meluber lurus ke kanan.
+        const colSpan = Math.max(1, Math.round(fld.width));
+        const endCol = col + colSpan - 1;
+        ws.mergeCells(row, col, row, endCol);
+        const cell = ws.getCell(row, col);
+        cell.value = text;
+        cell.font = { name: "Courier New", size: fld.size };
+        cell.alignment = { vertical: "top", horizontal: "left", wrapText: true };
+        continue;
+      }
+
       const cell = ws.getCell(row, col);
       cell.value = text;
       cell.font = { name: "Courier New", size: fld.size };

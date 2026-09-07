@@ -93,14 +93,24 @@ export async function printSJ(sjOrList) {
     x: Number(f[k]?.x ?? def.x) + ox,
     y: Number(f[k]?.y ?? def.y) + oy,
     size: Number(f[k]?.size ?? def.size),
+    // "width" cuma dipakai field yang bisa wrap (turun ke baris
+    // bawah kalau teksnya kepanjangan) - lihat fieldWrapTight().
+    width: Number(f[k]?.width ?? def.width ?? 0),
   });
 
   const p = {
     apDari: pos("apDari", { x: 8, y: 10, size: 10 }),
     penerima: pos("penerima", { x: 8, y: 18, size: 10 }),
-    no: pos("no", { x: 175, y: 30, size: 11 }),
-    tanggal: pos("tanggal", { x: 175, y: 38, size: 11 }),
-    jam: pos("jam", { x: 175, y: 46, size: 11 }),
+    // "no" & "tanggal" dibuat wrap (bisa turun ke bawah) karena kotak
+    // yang sudah tercetak fisik di kertas untuk Nomor/Tanggal biasanya
+    // sempit - kalau nomor SJ atau tanggalnya kepanjangan (mis. nomor
+    // urutnya sudah banyak digit), sisanya akan turun ke baris bawah
+    // sendiri alih-alih terpotong atau memanjang menabrak kolom lain.
+    // Lebar default 40mm - sesuaikan lagi lewat halaman Kalibrasi
+    // Cetak (kolom "Lebar wrap") kalau kotak fisik di kertas kamu
+    // lebih sempit/lebar dari itu.
+    no: pos("no", { x: 175, y: 30, size: 11, width: 40 }),
+    tanggal: pos("tanggal", { x: 175, y: 38, size: 11, width: 40 }),
     tujuan: pos("tujuan", { x: 8, y: 26, size: 10 }),
     jenis: pos("jenisBarang", { x: 8, y: 34, size: 10 }),
     nopol: pos("nopol", { x: 14, y: 62, size: 13 }),
@@ -118,7 +128,6 @@ export async function printSJ(sjOrList) {
     penerima: "Penerima",
     no: "Nomor",
     tanggal: "Tanggal",
-    jam: "Jam",
     tujuan: "Tujuan",
     jenis: "Jenis Brg",
   };
@@ -126,6 +135,18 @@ export async function printSJ(sjOrList) {
   const field = (key, text, withLabel) => {
     const t = withLabel ? `${LBL[key]} : ${text || "-"}` : text;
     return `<div class="f" style="left:${p[key].x}mm;top:${p[key].y}mm;font-size:${p[key].size}pt">${esc(
+      t
+    )}</div>`;
+  };
+
+  // Field yang wrap turun ke bawah kalau kepanjangan (bukan cuma
+  // nowrap seperti field() di atas). Dipakai untuk "no" & "tanggal".
+  // Beda dari fieldTujuan: yang ini pakai word-break:break-all
+  // karena isinya nomor/tanggal (tanpa spasi), jadi harus bisa
+  // dipotong di sembarang karakter, bukan cuma di batas kata.
+  const fieldWrapTight = (key, text, withLabel) => {
+    const t = withLabel ? `${LBL[key]} : ${text || "-"}` : text;
+    return `<div class="f f-wrap-tight" style="left:${p[key].x}mm;top:${p[key].y}mm;font-size:${p[key].size}pt;width:${p[key].width}mm">${esc(
       t
     )}</div>`;
   };
@@ -158,9 +179,8 @@ export async function printSJ(sjOrList) {
       return `<div class="sheet"${last ? "" : ' style="page-break-after:always"'}>
         ${field("apDari", namaCustomer, true)}
         ${field("penerima", namaPenerima, true)}
-        ${field("no", sj.no, true)}
-        ${field("tanggal", fmtDateShort(sj.tanggal), true)}
-        ${field("jam", sj.jam || "", true)}
+        ${fieldWrapTight("no", sj.no, true)}
+        ${fieldWrapTight("tanggal", fmtDateShort(sj.tanggal), true)}
         ${fieldTujuan(sj.tujuan || sj.customer?.alamat || "")}
         ${field("jenis", sj.jenisBarang || "", true)}
         ${field("nopol", sj.noPolisi || sj.armada?.nopol || "")}
@@ -185,6 +205,7 @@ export async function printSJ(sjOrList) {
       .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;background:#fff;font-family:${fontStack};color:#111;letter-spacing:${letterSpacing}mm;font-kerning:none;font-variant-ligatures:none;text-rendering:optimizeSpeed;-webkit-font-smoothing:antialiased}
       .f{position:absolute;white-space:nowrap;font-family:${fontStack};letter-spacing:${letterSpacing}mm;font-kerning:none;font-variant-ligatures:none}
       .f-wrap{white-space:normal;word-break:break-word;line-height:1.25}
+      .f-wrap-tight{white-space:normal;word-break:break-all;line-height:1.2}
     </style>
     ${sheets}
   `);
@@ -278,20 +299,23 @@ export async function printInvoice(inv) {
          hasil Export ke Excel (lihat backend/services/invoiceXlsx.js)
          supaya cetak langsung dari browser dan cetak lewat Excel
          tampil sama ukurannya. */
-      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 8mm 6mm ${8 + left}mm;font:12pt "Times New Roman",Times,serif;color:#111;line-height:1.4}
-      .title{text-align:center;font-size:16pt;font-weight:700;margin-bottom:4mm}
+      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 8mm 6mm ${8 + left}mm;font:12.5pt "Times New Roman",Times,serif;color:#111;line-height:1.4}
+      .title{text-align:center;font-size:17pt;font-weight:700;margin-bottom:4mm}
       .head{display:flex;justify-content:space-between;margin-bottom:4mm}
       .head .right{text-align:right}
-      .label{font-size:12pt;color:#555}
+      .label{font-size:12.5pt;color:#555}
       .val{font-weight:700}
       .idrow{margin:3mm 0 5mm}
       .idrow div{margin-bottom:1.5mm}
       .idrow .label{display:inline-block;width:38mm}
       /* Tabel item polos - tanpa pembatas antar kolom, cuma garis di
-         atas & bawah header dan garis penutup di baris terakhir. */
-      .tbl{border-collapse:collapse;width:100%;font-size:12pt;table-layout:fixed}
-      .tbl th{border-top:1px solid #111;border-bottom:1px solid #111;padding:1.8mm;text-align:center;background:#eee}
-      .tbl td{padding:1.8mm;text-align:center;border:none}
+         atas & bawah header dan garis penutup di baris terakhir.
+         Fontnya sedikit digedein (13pt) dibanding sebelumnya (12pt)
+         supaya tetap kebaca jelas, tapi paddingnya dijaga secukupnya
+         supaya sampai 6 baris tagihan tetap muat rapi di satu halaman. */
+      .tbl{border-collapse:collapse;width:100%;font-size:13pt;table-layout:fixed}
+      .tbl th{border-top:1px solid #111;border-bottom:1px solid #111;padding:2mm 1.6mm;text-align:center;background:#eee}
+      .tbl td{padding:2mm 1.6mm;text-align:center;border:none}
       .tbl tr:last-child td{border-bottom:1px solid #111}
       .tbl td.left{text-align:left}
       .tbl td.num{text-align:right}
@@ -304,11 +328,15 @@ export async function printInvoice(inv) {
       .tbl .c-m3{width:7%}
       .tbl .c-harga{width:10%}
       .tbl .c-jumlah{width:11%}
-      .bottom{display:flex;justify-content:space-between;margin-top:3mm}
+      /* Baris total: sejajar dengan kolom tabel item - "Total M3"
+         sejajar kolom Alamat Kirim, angkanya sejajar kolom M3, dan
+         jumlah total tagihan sejajar kolom Jumlah, semua dalam satu
+         baris. */
+      .tbl .total-row td{border-top:1.5px solid #111;padding-top:2.5mm;font-size:13pt}
+      .tbl .terbilang-row td{padding-top:1.5mm;padding-bottom:0;font-size:11pt;text-align:left}
       .sign{text-align:center;margin-top:9mm;margin-left:auto;width:48mm}
       .signline{border-top:1px solid #111;padding-top:1.5mm;margin-top:14mm}
-      .note{font-size:9pt;margin-top:2mm}
-      .totalbox td{border:1px solid #111;padding:1.5mm 3mm}
+      .note{font-size:10pt;margin-top:1.5mm}
     </style>
     <div class="sheet">
       <div class="title">INVOICE</div>
@@ -338,19 +366,21 @@ export async function printInvoice(inv) {
           <th class="c-plt">P L T</th><th class="c-m3">M3</th><th class="c-harga">Harga</th><th class="c-jumlah">Jumlah</th>
         </tr>
         ${rows}
+        <tr class="total-row">
+          <td colspan="4"></td>
+          <td class="left"><b>Total M3</b></td>
+          <td></td>
+          <td><b>${totalM3.toFixed(3)}</b></td>
+          <td></td>
+          <td class="num"><b>${rupiah(total)}</b></td>
+        </tr>
+        <tr class="terbilang-row">
+          <td colspan="9">
+            <b>Terbilang:</b> ${esc(terbilang(total))} Rupiah
+            ${inv.catatan ? `&nbsp;&nbsp;&nbsp;<b>Catatan:</b> ${esc(inv.catatan)}` : ""}
+          </td>
+        </tr>
       </table>
-      <div class="bottom">
-        <div>
-          <b>Total M3:</b> ${totalM3.toFixed(3)}
-          <div class="note"><b>Terbilang:</b> ${esc(terbilang(total))} Rupiah</div>
-          ${inv.catatan ? `<div class="note"><b>Catatan:</b> ${esc(inv.catatan)}</div>` : ""}
-        </div>
-        <table class="tbl totalbox" style="width:62mm">
-          <tr><td><b>Jumlah Total Tagihan</b></td><td class="num"><b>${rupiah(total)}</b></td></tr>
-          <tr><td>Sudah Dibayar</td><td class="num">${rupiah(inv.dibayar)}</td></tr>
-          <tr><td>Sisa</td><td class="num">${rupiah(inv.sisaTagihan)}</td></tr>
-        </table>
-      </div>
       <div class="sign">
         Jakarta, ${esc(fmtDate(inv.tanggal))}
         <div class="signline">${esc(signerName || "Hormat Kami")}</div>

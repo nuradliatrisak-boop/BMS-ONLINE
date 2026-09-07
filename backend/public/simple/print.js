@@ -241,7 +241,7 @@ function printSJ(sjOrList) {
     // offsetX / offsetY tetap ditambahkan.
     // --------------------------------------------------------
 
-    function pos(k, defX, defY, defSize) {
+    function pos(k, defX, defY, defSize, defWidth) {
 
       var fk = f[k] || {};
 
@@ -272,6 +272,16 @@ function printSJ(sjOrList) {
             fk.size !== undefined
               ? fk.size
               : defSize
+          ),
+
+        // "width" cuma dipakai field yang bisa wrap (turun ke baris
+        // bawah kalau teksnya kepanjangan) - lihat fieldWrapTight().
+        width:
+
+          Number(
+            fk.width !== undefined
+              ? fk.width
+              : (defWidth || 0)
           )
 
       };
@@ -315,13 +325,19 @@ function printSJ(sjOrList) {
         ),
 
 
+      // "no" & "tanggal" dibuat wrap (bisa turun ke bawah) karena
+      // kotak yang sudah tercetak fisik di kertas untuk Nomor/Tanggal
+      // biasanya sempit - kalau teksnya kepanjangan, sisanya turun ke
+      // baris bawah sendiri, bukan terpotong. Lebar default 40mm -
+      // sesuaikan lagi lewat halaman Kalibrasi Cetak kalau perlu.
       no:
 
         pos(
           "no",
           175,
           30,
-          11
+          11,
+          40
         ),
 
 
@@ -331,17 +347,8 @@ function printSJ(sjOrList) {
           "tanggal",
           175,
           38,
-          11
-        ),
-
-
-      jam:
-
-        pos(
-          "jam",
-          175,
-          46,
-          11
+          11,
+          40
         ),
 
 
@@ -435,9 +442,6 @@ function printSJ(sjOrList) {
       tanggal:
         "Tanggal",
 
-      jam:
-        "Jam",
-
       tujuan:
         "Tujuan",
 
@@ -492,6 +496,52 @@ function printSJ(sjOrList) {
         'font-size:' +
         p[key].size +
         'pt;' +
+
+        '">' +
+
+        escapeHtml(t) +
+
+        '</div>'
+
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // CETAK FIELD YANG WRAP TURUN KE BAWAH (KETAT)
+    //
+    // Dipakai untuk "no" & "tanggal". Beda dari fieldTujuan di bawah:
+    // yang ini pakai word-break:break-all karena isinya nomor/tanggal
+    // (tanpa spasi), jadi harus bisa dipotong di sembarang karakter,
+    // bukan cuma di batas kata.
+    // --------------------------------------------------------
+
+    function fieldWrapTight(key, text, withLabel) {
+
+      var t = withLabel
+        ? (LBL[key] + " : " + (text || "-"))
+        : text;
+
+      return (
+
+        '<div class="f sj-field sj-field-wrap-tight" style="' +
+
+        'left:' +
+        p[key].x +
+        'mm;' +
+
+        'top:' +
+        p[key].y +
+        'mm;' +
+
+        'font-size:' +
+        p[key].size +
+        'pt;' +
+
+        'width:' +
+        p[key].width +
+        'mm;' +
 
         '">' +
 
@@ -719,23 +769,16 @@ function printSJ(sjOrList) {
         ) +
 
 
-        field(
+        fieldWrapTight(
           "no",
           sj.no,
           true
         ) +
 
 
-        field(
+        fieldWrapTight(
           "tanggal",
           fmtDateShortPrint(sj.tanggal),
-          true
-        ) +
-
-
-        field(
-          "jam",
-          sj.jam || "",
           true
         ) +
 
@@ -935,6 +978,15 @@ function printSJ(sjOrList) {
         'white-space:normal;' +
 
         'word-break:break-word;' +
+
+      '}' +
+
+
+      '.sj-field-wrap-tight{' +
+
+        'white-space:normal;' +
+
+        'word-break:break-all;' +
 
       '}' +
 
@@ -1406,10 +1458,12 @@ function printInvoice(inv) {
           'mm;' +
 
         // Font disamakan dengan hasil Export ke Excel: Times New
-        // Roman 12pt seragam di seluruh invoice.
+        // Roman, seragam di seluruh invoice. Sedikit digedein
+        // (12.5pt) dibanding sebelumnya (12pt) supaya tetap kebaca
+        // jelas.
         'font-family:"Times New Roman",Times,serif;' +
 
-        'font-size:12pt;' +
+        'font-size:12.5pt;' +
 
         'line-height:1.4;' +
 
@@ -1546,7 +1600,9 @@ function printInvoice(inv) {
 
         'font-family:"Times New Roman",Times,serif;' +
 
-        'font-size:12pt;' +
+        // Sedikit digedein (13pt) dibanding sebelumnya (12pt) supaya
+        // tetap kebaca jelas, sampai 6 baris tagihan tetap muat rapi.
+        'font-size:13pt;' +
 
         'line-height:1.3;' +
 
@@ -1560,7 +1616,7 @@ function printInvoice(inv) {
 
         'border:none;' +
 
-        'padding:1mm 0.6mm;' +
+        'padding:1.3mm 0.6mm;' +
 
         'vertical-align:middle;' +
 
@@ -1650,77 +1706,47 @@ function printInvoice(inv) {
 
 
       // ------------------------------------------------------
-      // BAGIAN BAWAH
+      // BARIS TOTAL & TERBILANG
+      //
+      // Baris total sejajar dengan kolom tabel item - "Total M3"
+      // sejajar kolom Alamat Kirim, angkanya sejajar kolom M3, dan
+      // jumlah total tagihan sejajar kolom Jumlah, semua dalam satu
+      // baris (bukan kotak terpisah lagi).
       // ------------------------------------------------------
 
-      '.bottom{' +
+      '.tbl .total-row td{' +
 
-        'display:flex;' +
+        'border-top:1.5px solid #111;' +
 
-        'justify-content:space-between;' +
+        'padding-top:2.5mm;' +
 
-        'align-items:flex-start;' +
-
-        'gap:3mm;' +
-
-        'margin-top:2mm;' +
-
-        'width:100%;' +
-
-        'font-size:12pt;' +
-
-        'line-height:1.4;' +
+        'font-size:13pt;' +
 
       '}' +
 
 
-      '.bottom-left{' +
+      '.tbl .terbilang-row td{' +
 
-        'width:52%;' +
+        'padding-top:1.5mm;' +
 
-        'min-width:0;' +
+        'padding-bottom:0;' +
 
-      '}' +
+        'font-size:11pt;' +
 
-
-      '.bottom-right{' +
-
-        'width:48%;' +
+        'text-align:left;' +
 
       '}' +
 
 
       '.note{' +
 
-        'font-size:9pt;' +
+        'font-size:10pt;' +
 
         'line-height:1.4;' +
 
         'margin-top:1mm;' +
 
         'word-wrap:break-word;' +
-
-      '}' +
-
-
-      // ------------------------------------------------------
-      // TOTAL BOX
-      // ------------------------------------------------------
-
-      '.totalbox{' +
-
-        'width:100%;' +
-
-        'font-size:12pt;' +
-
-      '}' +
-
-
-      '.totalbox td{' +
-
-        'border:1px solid #111;' +
-
-        'padding:1mm 1.5mm;' +
 
       '}' +
 
@@ -2034,25 +2060,40 @@ function printInvoice(inv) {
       rowsHtml +
 
 
-      '</table>' +
-
-
       // ------------------------------------------------------
-      // BAGIAN TOTAL
+      // BARIS TOTAL - sejajar dengan kolom tabel item di atas.
+      // "Total M3" sejajar kolom Alamat Kirim, angkanya sejajar
+      // kolom M3, jumlah total tagihan sejajar kolom Jumlah.
       // ------------------------------------------------------
 
-      '<div class="bottom">' +
+      '<tr class="total-row">' +
 
+      '<td colspan="4"></td>' +
 
-      '<div class="bottom-left">' +
+      '<td class="left"><b>Total M3</b></td>' +
 
+      '<td></td>' +
 
-      '<b>Total M3:</b> ' +
-
+      '<td><b>' +
       totalM3.toFixed(3) +
+      '</b></td>' +
+
+      '<td></td>' +
+
+      '<td class="num"><b>' +
+      rupiah(total) +
+      '</b></td>' +
+
+      '</tr>' +
 
 
-      '<div class="note">' +
+      // ------------------------------------------------------
+      // TERBILANG
+      // ------------------------------------------------------
+
+      '<tr class="terbilang-row">' +
+
+      '<td colspan="9">' +
 
       '<b>Terbilang:</b> ' +
 
@@ -2062,24 +2103,17 @@ function printInvoice(inv) {
 
       ' Rupiah' +
 
-      '</div>' +
-
-
       (
 
         inv.catatan
 
           ? (
 
-              '<div class="note">' +
-
-              '<b>Catatan:</b> ' +
+              '&nbsp;&nbsp;&nbsp;<b>Catatan:</b> ' +
 
               escapeHtml(
                 inv.catatan
-              ) +
-
-              '</div>'
+              )
 
             )
 
@@ -2087,84 +2121,12 @@ function printInvoice(inv) {
 
       ) +
 
-
-      '</div>' +
-
-
-      '<div class="bottom-right">' +
-
-
-      '<table class="tbl totalbox">' +
-
-
-      '<tr>' +
-
-      '<td>' +
-
-      '<b>Jumlah Total Tagihan</b>' +
-
       '</td>' +
-
-
-      '<td class="num">' +
-
-      '<b>' +
-
-      rupiah(total) +
-
-      '</b>' +
-
-      '</td>' +
-
-
-      '</tr>' +
-
-
-      '<tr>' +
-
-      '<td>' +
-      'Sudah Dibayar' +
-      '</td>' +
-
-
-      '<td class="num">' +
-
-      rupiah(
-        inv.dibayar
-      ) +
-
-      '</td>' +
-
-
-      '</tr>' +
-
-
-      '<tr>' +
-
-      '<td>' +
-      'Sisa' +
-      '</td>' +
-
-
-      '<td class="num">' +
-
-      rupiah(
-        inv.sisaTagihan
-      ) +
-
-      '</td>' +
-
 
       '</tr>' +
 
 
       '</table>' +
-
-
-      '</div>' +
-
-
-      '</div>' +
 
 
       // ------------------------------------------------------

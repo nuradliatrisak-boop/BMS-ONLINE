@@ -26,10 +26,8 @@ export const DEFAULTS = {
       penerima: { x: 8, y: 18, size: 10 },
       tujuan: { x: 8, y: 26, size: 10 },
       jenisBarang: { x: 8, y: 34, size: 10 },
-      // width: lebar maksimal (mm) sebelum teks dilipat ke baris di
-      // bawahnya (bukan dipotong/hilang) - lihat frontend/src/services/print.js.
-      no: { x: 175, y: 30, size: 11, width: 40 },
-      tanggal: { x: 175, y: 38, size: 11, width: 40 },
+      no: { x: 175, y: 30, size: 11 },
+      tanggal: { x: 175, y: 38, size: 11 },
       jam: { x: 175, y: 46, size: 11 },
       nopol: { x: 14, y: 62, size: 13 },
       ukuranBak: { x: 90, y: 62, size: 13 },

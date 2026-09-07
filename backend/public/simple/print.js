@@ -241,7 +241,7 @@ function printSJ(sjOrList) {
     // offsetX / offsetY tetap ditambahkan.
     // --------------------------------------------------------
 
-    function pos(k, defX, defY, defSize, defWidth) {
+    function pos(k, defX, defY, defSize) {
 
       var fk = f[k] || {};
 
@@ -272,18 +272,6 @@ function printSJ(sjOrList) {
             fk.size !== undefined
               ? fk.size
               : defSize
-          ),
-
-
-        // Lebar maksimal (mm) sebelum teks dilipat ke baris berikutnya
-        // (bukan dipotong/hilang). 0/undefined = tidak dibatasi (nowrap,
-        // perilaku lama).
-        width:
-
-          Number(
-            fk.width !== undefined
-              ? fk.width
-              : (defWidth || 0)
           )
 
       };
@@ -327,18 +315,13 @@ function printSJ(sjOrList) {
         ),
 
 
-      // Nomor & Tanggal dibatasi lebarnya (default 40mm, cukup untuk
-      // "Nomor : SJ-2609-0001" / "Tanggal : 07/09/26") - kalau nilainya
-      // lebih panjang dari itu, sisanya dilipat ke bawah (bukan kepotong
-      // di tepi kotak yang sudah tercetak di kertas).
       no:
 
         pos(
           "no",
           175,
           30,
-          11,
-          40
+          11
         ),
 
 
@@ -348,8 +331,7 @@ function printSJ(sjOrList) {
           "tanggal",
           175,
           38,
-          11,
-          40
+          11
         ),
 
 
@@ -493,45 +475,6 @@ function printSJ(sjOrList) {
           )
 
         : text;
-
-
-      var width = Number(p[key].width || 0);
-
-
-      // Kalau field ini punya batas lebar (misal Nomor/Tanggal), teks
-      // yang kepanjangan dilipat ke baris di bawahnya, bukan
-      // dipotong/hilang di tepi kotak yang sudah tercetak di kertas.
-      if (width > 0) {
-
-        return (
-
-          '<div class="f sj-field sj-field-wrap" style="' +
-
-          'left:' +
-          p[key].x +
-          'mm;' +
-
-          'top:' +
-          p[key].y +
-          'mm;' +
-
-          'font-size:' +
-          p[key].size +
-          'pt;' +
-
-          'width:' +
-          width +
-          'mm;' +
-
-          '">' +
-
-          escapeHtml(t) +
-
-          '</div>'
-
-        );
-
-      }
 
 
       return (
@@ -1707,18 +1650,42 @@ function printInvoice(inv) {
 
 
       // ------------------------------------------------------
-      // BAGIAN BAWAH (Terbilang & Catatan)
+      // BAGIAN BAWAH
       // ------------------------------------------------------
 
       '.bottom{' +
 
-        'margin-top:2.5mm;' +
+        'display:flex;' +
+
+        'justify-content:space-between;' +
+
+        'align-items:flex-start;' +
+
+        'gap:3mm;' +
+
+        'margin-top:2mm;' +
 
         'width:100%;' +
 
         'font-size:12pt;' +
 
         'line-height:1.4;' +
+
+      '}' +
+
+
+      '.bottom-left{' +
+
+        'width:52%;' +
+
+        'min-width:0;' +
+
+      '}' +
+
+
+      '.bottom-right{' +
+
+        'width:48%;' +
 
       '}' +
 
@@ -1737,19 +1704,23 @@ function printInvoice(inv) {
 
 
       // ------------------------------------------------------
-      // BARIS TOTAL DI DALAM TABEL
-      //
-      // Garis tegas di atas sebagai pemisah dari baris item -
-      // garis bawah otomatis ikut aturan .tbl tr:last-child td.
+      // TOTAL BOX
       // ------------------------------------------------------
 
-      '.tbl tr.total-row td{' +
+      '.totalbox{' +
 
-        'border-top:1px solid #111;' +
+        'width:100%;' +
 
-        'padding-top:2.2mm;' +
+        'font-size:12pt;' +
 
-        'padding-bottom:2.2mm;' +
+      '}' +
+
+
+      '.totalbox td{' +
+
+        'border:1px solid #111;' +
+
+        'padding:1mm 1.5mm;' +
 
       '}' +
 
@@ -2063,42 +2034,22 @@ function printInvoice(inv) {
       rowsHtml +
 
 
-      // ------------------------------------------------------
-      // BARIS TOTAL
-      //
-      // Ditambahkan sebagai baris tabel biasa (bukan tabel/kotak
-      // terpisah) supaya kolomnya otomatis sejajar persis dengan
-      // kolom di atasnya: "Total M3" sejajar kolom Alamat Kirim (di
-      // tengah tabel), angka total M3 sejajar kolom M3, dan Jumlah
-      // Total Tagihan sejajar kolom Jumlah. Tidak ada lagi baris
-      // Sudah Dibayar / Sisa di cetakan.
-      // ------------------------------------------------------
-
-      '<tr class="total-row">' +
-
-      '<td colspan="4"></td>' +
-
-      '<td class="left"><b>Total M3</b></td>' +
-
-      '<td></td>' +
-
-      '<td><b>' + totalM3.toFixed(3) + '</b></td>' +
-
-      '<td class="num"><b>Jumlah Total Tagihan</b></td>' +
-
-      '<td class="num"><b>' + rupiah(total) + '</b></td>' +
-
-      '</tr>' +
-
-
       '</table>' +
 
 
       // ------------------------------------------------------
-      // TERBILANG & CATATAN
+      // BAGIAN TOTAL
       // ------------------------------------------------------
 
       '<div class="bottom">' +
+
+
+      '<div class="bottom-left">' +
+
+
+      '<b>Total M3:</b> ' +
+
+      totalM3.toFixed(3) +
 
 
       '<div class="note">' +
@@ -2135,6 +2086,82 @@ function printInvoice(inv) {
           : ""
 
       ) +
+
+
+      '</div>' +
+
+
+      '<div class="bottom-right">' +
+
+
+      '<table class="tbl totalbox">' +
+
+
+      '<tr>' +
+
+      '<td>' +
+
+      '<b>Jumlah Total Tagihan</b>' +
+
+      '</td>' +
+
+
+      '<td class="num">' +
+
+      '<b>' +
+
+      rupiah(total) +
+
+      '</b>' +
+
+      '</td>' +
+
+
+      '</tr>' +
+
+
+      '<tr>' +
+
+      '<td>' +
+      'Sudah Dibayar' +
+      '</td>' +
+
+
+      '<td class="num">' +
+
+      rupiah(
+        inv.dibayar
+      ) +
+
+      '</td>' +
+
+
+      '</tr>' +
+
+
+      '<tr>' +
+
+      '<td>' +
+      'Sisa' +
+      '</td>' +
+
+
+      '<td class="num">' +
+
+      rupiah(
+        inv.sisaTagihan
+      ) +
+
+      '</td>' +
+
+
+      '</tr>' +
+
+
+      '</table>' +
+
+
+      '</div>' +
 
 
       '</div>' +

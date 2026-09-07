@@ -29,11 +29,7 @@ import ExcelJS from "exceljs";
 //   - Ada judul "INVOICE" rata tengah di bagian atas.
 //   - Tabel item dibuat polos (tanpa garis pembatas antar kolom),
 //     cuma garis horizontal di atas/bawah header & penutup baris
-//     item terakhir. Box "Jumlah Total Tagihan" tetap pakai kotak
-//     penuh (baris "Sudah Dibayar"/"Sisa" sudah tidak dicetak lagi).
-//   - "Total M3" sejajar kolom "Alamat Kirim", angkanya sejajar
-//     kolom "M3", dan "Jumlah Total Tagihan" sejajar kolom "Jumlah".
-//   - Ada baris "Terbilang" (nominal dalam huruf) di bawah total M3.
+//     item terakhir. Box total tagihan tetap pakai kotak penuh.
 //   - Lebar kolom & tinggi baris disesuaikan supaya teks 12pt tetap
 //     kebaca penuh (tidak kepotong / ke-wrap kependekan).
 //   - Tidak mengubah struktur kolom, merge, margin, atau data invoice.
@@ -82,52 +78,6 @@ function fmtDateLong(v) {
   });
 }
 
-// ------------------------------------------------------------
-// TERBILANG (nominal dalam huruf)
-//
-// Sama persis dengan frontend/src/services/print.js dan
-// backend/public/simple/print.js supaya hasil cetak dari mana pun
-// (browser langsung / Excel) selalu menampilkan angka terbilang yang
-// sama.
-// ------------------------------------------------------------
-function terbilang(n) {
-  n = Math.round(Number(n) || 0);
-  if (n === 0) return "Nol";
-  const s = [
-    "",
-    "Satu",
-    "Dua",
-    "Tiga",
-    "Empat",
-    "Lima",
-    "Enam",
-    "Tujuh",
-    "Delapan",
-    "Sembilan",
-    "Sepuluh",
-    "Sebelas",
-  ];
-  const f = (x) =>
-    x < 12
-      ? s[x]
-      : x < 20
-      ? f(x - 10) + " Belas"
-      : x < 100
-      ? f(Math.floor(x / 10)) + " Puluh" + (x % 10 ? " " + f(x % 10) : "")
-      : x < 200
-      ? "Seratus" + (x % 100 ? " " + f(x % 100) : "")
-      : x < 1000
-      ? f(Math.floor(x / 100)) + " Ratus" + (x % 100 ? " " + f(x % 100) : "")
-      : x < 2000
-      ? "Seribu" + (x % 1000 ? " " + f(x % 1000) : "")
-      : x < 1e6
-      ? f(Math.floor(x / 1000)) + " Ribu" + (x % 1000 ? " " + f(x % 1000) : "")
-      : x < 1e9
-      ? f(Math.floor(x / 1e6)) + " Juta" + (x % 1e6 ? " " + f(x % 1e6) : "")
-      : f(Math.floor(x / 1e9)) + " Miliar" + (x % 1e9 ? " " + f(x % 1e9) : "");
-  return f(n);
-}
-
 const THIN = {
   style: "thin",
   color: { argb: "FF111111" },
@@ -142,8 +92,8 @@ const BOX = {
 
 // Tabel item dibuat polos (tanpa garis pembatas antar kolom) - cuma
 // garis horizontal di atas & bawah header, dan garis penutup di baris
-// item paling bawah. Box total tagihan (Jumlah Total Tagihan) tetap
-// pakai BOX biasa karena itu memang dimaksudkan tampil sebagai kotak.
+// item paling bawah. Box total tagihan (boxRows) tetap pakai BOX biasa
+// karena itu memang dimaksudkan tampil sebagai kotak.
 const ROW_BOTTOM = { bottom: THIN };
 const ROW_TOP_BOTTOM = { top: THIN, bottom: THIN };
 
@@ -695,13 +645,7 @@ export async function buildInvoiceWorkbook(
   }
 
   // ============================================================
-  // BARIS TOTAL M3
-  //
-  // Label "Total M3" ditaruh di kolom E (sejajar kolom "Alamat
-  // Kirim" - di tengah tabel), dan angkanya di kolom I (sejajar
-  // kolom "M3"), supaya sejajar persis dengan header tabel di
-  // atasnya (disamakan dengan tata letak cetak langsung dari
-  // browser - lihat frontend/src/services/print.js).
+  // TOTAL M3
   // ============================================================
 
   ws.addRow([]).height = 8;
@@ -717,78 +661,18 @@ export async function buildInvoiceWorkbook(
     );
 
   const rTotalM3 = ws.addRow([
-    "",
-    "",
-    "",
-    "",
-    "Total M3",
-    "",
-    "",
-    "",
-    Number(totalM3.toFixed(3)),
+    `Total M3: ${totalM3.toFixed(3)}`,
   ]);
 
   applyFont(
-    rTotalM3.getCell(5),
+    rTotalM3.getCell(1),
     {
       size: FONT_IMPORTANT,
       bold: true,
     }
   );
-
-  rTotalM3.getCell(5).alignment = {
-    horizontal: "left",
-    vertical: "middle",
-  };
-
-  applyFont(
-    rTotalM3.getCell(9),
-    {
-      size: FONT_IMPORTANT,
-      bold: true,
-    }
-  );
-
-  rTotalM3.getCell(9).numFmt = "0.000";
-
-  rTotalM3.getCell(9).alignment = {
-    horizontal: "center",
-    vertical: "middle",
-  };
 
   rTotalM3.height = 20;
-
-  // ============================================================
-  // TERBILANG
-  // ============================================================
-
-  const terbilangText = `Terbilang: ${terbilang(total)} Rupiah`;
-
-  const rTerbilang = ws.addRow([
-    terbilangText,
-  ]);
-
-  applyFont(
-    rTerbilang.getCell(1),
-    {
-      size: FONT_SMALL,
-      italic: true,
-    }
-  );
-
-  rTerbilang.getCell(1).alignment = {
-    wrapText: true,
-    vertical: "middle",
-  };
-
-  rTerbilang.height = Math.max(
-    19,
-    estimateWrapHeight(
-      terbilangText,
-      72,
-      16
-    )
-  );
 
   // ============================================================
   // CATATAN
@@ -826,70 +710,85 @@ export async function buildInvoiceWorkbook(
   ws.addRow([]).height = 8;
 
   // ============================================================
-  // JUMLAH TOTAL TAGIHAN
-  //
-  // Hanya satu baris (label + nilai), sejajar dengan kolom
-  // "Harga"/"Jumlah" di atasnya. Baris "Sudah Dibayar" dan "Sisa"
-  // sudah tidak dicetak lagi di sini (tetap bisa dilihat di halaman
-  // detail invoice pada aplikasi).
+  // BOX TOTAL TAGIHAN
   // ============================================================
 
-  const rTotalTagihan = ws.addRow([
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "Jumlah Total Tagihan",
-    "",
-    total,
-  ]);
+  const boxRows = [
+    [
+      "Jumlah Total Tagihan",
+      total,
+    ],
+    [
+      "Sudah Dibayar",
+      inv.dibayar,
+    ],
+    [
+      "Sisa",
+      inv.sisaTagihan,
+    ],
+  ];
 
-  ws.mergeCells(
-    `I${rTotalTagihan.number}:J${rTotalTagihan.number}`
-  );
+  for (
+    const [label, val]
+    of boxRows
+  ) {
+    const r = ws.addRow([
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      label,
+      "",
+      val,
+    ]);
 
-  // Label total
-  applyFont(
-    rTotalTagihan.getCell(9),
-    {
-      size: FONT_IMPORTANT,
-      bold: true,
-    }
-  );
+    ws.mergeCells(
+      `I${r.number}:J${r.number}`
+    );
 
-  rTotalTagihan.getCell(9).alignment = {
-    horizontal: "left",
-    vertical: "middle",
-  };
+    // Label total
+    applyFont(
+      r.getCell(9),
+      {
+        size: FONT_IMPORTANT,
+        bold: true,
+      }
+    );
 
-  // Border label
-  rTotalTagihan.getCell(9).border = BOX;
-  rTotalTagihan.getCell(10).border = BOX;
+    r.getCell(9).alignment = {
+      horizontal: "left",
+      vertical: "middle",
+    };
 
-  // Nilai
-  applyFont(
-    rTotalTagihan.getCell(11),
-    {
-      size: FONT_TOTAL,
-      bold: true,
-    }
-  );
+    // Border label
+    r.getCell(9).border = BOX;
+    r.getCell(10).border = BOX;
 
-  rTotalTagihan.getCell(11).border = BOX;
+    // Nilai
+    applyFont(
+      r.getCell(11),
+      {
+        size: FONT_TOTAL,
+        bold: true,
+      }
+    );
 
-  rTotalTagihan.getCell(11).numFmt =
-    '"Rp" #,##0';
+    r.getCell(11).border = BOX;
 
-  rTotalTagihan.getCell(11).alignment = {
-    horizontal: "right",
-    vertical: "middle",
-  };
+    r.getCell(11).numFmt =
+      '"Rp" #,##0';
 
-  rTotalTagihan.height = 22;
+    r.getCell(11).alignment = {
+      horizontal: "right",
+      vertical: "middle",
+    };
+
+    r.height = 22;
+  }
 
   // ============================================================
   // TANGGAL

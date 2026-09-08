@@ -122,13 +122,8 @@ function terbilang(n) {
   return f(n);
 }
 
-// Border pakai gaya "medium" (bukan "thin") - alasannya sama seperti
-// garis di versi cetak HTML: garis "thin" itu garis paling tipis di
-// Excel, dan di printer dot-matrix garis setipis itu sering kecetak
-// putus-putus/titik-titik, bukan garis solid. "medium" jauh lebih
-// aman kecetak solid di DPI berapapun.
 const THIN = {
-  style: "medium",
+  style: "thin",
   color: { argb: "FF111111" },
 };
 

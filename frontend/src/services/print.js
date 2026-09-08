@@ -299,24 +299,24 @@ export async function printInvoice(inv) {
          hasil Export ke Excel (lihat backend/services/invoiceXlsx.js)
          supaya cetak langsung dari browser dan cetak lewat Excel
          tampil sama ukurannya. */
-      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 8mm 6mm ${8 + left}mm;font:12.5pt "Times New Roman",Times,serif;color:#111;line-height:1.4}
-      .title{text-align:center;font-size:17pt;font-weight:700;margin-bottom:4mm}
+      .sheet{position:relative;width:${c.w}mm;height:${c.h}mm;padding:${top}mm 8mm 6mm ${8 + left}mm;font:10.5pt "Times New Roman",Times,serif;color:#111;line-height:1.4}
+      .title{text-align:center;font-size:15pt;font-weight:700;margin-bottom:4mm}
       .head{display:flex;justify-content:space-between;margin-bottom:4mm}
       .head .right{text-align:right}
-      .label{font-size:12.5pt;color:#555}
+      .label{font-size:10.5pt;color:#555}
       .val{font-weight:700}
       .idrow{margin:3mm 0 5mm}
       .idrow div{margin-bottom:1.5mm}
       .idrow .label{display:inline-block;width:38mm}
       /* Tabel item polos - tanpa pembatas antar kolom, cuma garis di
          atas & bawah header dan garis penutup di baris terakhir.
-         Fontnya sedikit digedein (13pt) dibanding sebelumnya (12pt)
-         supaya tetap kebaca jelas, tapi paddingnya dijaga secukupnya
-         supaya sampai 6 baris tagihan tetap muat rapi di satu halaman. */
-      .tbl{border-collapse:collapse;width:100%;font-size:13pt;table-layout:fixed}
-      .tbl th{border-top:1px solid #111;border-bottom:1px solid #111;padding:2mm 1.6mm;text-align:center;background:#eee}
+         Garis pakai satuan mm (bukan px) dan agak ditebalin (0.5mm)
+         supaya di printer dot-matrix kecetak solid, tidak jadi
+         putus-putus/titik-titik seperti kalau pakai hairline 1px. */
+      .tbl{border-collapse:collapse;width:100%;font-size:11pt;table-layout:fixed}
+      .tbl th{border-top:0.9mm solid #111;border-bottom:0.9mm solid #111;padding:2mm 1.6mm;text-align:center;background:#eee}
       .tbl td{padding:2mm 1.6mm;text-align:center;border:none}
-      .tbl tr:last-child td{border-bottom:1px solid #111}
+      .tbl tr:last-child td{border-bottom:0.9mm solid #111}
       .tbl td.left{text-align:left}
       .tbl td.num{text-align:right}
       .tbl .c-no{width:4%}
@@ -332,11 +332,11 @@ export async function printInvoice(inv) {
          sejajar kolom Alamat Kirim, angkanya sejajar kolom M3, dan
          jumlah total tagihan sejajar kolom Jumlah, semua dalam satu
          baris. */
-      .tbl .total-row td{border-top:1.5px solid #111;padding-top:2.5mm;font-size:13pt}
-      .tbl .terbilang-row td{padding-top:1.5mm;padding-bottom:0;font-size:11pt;text-align:left}
+      .tbl .total-row td{border-top:1mm solid #111;padding-top:2.5mm;font-size:11pt}
+      .tbl .terbilang-row td{padding-top:1.5mm;padding-bottom:0;font-size:9pt;text-align:left}
       .sign{text-align:center;margin-top:9mm;margin-left:auto;width:48mm}
       .signline{border-top:1px solid #111;padding-top:1.5mm;margin-top:14mm}
-      .note{font-size:10pt;margin-top:1.5mm}
+      .note{font-size:9pt;margin-top:1.5mm}
     </style>
     <div class="sheet">
       <div class="title">INVOICE</div>

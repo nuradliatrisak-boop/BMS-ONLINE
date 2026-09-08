@@ -1458,12 +1458,10 @@ function printInvoice(inv) {
           'mm;' +
 
         // Font disamakan dengan hasil Export ke Excel: Times New
-        // Roman, seragam di seluruh invoice. Sedikit digedein
-        // (12.5pt) dibanding sebelumnya (12pt) supaya tetap kebaca
-        // jelas.
+        // Roman, seragam di seluruh invoice.
         'font-family:"Times New Roman",Times,serif;' +
 
-        'font-size:12.5pt;' +
+        'font-size:10.5pt;' +
 
         'line-height:1.4;' +
 
@@ -1480,7 +1478,7 @@ function printInvoice(inv) {
 
         'text-align:center;' +
 
-        'font-size:16pt;' +
+        'font-size:15pt;' +
 
         'font-weight:700;' +
 
@@ -1528,7 +1526,7 @@ function printInvoice(inv) {
 
       '.label{' +
 
-        'font-size:12pt;' +
+        'font-size:11pt;' +
 
         'line-height:1.35;' +
 
@@ -1541,7 +1539,7 @@ function printInvoice(inv) {
 
         'font-weight:700;' +
 
-        'font-size:12pt;' +
+        'font-size:11pt;' +
 
         'line-height:1.4;' +
 
@@ -1556,7 +1554,7 @@ function printInvoice(inv) {
 
         'margin:1.5mm 0 2mm 0;' +
 
-        'font-size:12pt;' +
+        'font-size:11pt;' +
 
         'line-height:1.4;' +
 
@@ -1600,9 +1598,7 @@ function printInvoice(inv) {
 
         'font-family:"Times New Roman",Times,serif;' +
 
-        // Sedikit digedein (13pt) dibanding sebelumnya (12pt) supaya
-        // tetap kebaca jelas, sampai 6 baris tagihan tetap muat rapi.
-        'font-size:13pt;' +
+        'font-size:11pt;' +
 
         'line-height:1.3;' +
 
@@ -1637,16 +1633,21 @@ function printInvoice(inv) {
 
         'line-height:1.25;' +
 
-        'border-top:1px solid #111;' +
+        // Pakai satuan fisik (mm), bukan px. "1px" itu satuan layar
+        // (~96dpi) - kalau di-scale ke resolusi dot-matrix (mis.
+        // 180dpi) garisnya jadi lebih tipis dari 1 pin print head,
+        // hasilnya putus-putus/titik-titik bukan garis solid. 0.9mm
+        // dijamin tetap tebal di DPI berapapun.
+        'border-top:0.9mm solid #111;' +
 
-        'border-bottom:1px solid #111;' +
+        'border-bottom:0.9mm solid #111;' +
 
       '}' +
 
 
       '.tbl tr:last-child td{' +
 
-        'border-bottom:1px solid #111;' +
+        'border-bottom:0.9mm solid #111;' +
 
       '}' +
 
@@ -1716,11 +1717,11 @@ function printInvoice(inv) {
 
       '.tbl .total-row td{' +
 
-        'border-top:1.5px solid #111;' +
+        'border-top:1mm solid #111;' +
 
         'padding-top:2.5mm;' +
 
-        'font-size:13pt;' +
+        'font-size:11pt;' +
 
       '}' +
 
@@ -1731,7 +1732,7 @@ function printInvoice(inv) {
 
         'padding-bottom:0;' +
 
-        'font-size:11pt;' +
+        'font-size:9pt;' +
 
         'text-align:left;' +
 
@@ -1740,7 +1741,7 @@ function printInvoice(inv) {
 
       '.note{' +
 
-        'font-size:10pt;' +
+        'font-size:9pt;' +
 
         'line-height:1.4;' +
 
@@ -1768,7 +1769,7 @@ function printInvoice(inv) {
 
         'width:45mm;' +
 
-        'font-size:12pt;' +
+        'font-size:11pt;' +
 
         'line-height:1.4;' +
 
@@ -1777,7 +1778,7 @@ function printInvoice(inv) {
 
       '.signline{' +
 
-        'border-top:1px solid #111;' +
+        'border-top:0.5mm solid #111;' +
 
         'padding-top:1mm;' +
 
@@ -2238,7 +2239,7 @@ function printSJBlank() {
 
       'font-weight:700;' +
 
-      'border:2px solid #111;' +
+      'border:1mm solid #111;' +
 
       'padding:2mm;' +
 
@@ -2258,7 +2259,7 @@ function printSJBlank() {
 
     '.line{' +
 
-      'border-bottom:1px solid #777;' +
+      'border-bottom:0.5mm solid #777;' +
 
       'min-height:5mm;' +
 
@@ -2278,7 +2279,7 @@ function printSJBlank() {
 
     '.grid td,.grid th{' +
 
-      'border:1px solid #111;' +
+      'border:0.5mm solid #111;' +
 
       'padding:2mm;' +
 
@@ -2307,7 +2308,7 @@ function printSJBlank() {
 
     '.sign .u{' +
 
-      'border-top:1px solid #111;' +
+      'border-top:0.5mm solid #111;' +
 
       'padding-top:2mm;' +
 

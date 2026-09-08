@@ -214,6 +214,29 @@ onMounted(load);
           <input v-model.number="inv.topMargin" type="number" step="0.5" />
         </div>
 
+        <div class="form-section-title" style="margin-top:16px">Font &amp; Spasi</div>
+        <div class="row4">
+          <div class="field">
+            <label>Font tulisan</label>
+            <select v-model="inv.fontFamily">
+              <option v-for="f in sjFontOptions" :key="f" :value="f">{{ f }}</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Ukuran font dasar (pt)</label>
+            <input v-model.number="inv.fontSize" type="number" step="0.5" />
+          </div>
+          <div class="field">
+            <label>Jarak antar baris (line spacing)</label>
+            <input v-model.number="inv.lineHeight" type="number" step="0.05" />
+          </div>
+          <div class="field">
+            <label>Jarak antar huruf (mm)</label>
+            <input v-model.number="inv.letterSpacing" type="number" step="0.05" />
+          </div>
+        </div>
+        <div class="calib-hint">Ukuran font dasar berlaku untuk isi invoice (alamat, tabel, dst) - bagian lain seperti judul "INVOICE" ikut membesar/mengecil secara proporsional. Font &amp; ukuran ini juga dipakai saat Export ke Excel, supaya hasil cetak langsung dan hasil Excel tetap sama persis.</div>
+
         <div class="calib-actions">
           <button class="btn btn-ghost" @click="cetakGridInv">Cetak Kotak Bantu (grid 5mm)</button>
           <button class="btn btn-ghost" @click="cetakContohInvoice">Cetak Contoh Invoice</button>

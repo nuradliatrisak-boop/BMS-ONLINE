@@ -61,6 +61,18 @@ export const DEFAULTS = {
     offsetX: 6,
     offsetY: 0,
     topMargin: 38,
+    // Font, ukuran dasar, jarak antar huruf & jarak antar baris untuk
+    // Invoice - sama seperti yang sudah ada di kalibrasi Surat Jalan,
+    // supaya keduanya bisa diatur dari halaman "Kalibrasi Cetak" dengan
+    // cara yang sama. Nilai default di bawah ini SAMA PERSIS dengan
+    // yang sebelumnya di-hardcode di printInvoice() (frontend) &
+    // invoiceXlsx.js (backend), jadi mengubah default ini TIDAK
+    // mengubah tampilan invoice yang sudah ada sampai user benar-benar
+    // mengubahnya lewat halaman Kalibrasi Cetak.
+    fontFamily: "Times New Roman",
+    fontSize: 10.5, // ukuran dasar (pt) badan invoice - ukuran lain (judul, tabel, dst) mengikuti proporsi ini
+    lineHeight: 1.4, // jarak antar baris (line-height)
+    letterSpacing: 0, // jarak antar huruf (mm), sama satuan seperti Surat Jalan
   },
 };
 

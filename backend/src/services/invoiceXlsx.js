@@ -39,25 +39,62 @@ const MM_TO_PT = 2.83464567; // 1 mm dalam point
 const MM_TO_IN = 1 / 25.4; // 1 mm dalam inch
 
 // ------------------------------------------------------------
-// FONT KHUSUS DOT MATRIX
+// FONT & UKURAN - SEKARANG IKUT KALIBRASI
 // ------------------------------------------------------------
-// Courier New dipilih karena karakter memiliki lebar yang konsisten
-// dan bentuknya sederhana, sehingga relatif mudah dibaca pada hasil
-// cetak dot matrix Windows/Excel.
+// Font, ukuran dasar, dan jarak antar baris sekarang diambil dari
+// kalibrasi (halaman Kalibrasi Cetak > Invoice - lihat
+// backend/src/routes/printCalib.js DEFAULTS.inv & frontend
+// KalibrasiCetak.vue), sama seperti Surat Jalan, dan dipakai juga
+// oleh printInvoice() di frontend/src/services/print.js supaya
+// hasil cetak langsung & hasil Excel tetap sama persis.
 //
-// Jangan terlalu besar karena invoice menggunakan continuous form.
-// 10 pt untuk isi dan 11 pt untuk bagian penting adalah kompromi
-// antara keterbacaan dan menjaga layout tetap muat.
+// Nilai berikut ini dihitung dari kalibrasi lewat fontSizesFrom()
+// di bawah - dibiarkan sebagai konstanta fallback kalau suatu saat
+// dipanggil tanpa objek kalibrasi (mis. dari skrip lain).
 // ------------------------------------------------------------
-const DOT_FONT = "Times New Roman";
-// FONT_BODY (isi tabel item) sedikit digedein dibanding sebelumnya
-// (12pt) supaya tetap kebaca jelas, tapi tinggi baris & lebar kolom
-// dijaga cukup supaya sampai 6 baris tagihan tetap muat rapi.
-const FONT_BODY = 13;
-const FONT_SMALL = 12;
-const FONT_IMPORTANT = 12;
-const FONT_TOTAL = 13;
-const FONT_TITLE = 16; // Judul "INVOICE" di tengah atas
+const FALLBACK_FONT = "Times New Roman";
+const FALLBACK_BASE_SIZE = 10.5;
+const FALLBACK_LINE_HEIGHT = 1.4;
+
+// Rasio tiap bagian terhadap ukuran dasar (base = 10.5pt di kalibrasi
+// lama) - dipertahankan sama seperti sebelum ada kalibrasi, supaya
+// hierarki ukuran (judul > tabel > isi > catatan kecil) tetap sama
+// walau "Ukuran font dasar" diubah user.
+function fontSizesFrom(calib) {
+  const base = Number(calib?.fontSize ?? FALLBACK_BASE_SIZE) || FALLBACK_BASE_SIZE;
+  const scale = base / FALLBACK_BASE_SIZE;
+  const r = (n) => Math.round(n * scale * 2) / 2; // dibulatkan ke 0.5pt terdekat
+  return {
+    font: calib?.fontFamily || FALLBACK_FONT,
+    lineHeight: Number(calib?.lineHeight ?? FALLBACK_LINE_HEIGHT) || FALLBACK_LINE_HEIGHT,
+    FONT_BODY: r(13),
+    FONT_SMALL: r(12),
+    FONT_IMPORTANT: r(12),
+    FONT_TOTAL: r(13),
+    FONT_TITLE: r(16),
+  };
+}
+
+// Nilai berikut diisi ulang di awal buildInvoiceWorkbook() dari
+// fontSizesFrom(calib) - lihat catatan di atas. Fungsi ini tidak
+// mengandung "await", jadi tidak ada celah untuk request lain
+// menimpa nilai ini di tengah proses membangun satu workbook.
+let DOT_FONT = FALLBACK_FONT;
+let LINE_HEIGHT = FALLBACK_LINE_HEIGHT;
+let FONT_BODY = 13;
+let FONT_SMALL = 12;
+let FONT_IMPORTANT = 12;
+let FONT_TOTAL = 13;
+let FONT_TITLE = 16;
+
+// Tinggi baris (pt) yang proporsional dengan ukuran font sel & jarak
+// antar baris (line spacing) dari kalibrasi - dipakai sebagai
+// lineHeightPt di estimateWrapHeight() supaya "Jarak antar baris"
+// yang diatur di halaman Kalibrasi Cetak juga mempengaruhi tinggi
+// baris Excel, bukan cuma tampilan cetak langsung dari browser.
+function wrapLineHeight(fontSizePt) {
+  return Math.round(Number(fontSizePt || FONT_BODY) * LINE_HEIGHT * 10) / 10;
+}
 
 function rupiah(n) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
@@ -122,8 +159,20 @@ function terbilang(n) {
   return f(n);
 }
 
+// Gaya garis tabel. SEBELUMNYA pakai style: "thin" (garis rambut /
+// hairline Excel) - itu terlihat solid rapi di layar & PDF, tapi di
+// printer dot-matrix/continuous form garis hairline seringnya JADI
+// PUTUS-PUTUS (titik-titik) karena tipis banget, di bawah resolusi
+// dot printer itu buat gambar (border cell adalah grafik, bukan
+// karakter teks) - sama seperti kenapa cetak-langsung dari browser
+// (lihat printInvoice() di frontend/src/services/print.js) sengaja
+// pakai garis 0.9mm (ditebalin), bukan garis 1px, biar kecetak solid
+// di printer yang sama. Style "medium" (garis lebih tebal daripada
+// "thin") dipakai di sini karena alasan yang sama, supaya hasil
+// Excel & cetak langsung sama-sama solid, tidak putus-putus, di
+// printer dot-matrix.
 const THIN = {
-  style: "thin",
+  style: "medium",
   color: { argb: "FF111111" },
 };
 
@@ -159,28 +208,88 @@ function applyFont(cell, options = {}) {
   };
 }
 
-// Perkiraan tinggi baris berdasarkan panjang teks.
-// Tetap dipertahankan agar teks wrap tidak kepotong.
+// Perkiraan tinggi baris berdasarkan teks yang akan di-wrap.
+//
+// CATATAN PERBAIKAN: versi sebelumnya cuma menghitung
+// `panjang teks / charsPerLine` (dibulatkan ke atas) untuk menebak
+// jumlah baris. Itu meleset kalau teksnya:
+//   - punya baris baru manual (\n) - tiap \n seharusnya SELALU jadi
+//     baris baru sendiri, tapi hitungan lama menganggap semua
+//     karakter (termasuk \n) mengalir rata makanya baris hasil
+//     wrap-nya lebih SEDIKIT dari kenyataan;
+//   - kata-katanya tidak rata (ada kata panjang, ada kata pendek) -
+//     Excel wrap di batas KATA (spasi), bukan di titik pas
+//     "charsPerLine karakter", jadi baris bisa "meluap" lebih cepat
+//     dari perkiraan char-count murni.
+// Akibatnya tinggi baris yang di-set kadang kurang tinggi, dan baris
+// alamat berikutnya (atau baris "Total M3" di bawahnya) jadi
+// bertumpuk/ketiban teks yang harusnya masih bagian dari alamat di
+// atasnya - persis seperti pada Invoice-BMS-INV-202609-0003.
+//
+// Perbaikan: simulasikan word-wrap sungguhan (per kata, per baris
+// baru manual) supaya jumlah baris yang dihitung mendekati apa yang
+// benar-benar dirender Excel, dan tinggi barisnya dibulatkan ke atas
+// (bukan ke bawah) supaya tetap ada sedikit ruang lebih aman.
 function estimateWrapHeight(
   text,
   colWidthChars,
   lineHeightPt = 15
 ) {
-  const len = String(text ?? "").length;
+  const raw = String(text ?? "");
+  if (!raw.trim()) return lineHeightPt;
 
-  if (!len) return lineHeightPt;
+  const charsPerLine = Math.max(6, Math.floor(colWidthChars));
 
-  const charsPerLine = Math.max(
-    6,
-    Math.floor(colWidthChars)
-  );
+  let totalLines = 0;
+  const paragraphs = raw.split(/\r\n|\r|\n/);
 
-  const lines = Math.max(
-    1,
-    Math.ceil(len / charsPerLine)
-  );
+  for (const para of paragraphs) {
+    const words = para.split(/\s+/).filter(Boolean);
+    if (!words.length) {
+      totalLines += 1; // baris kosong (dari \n\n) tetap makan 1 baris
+      continue;
+    }
 
-  return lines * lineHeightPt;
+    let lineLen = 0;
+    let linesInPara = 1;
+
+    for (const word of words) {
+      const wLen = word.length;
+
+      if (wLen > charsPerLine) {
+        // Kata sendiri sudah lebih panjang dari lebar kolom - akan
+        // patah di tengah kata dan makan beberapa baris sendiri.
+        if (lineLen > 0) {
+          linesInPara += 1;
+          lineLen = 0;
+        }
+        linesInPara += Math.ceil(wLen / charsPerLine) - 1;
+        lineLen = wLen % charsPerLine || charsPerLine;
+        continue;
+      }
+
+      const nextLen = lineLen === 0 ? wLen : lineLen + 1 + wLen;
+      if (nextLen > charsPerLine) {
+        linesInPara += 1;
+        lineLen = wLen;
+      } else {
+        lineLen = nextLen;
+      }
+    }
+
+    totalLines += linesInPara;
+  }
+
+  totalLines = Math.max(1, totalLines);
+
+  // Margin aman HANYA ditambahkan kalau teksnya memang wrap jadi
+  // lebih dari 1 baris (lebar kolom "chars" Excel dihitung dari font
+  // default workbook, bukan font invoice yang proporsional seperti
+  // Times New Roman, jadi perkiraan di atas tetap perkiraan). Kalau
+  // teksnya cuma 1 baris, tidak perlu tambahan supaya baris pendek
+  // (mis. "Kode Customer") tidak jadi tinggi tanpa alasan.
+  const safetyLines = totalLines > 1 ? 1 : 0;
+  return (totalLines + safetyLines) * lineHeightPt;
 }
 
 export async function buildInvoiceWorkbook(
@@ -188,6 +297,18 @@ export async function buildInvoiceWorkbook(
   calib,
   signerName
 ) {
+  // Font, ukuran dasar & jarak antar baris ikut kalibrasi (sama
+  // seperti yang dipakai printInvoice() di frontend) - lihat
+  // fontSizesFrom() di atas.
+  const F = fontSizesFrom(calib);
+  DOT_FONT = F.font;
+  LINE_HEIGHT = F.lineHeight;
+  FONT_BODY = F.FONT_BODY;
+  FONT_SMALL = F.FONT_SMALL;
+  FONT_IMPORTANT = F.FONT_IMPORTANT;
+  FONT_TOTAL = F.FONT_TOTAL;
+  FONT_TITLE = F.FONT_TITLE;
+
   const wb = new ExcelJS.Workbook();
 
   const ws = wb.addWorksheet("Invoice", {
@@ -416,7 +537,7 @@ export async function buildInvoiceWorkbook(
     estimateWrapHeight(
       inv.customer?.alamat || "",
       28,
-      17
+      wrapLineHeight(FONT_BODY)
     )
   );
 
@@ -477,7 +598,7 @@ export async function buildInvoiceWorkbook(
       estimateWrapHeight(
         val,
         75,
-        17
+        wrapLineHeight(FONT_BODY)
       )
     );
   }
@@ -662,19 +783,19 @@ export async function buildInvoiceWorkbook(
         estimateWrapHeight(
           row.getCell(3).value,
           12,
-          17
+          wrapLineHeight(FONT_BODY)
         ),
 
         estimateWrapHeight(
           row.getCell(4).value,
           13,
-          17
+          wrapLineHeight(FONT_BODY)
         ),
 
         estimateWrapHeight(
           row.getCell(5).value,
           24,
-          17
+          wrapLineHeight(FONT_BODY)
         )
       );
     }
@@ -805,7 +926,7 @@ export async function buildInvoiceWorkbook(
     estimateWrapHeight(
       terbilangText,
       100,
-      16
+      wrapLineHeight(FONT_SMALL)
     )
   );
 

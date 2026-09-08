@@ -1057,6 +1057,79 @@ function printInvoice(inv) {
       calib.inv;
 
 
+    // ----------------------------------------------------------
+    // FONT, UKURAN DASAR, JARAK ANTAR BARIS & ANTAR HURUF
+    //
+    // Diambil dari kalibrasi (halaman Kalibrasi Cetak > Invoice) -
+    // sama seperti Surat Jalan, dan disamakan dengan versi Vue
+    // (frontend/src/services/print.js) supaya hasil cetak dari sini
+    // dan dari aplikasi Vue tetap identik. Ukuran-ukuran lain
+    // (judul, tabel, terbilang, dst) tetap mengikuti proporsi yang
+    // sama seperti sebelumnya (semua dulu berbasis 10.5pt), lewat
+    // fungsi pt() di bawah.
+    // ----------------------------------------------------------
+
+    var invFontFamily =
+      c.fontFamily || "Times New Roman";
+
+    var invFontFallback = {
+      "Courier New": "monospace",
+      "Consolas": "monospace",
+      "Arial": "sans-serif",
+      "Verdana": "sans-serif",
+      "Times New Roman": "serif"
+    };
+
+    var invFontStack =
+      '"' + invFontFamily + '",' +
+      (invFontFallback[invFontFamily] || "serif");
+
+    var invFontSize =
+      Number(
+        c.fontSize !== undefined
+          ? c.fontSize
+          : 10.5
+      );
+
+    var invLineHeight =
+      Number(
+        c.lineHeight !== undefined
+          ? c.lineHeight
+          : 1.4
+      );
+
+    var invLetterSpacing =
+      Number(
+        c.letterSpacing !== undefined
+          ? c.letterSpacing
+          : 0
+      );
+
+    var invScale =
+      invFontSize / 10.5;
+
+    // Bulatkan ke 2 desimal supaya string CSS-nya rapi.
+    function pt(base) {
+      return (
+        Math.round(
+          base * invScale * 100
+        ) / 100
+      ) + "pt";
+    }
+
+    // Sebagian elemen invoice ini punya line-height sendiri-sendiri
+    // yang sedikit beda dari base (1.4) supaya rapi (label lebih
+    // rapat, dst). lh() menjaga proporsi itu sambil tetap ikut naik/
+    // turun kalau "Jarak antar baris" di kalibrasi diubah.
+    function lh(base) {
+      return (
+        Math.round(
+          base * (invLineHeight / 1.4) * 100
+        ) / 100
+      );
+    }
+
+
     var rowsHtml = "";
 
 
@@ -1457,13 +1530,24 @@ function printInvoice(inv) {
           (4 + left) +
           'mm;' +
 
-        // Font disamakan dengan hasil Export ke Excel: Times New
-        // Roman, seragam di seluruh invoice.
-        'font-family:"Times New Roman",Times,serif;' +
+        // Font, ukuran dasar, line-height & letter-spacing ikut
+        // kalibrasi (halaman Kalibrasi Cetak > Invoice) - bukan
+        // hardcode lagi.
+        'font-family:' +
+        invFontStack +
+        ';' +
 
-        'font-size:10.5pt;' +
+        'font-size:' +
+        pt(10.5) +
+        ';' +
 
-        'line-height:1.4;' +
+        'line-height:' +
+        invLineHeight +
+        ';' +
+
+        'letter-spacing:' +
+        invLetterSpacing +
+        'mm;' +
 
         'color:#111;' +
 
@@ -1478,7 +1562,7 @@ function printInvoice(inv) {
 
         'text-align:center;' +
 
-        'font-size:15pt;' +
+        'font-size:' + pt(15) + ';' +
 
         'font-weight:700;' +
 
@@ -1526,9 +1610,9 @@ function printInvoice(inv) {
 
       '.label{' +
 
-        'font-size:11pt;' +
+        'font-size:' + pt(11) + ';' +
 
-        'line-height:1.35;' +
+        'line-height:' + lh(1.35) + ';' +
 
         'color:#555;' +
 
@@ -1539,9 +1623,9 @@ function printInvoice(inv) {
 
         'font-weight:700;' +
 
-        'font-size:11pt;' +
+        'font-size:' + pt(11) + ';' +
 
-        'line-height:1.4;' +
+        'line-height:' + lh(1.4) + ';' +
 
       '}' +
 
@@ -1554,9 +1638,9 @@ function printInvoice(inv) {
 
         'margin:1.5mm 0 2mm 0;' +
 
-        'font-size:11pt;' +
+        'font-size:' + pt(11) + ';' +
 
-        'line-height:1.4;' +
+        'line-height:' + lh(1.4) + ';' +
 
       '}' +
 
@@ -1596,11 +1680,11 @@ function printInvoice(inv) {
 
         'table-layout:fixed;' +
 
-        'font-family:"Times New Roman",Times,serif;' +
+        'font-family:' + invFontStack + ';' +
 
-        'font-size:11pt;' +
+        'font-size:' + pt(11) + ';' +
 
-        'line-height:1.3;' +
+        'line-height:' + lh(1.3) + ';' +
 
       '}' +
 
@@ -1631,7 +1715,7 @@ function printInvoice(inv) {
 
         'font-weight:700;' +
 
-        'line-height:1.25;' +
+        'line-height:' + lh(1.25) + ';' +
 
         // Pakai satuan fisik (mm), bukan px. "1px" itu satuan layar
         // (~96dpi) - kalau di-scale ke resolusi dot-matrix (mis.
@@ -1721,7 +1805,7 @@ function printInvoice(inv) {
 
         'padding-top:2.5mm;' +
 
-        'font-size:11pt;' +
+        'font-size:' + pt(11) + ';' +
 
       '}' +
 
@@ -1732,7 +1816,7 @@ function printInvoice(inv) {
 
         'padding-bottom:0;' +
 
-        'font-size:9pt;' +
+        'font-size:' + pt(9) + ';' +
 
         'text-align:left;' +
 
@@ -1741,9 +1825,9 @@ function printInvoice(inv) {
 
       '.note{' +
 
-        'font-size:9pt;' +
+        'font-size:' + pt(9) + ';' +
 
-        'line-height:1.4;' +
+        'line-height:' + lh(1.4) + ';' +
 
         'margin-top:1mm;' +
 
@@ -1769,9 +1853,9 @@ function printInvoice(inv) {
 
         'width:45mm;' +
 
-        'font-size:11pt;' +
+        'font-size:' + pt(11) + ';' +
 
-        'line-height:1.4;' +
+        'line-height:' + lh(1.4) + ';' +
 
       '}' +
 

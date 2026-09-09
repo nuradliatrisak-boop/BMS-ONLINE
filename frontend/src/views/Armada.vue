@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, watch } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
+import DokumenAsetPanel from "../components/DokumenAsetPanel.vue";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -178,6 +179,18 @@ function closeDetail() {
   detailArmada.value = null;
 }
 
+// --- Dokumen kelengkapan kendaraan (STNK, KIR, Foto Mobil, dst) ---
+const showDokumen = ref(false);
+const dokumenArmada = ref(null);
+function openDokumen(a) {
+  dokumenArmada.value = a;
+  showDokumen.value = true;
+}
+function closeDokumen() {
+  showDokumen.value = false;
+  dokumenArmada.value = null;
+}
+
 function isTronton(jenis) {
   return (jenis || "").toLowerCase().includes("tronton");
 }
@@ -318,6 +331,10 @@ onMounted(load);
         <div class="armada-sopir">{{ a.sopir || "Belum ada sopir" }}</div>
         <div class="armada-divisi">Divisi {{ a.divisi }}</div>
 
+        <button type="button" class="btn btn-sm btn-ghost" style="margin: 6px 0;" @click.stop="openDokumen(a)">
+          📎 Dokumen
+        </button>
+
         <template v-if="a.divisi === 'Armada'">
           <div class="armada-summary">
             <div>
@@ -403,6 +420,16 @@ onMounted(load);
           <button class="btn btn-primary" @click="submit">Simpan Armada</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal Dokumen kelengkapan kendaraan: STNK, KIR, Foto Mobil, dst -->
+  <div v-if="showDokumen && dokumenArmada" class="modal-bg" @click.self="closeDokumen">
+    <div class="modal" style="max-width: 640px;">
+      <button class="modal-close" @click="closeDokumen">×</button>
+      <h2>Dokumen — {{ dokumenArmada.nopol }}</h2>
+      <div class="msub">Kelengkapan dokumen kendaraan ini</div>
+      <DokumenAsetPanel aset-tipe="MOBIL" :aset-id="dokumenArmada.id" />
     </div>
   </div>
 

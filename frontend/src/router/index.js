@@ -17,6 +17,9 @@ import Users from "../views/Users.vue";
 import RekapPenjualan from "../views/RekapPenjualan.vue";
 import KalibrasiCetak from "../views/KalibrasiCetak.vue";
 import Settings from "../views/Settings.vue";
+import SolarJadwal from "../views/SolarJadwal.vue";
+import Kapal from "../views/Kapal.vue";
+import AlatBeratUnit from "../views/AlatBeratUnit.vue";
 
 const routes = [
   { path: "/login", name: "login", component: Login, meta: { public: true } },
@@ -35,6 +38,9 @@ const routes = [
   { path: "/users", name: "users", component: Users, meta: { adminOnly: true } },
   { path: "/kalibrasi-cetak", name: "kalibrasi-cetak", component: KalibrasiCetak, meta: { adminOnly: true } },
   { path: "/pengaturan", name: "pengaturan", component: Settings, meta: { adminOnly: true } },
+  { path: "/solar-jadwal", name: "solar-jadwal", component: SolarJadwal },
+  { path: "/kapal", name: "kapal", component: Kapal },
+  { path: "/alat-berat-unit", name: "alat-berat-unit", component: AlatBeratUnit },
 ];
 
 const router = createRouter({

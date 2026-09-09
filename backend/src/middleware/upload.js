@@ -21,6 +21,7 @@ function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 ensureDir(path.join(UPLOAD_DIR, "solar"));
+ensureDir(path.join(UPLOAD_DIR, "dokumen"));
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -46,6 +47,33 @@ const ALLOWED_MIME = [
 
 export const uploadBukti = multer({
   storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED_MIME.includes(file.mimetype)) {
+      return cb(new Error("Format file tidak didukung. Pakai foto (JPG/PNG/WEBP) atau PDF."));
+    }
+    cb(null, true);
+  },
+});
+
+// Upload untuk Dokumen kelengkapan aset (STNK, KIR, Gross Akte, SIA, dst).
+// Sama polanya dengan uploadBukti, cuma disimpan di subfolder "dokumen"
+// yang terpisah supaya gampang dibedain di /uploads/dokumen/...
+const dokumenStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const sub = path.join(UPLOAD_DIR, "dokumen");
+    ensureDir(sub);
+    cb(null, sub);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || "").slice(0, 10);
+    const unik = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    cb(null, unik);
+  },
+});
+
+export const uploadDokumen = multer({
+  storage: dokumenStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
     if (!ALLOWED_MIME.includes(file.mimetype)) {

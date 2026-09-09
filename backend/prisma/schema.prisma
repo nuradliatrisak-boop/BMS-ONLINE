@@ -36,6 +36,24 @@ enum TipeSolar {
   KELUAR
 }
 
+// Status realisasi baris Jadwal Setor Solar (checklist harian):
+// BELUM   = belum dicentang/direalisasi sama sekali
+// SESUAI  = disetor pas sama literWajib (tinggal dicentang, tanpa ketik apa-apa)
+// SELISIH = disetor beda dari literWajib (kurang ATAU lebih -- tandanya
+//           dilihat dari literSetor vs literWajib, bukan dari enum ini)
+enum StatusSetor {
+  BELUM
+  SESUAI
+  SELISIH
+}
+
+// Jenis aset yang punya dokumen kelengkapan (STNK/KIR, akte kapal, dst).
+enum AsetTipe {
+  MOBIL
+  KAPAL
+  ALAT_BERAT
+}
+
 model User {
   id        String   @id @default(cuid())
   username  String   @unique
@@ -150,6 +168,68 @@ model Armada {
   createdAt DateTime @default(now())
 
   suratJalan SuratJalan[]
+  // Kelengkapan dokumen kendaraan (STNK, KIR, foto mobil, dst) dicari lewat
+  // model Dokumen dengan asetTipe="MOBIL" & asetId=Armada.id (relasi bebas,
+  // TIDAK pakai foreign key Prisma -- lihat catatan di model Dokumen).
+}
+
+// Master data Kapal (Divisi Kapal) -- terpisah dari Armada karena field &
+// dokumen kelengkapannya beda total (Gross Akte, Sertifikat Keselamatan,
+// Pas Besar, Buku Pulau, dst, bukan STNK/KIR). Dipakai untuk halaman
+// "Kapal" (kelola data + dokumen kelengkapan tiap kapal).
+model Kapal {
+  id        String   @id @default(cuid())
+  nama      String
+  noLambung String?  // opsional, identitas fisik kapal kalau ada
+  divisi    String   @default("Kapal")
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  // Dokumen kelengkapan (Gross Akte, dst) dicari lewat model Dokumen
+  // dengan asetTipe="KAPAL" & asetId=Kapal.id.
+}
+
+// Master data unit Alat Berat/Excavator -- terpisah dari kategori
+// "Alat Berat" di DivisiTx (yang cuma nama bebas untuk pencatatan
+// keuangan). Model ini khusus menyimpan data unit + dokumen
+// kelengkapannya (Invoice, SIA, SIO, foto unit).
+model AlatBeratUnit {
+  id        String   @id @default(cuid())
+  nama      String
+  jenis     String?  // Excavator, Bulldozer, dst
+  divisi    String   @default("Alat Berat")
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  // Dokumen kelengkapan (Invoice, SIA, SIO, dst) dicari lewat model Dokumen
+  // dengan asetTipe="ALAT_BERAT" & asetId=AlatBeratUnit.id.
+}
+
+// Dokumen kelengkapan aset (Mobil/Kapal/Alat Berat) -- satu tabel serba-guna
+// dipakai lintas menu supaya tidak perlu bikin tabel Dokumen terpisah per
+// jenis aset. `asetId` SENGAJA tidak dibuatkan foreign key Prisma (relasi
+// polimorfik: bisa nunjuk ke Armada.id / Kapal.id / AlatBeratUnit.id
+// tergantung `asetTipe`, dan Prisma/Postgres tidak bisa 1 kolom FK ke 3
+// tabel berbeda) -- integritasnya dijaga di kode routes (hapus dokumen ikut
+// saat aset induknya dihapus, lihat routes kapal.js/alatBeratUnit.js/armada.js).
+// Baris "wajib" (STNK, KIR, Gross Akte, SIA, dst) otomatis dibuat kosong
+// saat aset baru ditambahkan, lalu tinggal diisi/upload belakangan. User
+// juga bebas menambah baris dokumen "opsional" sendiri (label bebas), baik
+// yang perlu upload file maupun yang cukup diisi teks (mis. nomor
+// dokumen/tanggal berlaku) lewat kolom `nilai`.
+model Dokumen {
+  id            String    @id @default(cuid())
+  asetTipe      AsetTipe
+  asetId        String
+  label         String    // "STNK", "KIR", "Foto Mobil", "Gross Akte", dst -- atau label custom
+  file          String?   // nama file di /uploads/dokumen (opsional)
+  fileNama      String?   // nama file asli saat diupload
+  nilai         String?   // isian teks/angka untuk kolom opsional yang bukan file
+  berlakuSampai DateTime? // opsional, tanggal kadaluarsa dokumen (STNK/KIR/dll)
+  catatan       String?
+  wajib         Boolean   @default(false) // true = baris bawaan (default), false = ditambah manual/custom
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([asetTipe, asetId])
 }
 
 model Material {
@@ -280,7 +360,43 @@ model SolarTx {
   divisi     String    @default("Alat Berat")
   createdAt  DateTime  @default(now())
 
+  jadwalSetor SolarJadwalSetor?
+
   @@index([tipe, tanggal])
+}
+
+// Checklist harian "Jadwal Setor Solar" -- daftar sopir yang wajib
+// menyetorkan sejumlah liter solar pada tanggal tertentu (hasil dari
+// sopir yang ambil solar sesuai surat jalan). Diinput manual oleh staff
+// tiap hari. Saat direalisasi:
+//  - Kalau setornya PAS (literSetor == literWajib) -> tinggal dicentang,
+//    status jadi SESUAI, tidak perlu ngetik apa-apa.
+//  - Kalau BEDA (kurang/lebih) -> staff ketik jumlah aktual di literSetor,
+//    status jadi SELISIH.
+// Baik SESUAI maupun SELISIH otomatis bikin 1 baris SolarTx (MASUK) supaya
+// nyambung ke saldo Stok Solar yang sudah ada.
+// Sopir yang TIDAK ada di jadwal hari itu tapi tetap setor -> tinggal
+// ditambah baris baru manual dengan terjadwal=false (tidak perlu fitur
+// khusus). Sopir yang setor lebih karena nombok utang solar sebelumnya
+// juga tidak perlu ditangani khusus: saldo utang per sopir dihitung
+// otomatis dari akumulasi (literWajib - literSetor) seluruh baris yang
+// sudah SELISIH/SESUAI (lihat GET /api/solar-jadwal/utang), jadi
+// kelebihan setor hari ini otomatis menutup kekurangan hari-hari lalu.
+model SolarJadwalSetor {
+  id           String      @id @default(cuid())
+  tanggal      DateTime    // tanggal wajib setor
+  nama         String      // nama sopir
+  literWajib   Float
+  noSuratJalan String?     // referensi opsional ke no. Surat Jalan
+  status       StatusSetor @default(BELUM)
+  literSetor   Float?      // diisi saat realisasi (null selama BELUM)
+  terjadwal    Boolean     @default(true) // false = ditambah manual/dadakan (nama tidak ada di list awal)
+  catatan      String?
+  solarTxId    String?     @unique
+  solarTx      SolarTx?    @relation(fields: [solarTxId], references: [id], onDelete: SetNull)
+  createdAt    DateTime    @default(now())
+
+  @@index([tanggal, nama])
 }
 
 model PrintCalib {

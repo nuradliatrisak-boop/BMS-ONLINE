@@ -1,5 +1,6 @@
 import { Router } from "express";
 import prisma from "../prismaClient.js";
+import { buildDefaultDokumenData } from "../config/dokumenConfig.js";
 
 const router = Router();
 
@@ -120,6 +121,12 @@ router.post("/", async (req, res, next) => {
         volume: volume !== undefined && volume !== "" ? Number(volume) : null,
       },
     });
+
+    // Bikinin baris dokumen kelengkapan wajib (kosong dulu): STNK, KIR, Foto Mobil.
+    await prisma.dokumen.createMany({
+      data: buildDefaultDokumenData("MOBIL", armada.id),
+    });
+
     res.status(201).json(armada);
   } catch (e) {
     next(e);
@@ -150,6 +157,9 @@ router.put("/:id", async (req, res, next) => {
 
 router.delete("/:id", async (req, res, next) => {
   try {
+    // Dokumen kelengkapan (STNK/KIR/dst) bukan foreign key (relasi
+    // polimorfik), jadi harus ikut dihapus manual biar tidak jadi sampah.
+    await prisma.dokumen.deleteMany({ where: { asetTipe: "MOBIL", asetId: req.params.id } });
     await prisma.armada.delete({ where: { id: req.params.id } });
     res.status(204).end();
   } catch (e) {

@@ -18,6 +18,10 @@ import stockMasterRoutes from "./routes/stockMaster.js";
 import printCalibRoutes from "./routes/printCalib.js";
 import settingsRoutes from "./routes/settings.js";
 import solarTxRoutes from "./routes/solarTx.js";
+import solarJadwalRoutes from "./routes/solarJadwal.js";
+import kapalRoutes from "./routes/kapal.js";
+import alatBeratUnitRoutes from "./routes/alatBeratUnit.js";
+import dokumenRoutes from "./routes/dokumen.js";
 
 import { requireAuth } from "./middleware/auth.js";
 
@@ -70,6 +74,10 @@ app.use("/api/stock-master", requireAuth, stockMasterRoutes);
 app.use("/api/print-calib", requireAuth, printCalibRoutes);
 app.use("/api/settings", requireAuth, settingsRoutes);
 app.use("/api/solar-tx", requireAuth, solarTxRoutes);
+app.use("/api/solar-jadwal", requireAuth, solarJadwalRoutes);
+app.use("/api/kapal", requireAuth, kapalRoutes);
+app.use("/api/alat-berat-unit", requireAuth, alatBeratUnitRoutes);
+app.use("/api/dokumen", requireAuth, dokumenRoutes);
 
 // Penanganan error terpusat
 app.use((err, req, res, next) => {

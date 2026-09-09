@@ -90,6 +90,21 @@ function doLogout() {
         <span>Alat Berat</span>
       </router-link>
 
+      <router-link to="/alat-berat-unit" @click="closeSidebar">
+        <span class="ic">🔧</span>
+        <span>Dokumen Alat Berat</span>
+      </router-link>
+
+      <router-link to="/kapal" @click="closeSidebar">
+        <span class="ic">🚢</span>
+        <span>Kapal</span>
+      </router-link>
+
+      <router-link to="/solar-jadwal" @click="closeSidebar">
+        <span class="ic">⛽</span>
+        <span>Jadwal Setor Solar</span>
+      </router-link>
+
       <router-link to="/material" @click="closeSidebar">
         <span class="ic">📦</span>
         <span>Material</span>

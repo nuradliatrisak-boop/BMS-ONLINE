@@ -6,58 +6,61 @@
 // otomatis dikirim ke folder Google Drive yang sudah ditentukan, dan yang
 // disimpan di database cuma link-nya.
 //
+// KENAPA PAKAI OAUTH2 (bukan Service Account)?
+// Service Account punya kuota penyimpanan 0 byte. Kalau akun Drive tujuan
+// adalah Gmail biasa (bukan Google Workspace / tidak ada Shared Drive),
+// Service Account akan GAGAL upload dengan error "Service Accounts do not
+// have storage quota". Makanya di sini kita otentikasi pakai akun Gmail
+// kamu sendiri lewat OAuth2 -- file yang di-upload jadi "milik" akun Gmail
+// itu (pakai kuota 15GB gratisnya), bukan milik robot.
+//
 // SETUP YANG DIBUTUHKAN (sekali saja):
 // 1. Buka https://console.cloud.google.com -> buat/pilih project -> aktifkan
 //    "Google Drive API".
-// 2. Bikin Service Account (IAM & Admin > Service Accounts), buat key baru
-//    tipe JSON, lalu download credential-nya.
-// 3. Buka Google Drive, bikin 1 folder khusus (mis. "BMS - Dokumen Aset"),
-//    lalu SHARE folder itu ke alamat email service account
-//    (formatnya: xxxx@xxxx.iam.gserviceaccount.com) dengan akses "Editor".
-// 4. Ambil ID folder itu dari URL-nya:
+// 2. Ke "APIs & Services" > "OAuth consent screen":
+//    - User Type: External -> Create
+//    - Isi App name (bebas), User support email, Developer contact email
+//    - Scopes: skip / next saja
+//    - Test users: TAMBAHKAN email Gmail kamu sendiri di sini (wajib,
+//      karena app belum "Published" / masih mode testing)
+// 3. Ke "APIs & Services" > "Credentials" -> "+ CREATE CREDENTIALS" ->
+//    "OAuth client ID" -> Application type: "Desktop app" -> Create.
+//    Catat CLIENT_ID dan CLIENT_SECRET yang muncul.
+// 4. Jalankan sekali script backend/scripts/getGoogleRefreshToken.js (lihat
+//    file itu untuk caranya) buat dapetin REFRESH_TOKEN. Ini cuma dilakukan
+//    SEKALI di komputer kamu, hasilnya di-copy ke .env server.
+// 5. Buat 1 folder khusus di Google Drive kamu (mis. "BMS - Dokumen Aset"),
+//    ambil ID folder-nya dari URL:
 //    https://drive.google.com/drive/folders/<FOLDER_ID_DI_SINI>
-// 5. Isi 3 env var di .env (lihat .env.example):
-//    - GOOGLE_SERVICE_ACCOUNT_EMAIL
-//    - GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+// 6. Isi 4 env var di .env (lihat .env.example):
+//    - GOOGLE_OAUTH_CLIENT_ID
+//    - GOOGLE_OAUTH_CLIENT_SECRET
+//    - GOOGLE_OAUTH_REFRESH_TOKEN
 //    - GOOGLE_DRIVE_DOKUMEN_FOLDER_ID
-//    (atau, kalau lebih gampang, taruh file JSON credential-nya di server
-//    lalu isi GOOGLE_SERVICE_ACCOUNT_KEY_FILE dengan path-nya, tidak perlu
-//    pecah jadi 2 env var email+private key).
-//
-// CATATAN KUOTA: Service Account itu "akun robot" yang kuota Drive-nya numpang
-// ke pemilik folder kalau foldernya di "My Drive" biasa (limit 15GB gratis
-// dari akun Google yang share folder). Kalau dokumennya banyak & lama-lama
-// mau lebih dari itu, sebaiknya foldernya dipindah ke Shared Drive (perlu
-// Google Workspace) yang kuotanya organisasi, bukan per-akun.
 import { google } from "googleapis";
 import { Readable } from "stream";
 
 const FOLDER_ID = process.env.GOOGLE_DRIVE_DOKUMEN_FOLDER_ID;
 
+let oauthClient = null;
 function getAuth() {
-  const keyFile = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE;
-  if (keyFile) {
-    return new google.auth.GoogleAuth({
-      keyFile,
-      scopes: ["https://www.googleapis.com/auth/drive"],
-    });
-  }
+  if (oauthClient) return oauthClient;
 
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  // Private key dari Google biasanya multi-baris dengan "\n" literal kalau
-  // ditaruh di .env satu baris -- perlu diubah balik jadi newline asli.
-  const key = (process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
 
-  if (!email || !key) {
+  if (!clientId || !clientSecret || !refreshToken) {
     throw new Error(
-      "Kredensial Google Drive belum diisi di .env (GOOGLE_SERVICE_ACCOUNT_EMAIL + " +
-        "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY, atau GOOGLE_SERVICE_ACCOUNT_KEY_FILE)."
+      "Kredensial Google Drive (OAuth2) belum diisi di .env -- butuh " +
+        "GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN. " +
+        "Lihat panduan di backend/src/services/googleDrive.js"
     );
   }
-  return new google.auth.GoogleAuth({
-    credentials: { client_email: email, private_key: key },
-    scopes: ["https://www.googleapis.com/auth/drive"],
-  });
+
+  oauthClient = new google.auth.OAuth2(clientId, clientSecret);
+  oauthClient.setCredentials({ refresh_token: refreshToken });
+  return oauthClient;
 }
 
 let driveClient = null;

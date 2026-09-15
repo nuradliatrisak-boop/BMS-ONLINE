@@ -60,11 +60,15 @@ export const uploadBukti = multer({
 // BEDA dengan uploadBukti: ini pakai memoryStorage (file ditampung di RAM
 // sebagai buffer lewat req.file.buffer), TIDAK ditulis ke disk lokal sama
 // sekali -- karena file ini langsung diteruskan ke Google Drive oleh
-// routes/dokumen.js (lihat services/googleDrive.js). Batas 10MB di bawah
-// jadi penting supaya RAM server tidak kebebanan nampung file gede.
+// routes/dokumen.js (lihat services/googleDrive.js).
+// PENTING soal limit 100MB di bawah: karena file ditampung penuh di RAM
+// (bukan di disk), kalau banyak orang upload file besar BARENGAN, RAM
+// server bisa kepakai banyak sekaligus. Kalau nanti server sering
+// crash/restart pas ada yang upload file besar, turunkan lagi angka ini
+// (atau upgrade paket RAM di Railway).
 export const uploadDokumen = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
   fileFilter: (req, file, cb) => {
     if (!ALLOWED_MIME.includes(file.mimetype)) {
       return cb(new Error("Format file tidak didukung. Pakai foto (JPG/PNG/WEBP) atau PDF."));

@@ -191,7 +191,7 @@ model Kapal {
 // Master data unit Alat Berat/Excavator -- terpisah dari kategori
 // "Alat Berat" di DivisiTx (yang cuma nama bebas untuk pencatatan
 // keuangan). Model ini khusus menyimpan data unit + dokumen
-// kelengkapannya (Invoice, SIA, SIO, foto unit).
+// kelengkapannya (Surat Pelepasan Hak, Invoice, SIA, SIO, foto unit).
 model AlatBeratUnit {
   id        String   @id @default(cuid())
   nama      String
@@ -220,12 +220,18 @@ model Dokumen {
   asetTipe      AsetTipe
   asetId        String
   label         String    // "STNK", "KIR", "Foto Mobil", "Gross Akte", dst -- atau label custom
-  file          String?   // nama file di /uploads/dokumen (opsional)
-  fileNama      String?   // nama file asli saat diupload
+  file          String?   // LEGACY: nama file di /uploads/dokumen (upload lama sebelum pindah ke Drive)
+  fileNama      String?   // nama file asli saat diupload (dipakai baik utk file lokal lama maupun Drive)
+  driveFileId   String?   // ID file di Google Drive (dipakai buat hapus/ganti file)
+  driveViewUrl  String?   // link Google Drive buat lihat/download filenya -- upload BARU disimpan ke sini,
+                           // bukan lagi ke disk lokal (disk hosting gratisan sifatnya sementara)
   nilai         String?   // isian teks/angka untuk kolom opsional yang bukan file
   berlakuSampai DateTime? // opsional, tanggal kadaluarsa dokumen (STNK/KIR/dll)
   catatan       String?
   wajib         Boolean   @default(false) // true = baris bawaan (default), false = ditambah manual/custom
+  butuhFile     Boolean   @default(true)  // false = baris ini cukup diisi teks (kolom `nilai`),
+                                           // TIDAK butuh upload file -- form & panel tidak akan
+                                           // menampilkan input upload untuk baris ini
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

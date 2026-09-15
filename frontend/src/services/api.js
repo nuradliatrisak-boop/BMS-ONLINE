@@ -110,5 +110,13 @@ export const api = {
   upload,
   // Bangun URL lengkap ke file yang diupload (mis. bukti Solar), dari path
   // relatif yang dibalas backend (mis. "/uploads/solar/xxx.jpg").
-  fileUrl: (relPath) => (relPath ? `${BACKEND_ORIGIN}${relPath}` : null),
+  // Dokumen aset (STNK/KIR/Invoice/dst) sekarang linknya ke Google Drive
+  // (URL absolut, https://drive.google.com/...) -- dipakai apa adanya.
+  // Upload lain (bukti setor solar, dst) masih path lokal relatif
+  // ("/uploads/...") -- tetap perlu digabung dengan BACKEND_ORIGIN.
+  fileUrl: (path) => {
+    if (!path) return null;
+    if (/^https?:\/\//i.test(path)) return path;
+    return `${BACKEND_ORIGIN}${path}`;
+  },
 };

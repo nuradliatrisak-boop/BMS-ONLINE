@@ -45,7 +45,8 @@ async function simpanBaris(d) {
   if (d.nilai !== undefined) fd.append("nilai", d.nilai || "");
   if (d.berlakuSampai !== undefined) fd.append("berlakuSampai", d.berlakuSampai || "");
   if (d.catatan !== undefined) fd.append("catatan", d.catatan || "");
-  const fileEl = fileInputs.value[d.id];
+  fd.append("butuhFile", d.butuhFile ? "true" : "false");
+  const fileEl = d.butuhFile ? fileInputs.value[d.id] : null;
   const file = fileEl?.files?.[0];
   if (file) fd.append("file", file);
 
@@ -102,6 +103,7 @@ async function simpanTambah() {
   fd.append("asetTipe", props.asetTipe);
   fd.append("asetId", props.asetId);
   fd.append("label", tambahForm.value.label.trim());
+  fd.append("butuhFile", tambahForm.value.butuhFile ? "true" : "false");
   if (!tambahForm.value.butuhFile) fd.append("nilai", tambahForm.value.nilai || "");
   const file = tambahFileInput.value?.files?.[0];
   if (tambahForm.value.butuhFile && file) fd.append("file", file);
@@ -134,16 +136,35 @@ async function simpanTambah() {
         </div>
 
         <div class="dok-row-body">
-          <div v-if="d.fileUrl" class="dok-file-current">
-            <a :href="api.fileUrl(d.fileUrl)" target="_blank" rel="noopener">📎 {{ d.fileNama || "Lihat file" }}</a>
-            <button type="button" class="link-btn" @click="hapusFile(d)">Hapus file</button>
-          </div>
-
           <div class="row">
             <div class="field">
-              <label>{{ d.fileUrl ? "Ganti File" : "Upload File" }} (opsional)</label>
-              <input type="file" accept="image/*,application/pdf" :ref="(el) => setFileInputRef(d.id, el)" />
+              <label>Tipe Kolom</label>
+              <select v-model="d.butuhFile">
+                <option :value="true">Perlu upload file</option>
+                <option :value="false">Cukup isian teks</option>
+              </select>
             </div>
+          </div>
+
+          <template v-if="d.butuhFile">
+            <div v-if="d.fileUrl" class="dok-file-current">
+              <a :href="api.fileUrl(d.fileUrl)" target="_blank" rel="noopener">📎 {{ d.fileNama || "Lihat file" }}</a>
+              <button type="button" class="link-btn" @click="hapusFile(d)">Hapus file</button>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label>{{ d.fileUrl ? "Ganti File" : "Upload File" }} (opsional)</label>
+                <input type="file" accept="image/*,application/pdf" :ref="(el) => setFileInputRef(d.id, el)" />
+                <small class="hint">Otomatis tersimpan ke Google Drive, bukan ke server.</small>
+              </div>
+              <div class="field">
+                <label>Isian Teks (mis. No. Dokumen)</label>
+                <input v-model="d.nilai" placeholder="Opsional" />
+              </div>
+            </div>
+          </template>
+          <div v-else class="row">
             <div class="field">
               <label>Isian Teks (mis. No. Dokumen)</label>
               <input v-model="d.nilai" placeholder="Opsional" />
@@ -248,6 +269,12 @@ async function simpanTambah() {
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
+}
+.hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted, #6b7280);
 }
 .inline-add-box {
   background: #f7f9fc;

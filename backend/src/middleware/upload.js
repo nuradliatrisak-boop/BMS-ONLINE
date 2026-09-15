@@ -57,23 +57,13 @@ export const uploadBukti = multer({
 });
 
 // Upload untuk Dokumen kelengkapan aset (STNK, KIR, Gross Akte, SIA, dst).
-// Sama polanya dengan uploadBukti, cuma disimpan di subfolder "dokumen"
-// yang terpisah supaya gampang dibedain di /uploads/dokumen/...
-const dokumenStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const sub = path.join(UPLOAD_DIR, "dokumen");
-    ensureDir(sub);
-    cb(null, sub);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || "").slice(0, 10);
-    const unik = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    cb(null, unik);
-  },
-});
-
+// BEDA dengan uploadBukti: ini pakai memoryStorage (file ditampung di RAM
+// sebagai buffer lewat req.file.buffer), TIDAK ditulis ke disk lokal sama
+// sekali -- karena file ini langsung diteruskan ke Google Drive oleh
+// routes/dokumen.js (lihat services/googleDrive.js). Batas 10MB di bawah
+// jadi penting supaya RAM server tidak kebebanan nampung file gede.
 export const uploadDokumen = multer({
-  storage: dokumenStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
     if (!ALLOWED_MIME.includes(file.mimetype)) {

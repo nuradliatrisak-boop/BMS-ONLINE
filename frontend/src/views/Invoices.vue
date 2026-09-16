@@ -10,6 +10,19 @@ const router = useRouter();
 
 const invoices = ref([]);
 const customers = ref([]);
+const search = ref("");
+
+// Filter daftar invoice berdasarkan kata kunci pencarian (no invoice,
+// nama customer, atau divisi) yang diketik user.
+const filteredInvoices = computed(() => {
+  const q = search.value.trim().toLowerCase();
+  if (!q) return invoices.value;
+  return invoices.value.filter((i) =>
+    (i.no || "").toLowerCase().includes(q) ||
+    (i.customer?.nama || "").toLowerCase().includes(q) ||
+    (i.divisi || "").toLowerCase().includes(q)
+  );
+});
 const belumDitagih = ref([]);
 const loadingBelumDitagih = ref(false);
 const loading = ref(true);
@@ -222,10 +235,24 @@ onMounted(load);
     <div v-else class="card invoice-table-card">
       <div class="section-title">
         Daftar Invoice
-        <span class="tag">{{ invoices.length }} Invoice</span>
+        <span class="tag">{{ filteredInvoices.length }} / {{ invoices.length }} Invoice</span>
       </div>
 
-      <div class="table-wrap">
+      <div class="invoice-toolbar">
+        <div class="invoice-search">
+          <div class="search-wrap">
+            <span class="search-icon">⌕</span>
+            <input v-model="search" type="search" placeholder="Cari no invoice, nama customer, atau divisi..." />
+            <button v-if="search" class="search-clear" type="button" @click="search = ''">×</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="!filteredInvoices.length" class="empty">
+        Tidak ada invoice yang cocok dengan pencarian "{{ search }}".
+      </div>
+
+      <div v-else class="table-wrap">
         <table>
           <thead>
             <tr>
@@ -241,7 +268,7 @@ onMounted(load);
           </thead>
 
           <tbody>
-            <tr v-for="i in invoices" :key="i.id" class="clickable-row" @click="goDetail(i.id)">
+            <tr v-for="i in filteredInvoices" :key="i.id" class="clickable-row" @click="goDetail(i.id)">
               <td><span class="invoice-number mono">{{ i.no }}</span></td>
               <td><strong>{{ i.customer?.nama || "-" }}</strong></td>
               <td>{{ i.divisi }}</td>
@@ -381,6 +408,12 @@ onMounted(load);
 </template>
 
 <style scoped>
+.invoice-toolbar { display:flex; align-items:flex-end; gap:14px; padding:0 20px 14px; }
+.invoice-search { flex:1; min-width:240px; max-width:420px; }
+.search-wrap { position:relative; }
+.search-wrap input { padding-left:36px; padding-right:34px; width:100%; }
+.search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--ink-soft); font-size:20px; z-index:1; }
+.search-clear { position:absolute; right:9px; top:50%; transform:translateY(-50%); border:none; background:transparent; color:var(--ink-soft); cursor:pointer; font-size:20px; }
 .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .clickable-row { cursor: pointer; }
 .clickable-row:hover td { background: #f5f8fb; }

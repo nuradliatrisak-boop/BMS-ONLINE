@@ -1,0 +1,82 @@
+[
+  {
+    "sheet": "pajak djp",
+    "keterangan_final": "-> Laporan Divisi (kelompok 'Pajak (DJP)'), 6 baris, tanggal asli."
+  },
+  {
+    "sheet": "harga sihol",
+    "keterangan_final": "-> Customer > Harga (Bp. Sihool & Bp. Moreno), 20 baris harga (bukan transaksi)."
+  },
+  {
+    "sheet": "ponton",
+    "keterangan_final": "-> Laporan Divisi (kelompok 'Perbaikan Ponton & Peralatan'), 9 baris."
+  },
+  {
+    "sheet": "Sheet5",
+    "keterangan_final": "-> Laporan Divisi, 12 baris REFERENSI nominal Rp 0 (9 proyek + 3 piutang) -- datanya kemungkinan sudah tercatat di sheet ALEXANDER dkk, jadi tidak dihitung ulang sbg pemasukan/pengeluaran baru, tapi tetap tersimpan & bisa dicari per nama proyek/customer."
+  },
+  {
+    "sheet": "PT. Vanesa",
+    "keterangan_final": "-> Laporan Divisi, 3 baris (batu kali, pasir pasang, pasir urug) kelompok '[PENAWARAN]' -- harga referensi/penawaran, bukan invoice resmi (tanggal estimasi)."
+  },
+  {
+    "sheet": "jemb.cint",
+    "keterangan_final": "-> Laporan Divisi, 1 baris, invoice BMS-YB002, tanggal asli."
+  },
+  {
+    "sheet": "BOQ KM",
+    "keterangan_final": "-> Laporan Divisi, 2 baris (total tagihan per customer), tanggal asli."
+  },
+  {
+    "sheet": "HARGA BRAM",
+    "keterangan_final": "-> Customer > Harga (Bp. Bram), 7 baris harga."
+  },
+  {
+    "sheet": "Sheet2",
+    "keterangan_final": "-> Laporan Divisi, 1 baris kelompok '[PENAWARAN]' (penawaran service genset, total setelah PPN/PPh), tanggal estimasi."
+  },
+  {
+    "sheet": "Sheet6",
+    "keterangan_final": "-> Laporan Divisi, 17 baris REFERENSI nominal Rp 0 (laba bersih, piutang, margin kontraktor, hutang) -- angka aslinya tersimpan di keterangan, sengaja Rp 0 supaya tidak dobel hitung dgn transaksi yg sudah tercatat."
+  },
+  {
+    "sheet": "Sheet7",
+    "keterangan_final": "DIKECUALIKAN -- data pemilu/partai politik, bukan data bisnis sama sekali (sepertinya ter-paste tidak sengaja). Tidak dimasukkan ke sistem manapun."
+  },
+  {
+    "sheet": "harga alam jaya",
+    "keterangan_final": "-> Customer > Harga (customer baru 'TB. Alam Jaya', dibuat otomatis), 7 baris harga."
+  },
+  {
+    "sheet": "ibat",
+    "keterangan_final": "-> Laporan Divisi (kelompok 'Pengambilan Pasir Empat Pilar Utama'), 6 baris, tanggal asli."
+  },
+  {
+    "sheet": "PO.LTM",
+    "keterangan_final": "-> Laporan Divisi, 11 baris REFERENSI nominal Rp 0 (per customer) -- No PO/No Invoice yg tercantum kemungkinan sudah tercatat di sheet customer masing-masing."
+  },
+  {
+    "sheet": "fachry",
+    "keterangan_final": "-> Laporan Divisi, 1 baris, invoice BMS-OF001, tanggal asli."
+  },
+  {
+    "sheet": "SIMPHINK",
+    "keterangan_final": "-> Laporan Divisi, 1 baris, total tagihan, tanggal estimasi (dari tgl deposit)."
+  },
+  {
+    "sheet": "proyek xbekasi",
+    "keterangan_final": "-> Laporan Divisi, 2 baris kelompok '[PENAWARAN]' (harga jual & estimasi modal proyek Kali Bekasi ke PT. Brantas) -- belum ada SPK/kontrak, tanggal estimasi."
+  },
+  {
+    "sheet": "rekap 3",
+    "keterangan_final": "-> Laporan Divisi (kelompok 'Kasbon'), 11 baris kasbon Bp. Tri, tanggal asli."
+  },
+  {
+    "sheet": "pitaco",
+    "keterangan_final": "-> Laporan Divisi, 4 baris total tagihan per paket/tahun, sebagian tanggal asli sebagian estimasi."
+  },
+  {
+    "sheet": "KUBUS",
+    "keterangan_final": "-> Laporan Divisi, 4 baris total tagihan per customer, tanggal estimasi."
+  }
+]

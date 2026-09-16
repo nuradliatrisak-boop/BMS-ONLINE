@@ -275,6 +275,14 @@ model InvoiceItem {
   qty          Float
   satuan       String?
   hargaSatuan  Float
+  // --- khusus penagihan SEWA ALAT BERAT (opsional, boleh null untuk
+  // invoice material/armada biasa) ---
+  kategoriAlat String?   // "Bucket" / "Breker" / "Mobilisasi" -> dipakai statistik per kategori alat
+  unitAlat     String?   // nama unit alatnya, mis. "PC 200", "SANY PC - 075", "Longarm"
+  tglPakai     DateTime? // tanggal pemakaian alat pada baris ini (bukan tanggal invoice)
+
+  @@index([kategoriAlat])
+  @@index([unitAlat])
 }
 
 model Pembayaran {

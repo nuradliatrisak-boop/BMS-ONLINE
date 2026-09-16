@@ -11,17 +11,54 @@ const router = useRouter();
 const invoices = ref([]);
 const customers = ref([]);
 const search = ref("");
+// Pencarian dropdown: customer / divisi / status pembayaran. Dipakai bareng
+// kotak pencarian teks di sebelahnya (dua-duanya saling menyaring).
+const filterCustomerId = ref("");
+const filterDivisi = ref("");
+const filterStatus = ref("");
 
-// Filter daftar invoice berdasarkan kata kunci pencarian (no invoice,
-// nama customer, atau divisi) yang diketik user.
+// Isi dropdown customer diambil dari invoice yang ada, supaya daftarnya tidak
+// kepanjangan oleh customer yang belum pernah ditagih.
+const customerOptions = computed(() => {
+  const map = new Map();
+  for (const i of invoices.value) {
+    if (i.customer?.id) map.set(i.customer.id, i.customer.nama);
+  }
+  return [...map.entries()]
+    .map(([id, nama]) => ({ id, nama }))
+    .sort((a, b) => a.nama.localeCompare(b.nama));
+});
+
+const divisiOptions = computed(() =>
+  [...new Set(invoices.value.map((i) => i.divisi).filter(Boolean))].sort()
+);
+
+const adaFilterAktif = computed(
+  () => !!(search.value || filterCustomerId.value || filterDivisi.value || filterStatus.value)
+);
+
+function resetFilter() {
+  search.value = "";
+  filterCustomerId.value = "";
+  filterDivisi.value = "";
+  filterStatus.value = "";
+}
+
+// Filter daftar invoice: kata kunci (no invoice / nama customer / divisi)
+// digabung dengan pilihan dropdown di atas tabel.
 const filteredInvoices = computed(() => {
   const q = search.value.trim().toLowerCase();
-  if (!q) return invoices.value;
-  return invoices.value.filter((i) =>
-    (i.no || "").toLowerCase().includes(q) ||
-    (i.customer?.nama || "").toLowerCase().includes(q) ||
-    (i.divisi || "").toLowerCase().includes(q)
-  );
+  return invoices.value.filter((i) => {
+    if (filterCustomerId.value && i.customer?.id !== filterCustomerId.value) return false;
+    if (filterDivisi.value && i.divisi !== filterDivisi.value) return false;
+    if (filterStatus.value && i.status !== filterStatus.value) return false;
+    if (!q) return true;
+    return (
+      (i.no || "").toLowerCase().includes(q) ||
+      (i.customer?.nama || "").toLowerCase().includes(q) ||
+      (i.divisi || "").toLowerCase().includes(q)
+    );
+  });
 });
 const belumDitagih = ref([]);
 const loadingBelumDitagih = ref(false);
@@ -246,10 +283,31 @@ onMounted(load);
             <button v-if="search" class="search-clear" type="button" @click="search = ''">×</button>
           </div>
         </div>
+
+        <select v-model="filterCustomerId" class="filter-select" title="Saring per customer">
+          <option value="">— Semua customer —</option>
+          <option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.nama }}</option>
+        </select>
+
+        <select v-model="filterDivisi" class="filter-select" title="Saring per divisi">
+          <option value="">— Semua divisi —</option>
+          <option v-for="d in divisiOptions" :key="d" :value="d">{{ d }}</option>
+        </select>
+
+        <select v-model="filterStatus" class="filter-select" title="Saring per status pembayaran">
+          <option value="">— Semua status —</option>
+          <option value="BELUM">Belum bayar</option>
+          <option value="SEBAGIAN">Bayar sebagian</option>
+          <option value="LUNAS">Lunas</option>
+        </select>
+
+        <button v-if="adaFilterAktif" class="btn btn-ghost btn-sm" type="button" @click="resetFilter">
+          Reset filter
+        </button>
       </div>
 
       <div v-if="!filteredInvoices.length" class="empty">
-        Tidak ada invoice yang cocok dengan pencarian "{{ search }}".
+        Tidak ada invoice yang cocok dengan pencarian/filter yang dipilih.
       </div>
 
       <div v-else class="table-wrap">
@@ -410,6 +468,7 @@ onMounted(load);
 <style scoped>
 .invoice-toolbar { display:flex; align-items:flex-end; gap:14px; padding:0 20px 14px; }
 .invoice-search { flex:1; min-width:240px; max-width:420px; }
+.filter-select { min-width:170px; max-width:230px; }
 .search-wrap { position:relative; }
 .search-wrap input { padding-left:36px; padding-right:34px; width:100%; }
 .search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--ink-soft); font-size:20px; z-index:1; }

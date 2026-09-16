@@ -435,6 +435,13 @@ onMounted(load);
                 <td>
                   {{ it.keterangan }}
                   <div v-if="it.suratJalan" class="item-sj-sub">SJ: {{ it.suratJalan.no }}</div>
+                  <!-- Penanda baris sewa alat berat: kategori (Bucket/Breker/
+                       Mobilisasi) & unit alatnya. Baris inilah yang dijumlah
+                       di menu "Rekap Sewa Alat" dan statistik Dashboard. -->
+                  <div v-if="it.kategoriAlat" class="item-sj-sub">
+                    <span class="badge">{{ it.kategoriAlat }}</span>
+                    <span v-if="it.unitAlat"> {{ it.unitAlat }}</span>
+                  </div>
                 </td>
 
                 <td class="num mono">

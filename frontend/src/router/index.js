@@ -20,6 +20,7 @@ import Settings from "../views/Settings.vue";
 import SolarJadwal from "../views/SolarJadwal.vue";
 import Kapal from "../views/Kapal.vue";
 import AlatBeratUnit from "../views/AlatBeratUnit.vue";
+import RekapAlat from "../views/RekapAlat.vue";
 
 const routes = [
   { path: "/login", name: "login", component: Login, meta: { public: true } },
@@ -41,6 +42,7 @@ const routes = [
   { path: "/solar-jadwal", name: "solar-jadwal", component: SolarJadwal },
   { path: "/kapal", name: "kapal", component: Kapal },
   { path: "/alat-berat-unit", name: "alat-berat-unit", component: AlatBeratUnit },
+  { path: "/rekap-alat", name: "rekap-alat", component: RekapAlat },
 ];
 
 const router = createRouter({

@@ -22,6 +22,7 @@ import solarJadwalRoutes from "./routes/solarJadwal.js";
 import kapalRoutes from "./routes/kapal.js";
 import alatBeratUnitRoutes from "./routes/alatBeratUnit.js";
 import dokumenRoutes from "./routes/dokumen.js";
+import rekapAlatRoutes from "./routes/rekapAlat.js";
 
 import { requireAuth } from "./middleware/auth.js";
 
@@ -78,6 +79,7 @@ app.use("/api/solar-jadwal", requireAuth, solarJadwalRoutes);
 app.use("/api/kapal", requireAuth, kapalRoutes);
 app.use("/api/alat-berat-unit", requireAuth, alatBeratUnitRoutes);
 app.use("/api/dokumen", requireAuth, dokumenRoutes);
+app.use("/api/rekap-alat", requireAuth, rekapAlatRoutes);
 
 // Penanganan error terpusat
 app.use((err, req, res, next) => {

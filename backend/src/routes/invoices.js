@@ -123,6 +123,12 @@ async function buildItemData(tx, it) {
     qty: Number(qty) || 0,
     satuan: satuan || null,
     hargaSatuan: Number(it.hargaSatuan) || 0,
+    // Khusus baris SEWA ALAT BERAT (opsional). Kalau diisi, baris ini ikut
+    // terhitung di menu "Rekap Sewa Alat" & statistik per kategori alat di
+    // Dashboard. Invoice material/armada biasa cukup dibiarkan kosong.
+    kategoriAlat: it.kategoriAlat || null,
+    unitAlat: it.unitAlat || null,
+    tglPakai: it.tglPakai ? new Date(it.tglPakai) : null,
   };
 }
 

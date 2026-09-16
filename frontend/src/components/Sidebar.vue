@@ -120,6 +120,11 @@ function doLogout() {
         <span>Surat Jalan</span>
       </router-link>
 
+      <router-link to="/rekap-alat" @click="closeSidebar">
+        <span class="ic">⛏️</span>
+        <span>Rekap Sewa Alat</span>
+      </router-link>
+
       <router-link to="/rekap-penjualan" @click="closeSidebar">
         <span class="ic">🧾</span>
         <span>Rekap Penjualan</span>

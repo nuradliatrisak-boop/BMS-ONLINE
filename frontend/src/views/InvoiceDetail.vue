@@ -287,6 +287,76 @@ async function updateItemHarga(item) {
   }
 }
 
+// --- TAMBAH ITEM MANUAL (khusus sewa alat berat / item non-Surat Jalan) ---
+const showManualItemModal = ref(false);
+const savingManualItem = ref(false);
+const KATEGORI_ALAT_OPSI = ["Bucket", "Breker", "Mobilisasi"];
+const manualItem = ref({
+  tanggal: new Date().toISOString().slice(0, 10),
+  unitAlat: "",
+  kategoriAlat: "Bucket",
+  qty: 1,
+  satuan: "jam",
+  hargaSatuan: 0,
+});
+
+function resetManualItemForm() {
+  manualItem.value = {
+    tanggal: new Date().toISOString().slice(0, 10),
+    unitAlat: "",
+    kategoriAlat: "Bucket",
+    qty: 1,
+    satuan: "jam",
+    hargaSatuan: 0,
+  };
+}
+
+function openAddManualItemModal() {
+  resetManualItemForm();
+  showManualItemModal.value = true;
+}
+
+// Susun teks "keterangan" otomatis dari tanggal + unit + kategori, supaya
+// staf tidak perlu ngetik manual tapi tetap konsisten formatnya dengan data
+// hasil import Excel.
+function manualItemKeterangan() {
+  const tgl = manualItem.value.tanggal
+    ? new Date(manualItem.value.tanggal).toLocaleDateString("id-ID", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+      })
+    : "";
+  const bagian = [tgl, manualItem.value.unitAlat, manualItem.value.kategoriAlat].filter(Boolean);
+  return bagian.join(" — ") || "Sewa alat";
+}
+
+async function submitManualItem() {
+  if (manualItem.value.kategoriAlat !== "Mobilisasi" && !manualItem.value.unitAlat) {
+    return toast("Isi nama unit alatnya dulu (mis. PC 200, SANY PC-075)");
+  }
+  if (!manualItem.value.hargaSatuan) {
+    return toast("Isi harga satuannya dulu");
+  }
+  savingManualItem.value = true;
+  try {
+    invoice.value = await api.post(`/invoices/${route.params.id}/items`, {
+      keterangan: manualItemKeterangan(),
+      qty: Number(manualItem.value.qty) || 0,
+      satuan: manualItem.value.kategoriAlat === "Mobilisasi" ? "ls" : manualItem.value.satuan,
+      hargaSatuan: Number(manualItem.value.hargaSatuan) || 0,
+      kategoriAlat: manualItem.value.kategoriAlat,
+      unitAlat: manualItem.value.unitAlat || null,
+      tglPakai: manualItem.value.tanggal || null,
+    });
+    toast("Item berhasil ditambahkan");
+    showManualItemModal.value = false;
+    await load();
+  } catch (e) {
+    toast(e?.message || "Gagal menambahkan item");
+  } finally {
+    savingManualItem.value = false;
+  }
+}
+
 async function hapusItem(item) {
   if (!confirm("Hapus baris item ini dari invoice?")) return;
   try {
@@ -407,13 +477,16 @@ onMounted(load);
               {{ invoice.status }}
             </span>
 
-            <button
-              class="btn btn-sm btn-ghost"
-              style="margin-left:auto"
-              @click="openAddItemModal"
-            >
-              + Tambah Item
-            </button>
+            <div style="margin-left:auto; display:flex; gap:6px">
+              <button class="btn btn-sm btn-ghost" @click="openAddItemModal">
+                + Dari Surat Jalan
+              </button>
+              <!-- Tambah baris manual: dipakai untuk sewa alat berat (jam kerja,
+                   mobilisasi) atau item lain yang tidak berasal dari Surat Jalan. -->
+              <button class="btn btn-sm btn-ghost" @click="openAddManualItemModal">
+                + Tambah Manual
+              </button>
+            </div>
           </div>
 
           <table>
@@ -635,6 +708,72 @@ onMounted(load);
           <button class="btn btn-ghost" :disabled="savingAddItem" @click="showAddItemModal = false">Batal</button>
           <button class="btn btn-primary" :disabled="savingAddItem" @click="submitAddItems">
             {{ savingAddItem ? "Menyimpan..." : "Tambahkan Item Terpilih" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL TAMBAH ITEM MANUAL (sewa alat berat, dll) -->
+    <div v-if="showManualItemModal" class="modal-bg" @click.self="showManualItemModal = false">
+      <div class="modal" style="max-width:520px">
+        <button class="modal-close" @click="showManualItemModal = false">×</button>
+        <h2>Tambah Item Manual</h2>
+        <div class="msub">
+          Untuk baris sewa alat berat (jam kerja / mobilisasi) atau item lain
+          yang bukan dari Surat Jalan.
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Tanggal Pakai</label>
+            <input v-model="manualItem.tanggal" type="date" />
+          </div>
+          <div class="field">
+            <label>Kategori Alat</label>
+            <select v-model="manualItem.kategoriAlat">
+              <option v-for="k in KATEGORI_ALAT_OPSI" :key="k" :value="k">{{ k }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field" v-if="manualItem.kategoriAlat !== 'Mobilisasi'">
+          <label>Unit Alat</label>
+          <input v-model="manualItem.unitAlat" placeholder="mis. PC 200, SANY PC-075" />
+        </div>
+        <div class="field" v-else>
+          <label>Keterangan Mobilisasi <span class="optional">(opsional)</span></label>
+          <input v-model="manualItem.unitAlat" placeholder="mis. Mobilisasi PC 200 ke lokasi" />
+        </div>
+
+        <div class="row row-3" v-if="manualItem.kategoriAlat !== 'Mobilisasi'">
+          <div class="field">
+            <label>Jam Kerja</label>
+            <input v-model.number="manualItem.qty" type="number" min="0" step="0.5" />
+          </div>
+          <div class="field">
+            <label>Harga / Jam</label>
+            <input v-model.number="manualItem.hargaSatuan" type="number" min="0" />
+          </div>
+          <div class="field">
+            <label>Subtotal</label>
+            <div class="mono" style="padding-top:8px">
+              {{ rupiah((Number(manualItem.qty)||0) * (Number(manualItem.hargaSatuan)||0)) }}
+            </div>
+          </div>
+        </div>
+        <div class="row" v-else>
+          <div class="field">
+            <label>Biaya Mobilisasi</label>
+            <input v-model.number="manualItem.hargaSatuan" type="number" min="0" />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" :disabled="savingManualItem" @click="showManualItemModal = false">
+            Batal
+          </button>
+          <button class="btn btn-primary" :disabled="savingManualItem" @click="submitManualItem">
+            {{ savingManualItem ? "Menyimpan..." : "Tambahkan" }}
           </button>
         </div>
       </div>

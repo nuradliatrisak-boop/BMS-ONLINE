@@ -256,19 +256,18 @@ router.post("/", async (req, res, next) => {
     if (
       !divisi ||
       !customerId ||
-      !tanggal ||
-      !items?.length
+      !tanggal
     ) {
       return res.status(400).json({
         error:
-          "Divisi, customer, tanggal, dan minimal 1 item wajib diisi",
+          "Divisi, customer, dan tanggal wajib diisi",
       });
     }
 
     const invoice = await prisma.$transaction(async (tx) => {
       const no = await generateNomorInvoice(tx, tanggal);
       const itemsData = await Promise.all(
-        items.map((it) => buildItemData(tx, it))
+        (items || []).map((it) => buildItemData(tx, it))
       );
 
       return tx.invoice.create({

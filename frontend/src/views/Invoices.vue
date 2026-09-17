@@ -193,10 +193,6 @@ function validateForm() {
     toast("Tanggal invoice wajib diisi");
     return false;
   }
-  if (!selectedRows.value.length) {
-    toast("Pilih minimal 1 surat jalan yang mau ditagihkan");
-    return false;
-  }
   return true;
 }
 
@@ -353,7 +349,7 @@ onMounted(load);
 
       <h2>Buat Invoice Baru</h2>
       <div class="msub">
-        Pilih surat jalan customer yang belum ditagih. Nomor invoice dibuat otomatis.
+        Nomor invoice dibuat otomatis. Pilih surat jalan di bawah kalau ada pengiriman material yang mau ditagihkan — kalau invoice ini khusus sewa alat, boleh dikosongkan, nanti diisi lewat "+ Tambah Manual" setelah invoice dibuat.
       </div>
 
       <div class="auto-number-box">
@@ -397,7 +393,7 @@ onMounted(load);
       </div>
 
       <div class="section-title" style="margin-top: 8px">
-        Surat Jalan Belum Ditagih
+        Surat Jalan Belum Ditagih <span class="optional">(opsional)</span>
         <span class="tag">{{ selectedRows.length }} / {{ rows.length }} dipilih</span>
       </div>
 

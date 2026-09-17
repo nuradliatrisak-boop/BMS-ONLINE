@@ -237,10 +237,6 @@ function validateForm() {
     toast("Divisi wajib dipilih");
     return false;
   }
-  if (!form.value.customerId) {
-    toast("Customer wajib dipilih");
-    return false;
-  }
   if (!form.value.penerima?.trim()) {
     toast("Penerima wajib diisi");
     return false;
@@ -550,7 +546,7 @@ onMounted(load);
 
       <h2>{{ editingId ? "Edit Surat Jalan" : "Buat Surat Jalan" }}</h2>
       <div class="msub">
-        Isi informasi pengiriman. Nomor surat jalan akan dibuat otomatis oleh sistem.
+        Isi informasi pengiriman. Nomor surat jalan akan dibuat otomatis oleh sistem. Kalau pembeli kontan/tidak terdaftar, Customer boleh dikosongkan — isi Penerima & Tujuan manual saja.
       </div>
 
       <div class="row">
@@ -562,7 +558,7 @@ onMounted(load);
         </div>
 
         <div class="field">
-          <label>Customer <span class="optional">(A/P Dari)</span></label>
+          <label>Customer <span class="optional">(opsional — A/P Dari)</span></label>
           <div class="combobox">
             <input
               v-model="customerSearch"

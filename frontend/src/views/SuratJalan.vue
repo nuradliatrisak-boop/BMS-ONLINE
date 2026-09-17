@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { printSJ } from "../services/print.js";
+import SearchableSelect from "../components/SearchableSelect.vue";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -614,19 +615,22 @@ onMounted(load);
 
       <div class="field">
         <label>Jenis Barang / Stock</label>
-        <select v-model="form.jenisBarang">
-          <option value="">Pilih jenis barang...</option>
-          <option v-for="s in stockMasterList" :key="s.id" :value="s.nama">{{ s.kode }} — {{ s.nama }}</option>
-        </select>
+        <SearchableSelect
+          v-model="form.jenisBarang"
+          :options="stockMasterList.map(s => ({ value: s.nama, label: `${s.kode} — ${s.nama}` }))"
+          placeholder="Pilih jenis barang..."
+        />
       </div>
 
       <div class="row">
         <div class="field">
           <label>Armada <span class="optional">(opsional)</span></label>
-          <select v-model="form.armadaId" @change="onArmadaChange">
-            <option value="">- Pilih armada, atau isi manual di bawah -</option>
-            <option v-for="a in armadaList" :key="a.id" :value="a.id">{{ a.nopol }} — {{ a.jenis }}</option>
-          </select>
+          <SearchableSelect
+            v-model="form.armadaId"
+            @change="onArmadaChange"
+            :options="armadaList.map(a => ({ value: a.id, label: `${a.nopol} — ${a.jenis}` }))"
+            placeholder="- Pilih armada, atau isi manual di bawah -"
+          />
         </div>
         <div class="field">
           <label>Tanggal</label>

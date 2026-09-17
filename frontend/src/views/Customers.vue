@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
+import SearchableSelect from "../components/SearchableSelect.vue";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -535,10 +536,12 @@ onMounted(() => {
         <div class="field"><label>Armada / Tarif</label><select v-model="priceForm.vehicleType"><option value="CD">CD / Colt Diesel</option><option value="TRONTON">Tronton</option></select></div>
         <div class="field">
           <label>Kode Stock</label>
-          <select v-model="priceForm.stockCode" @change="onStockCodeChange">
-            <option value="" disabled>Pilih kode stock...</option>
-            <option v-for="s in stockMasterList.filter(x => x.aktif !== false)" :key="s.id" :value="s.kode">{{ s.kode }} — {{ s.nama }}</option>
-          </select>
+          <SearchableSelect
+            v-model="priceForm.stockCode"
+            @change="onStockCodeChange"
+            :options="stockMasterList.filter(x => x.aktif !== false).map(s => ({ value: s.kode, label: `${s.kode} — ${s.nama}` }))"
+            placeholder="Pilih kode stock..."
+          />
           <div class="stock-actions">
             <button type="button" class="link-btn" @click="showNewStock = !showNewStock">+ Kode stock belum ada di daftar?</button>
             <button type="button" class="link-btn" @click="showStockManager = !showStockManager">Kelola kode stock</button>

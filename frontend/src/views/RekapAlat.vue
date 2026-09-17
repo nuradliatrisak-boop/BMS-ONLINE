@@ -6,6 +6,7 @@
 // Semua angka di sini diambil dari tabel Invoice, jadi sama persis dengan
 // yang tampil di Dashboard & daftar Invoice -- bukan hitungan terpisah.
 import { ref, onMounted, computed, watch } from "vue";
+import SearchableSelect from "../components/SearchableSelect.vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 
@@ -136,12 +137,11 @@ onMounted(async () => {
       <div class="grid g4">
         <div class="field">
           <label>Customer</label>
-          <select v-model="filter.customerId">
-            <option value="">— Semua customer —</option>
-            <option v-for="c in opsi.customer" :key="c.id" :value="c.id">
-              {{ c.nama }}
-            </option>
-          </select>
+          <SearchableSelect
+            v-model="filter.customerId"
+            :options="opsi.customer.map(c => ({ value: c.id, label: c.nama }))"
+            placeholder="— Semua customer —"
+          />
         </div>
         <div class="field">
           <label>Kategori Alat</label>
@@ -152,10 +152,11 @@ onMounted(async () => {
         </div>
         <div class="field">
           <label>Unit Alat</label>
-          <select v-model="filter.unit">
-            <option value="">— Semua unit —</option>
-            <option v-for="u in opsi.unit" :key="u" :value="u">{{ u }}</option>
-          </select>
+          <SearchableSelect
+            v-model="filter.unit"
+            :options="opsi.unit.map(u => ({ value: u, label: u }))"
+            placeholder="— Semua unit —"
+          />
         </div>
         <div class="field">
           <label>Kata kunci</label>

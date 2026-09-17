@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
+import SearchableSelect from "../components/SearchableSelect.vue";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -280,10 +281,12 @@ onMounted(load);
           </div>
         </div>
 
-        <select v-model="filterCustomerId" class="filter-select" title="Saring per customer">
-          <option value="">— Semua customer —</option>
-          <option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.nama }}</option>
-        </select>
+        <SearchableSelect
+          v-model="filterCustomerId"
+          class="filter-select"
+          :options="customerOptions.map(c => ({ value: c.id, label: c.nama }))"
+          placeholder="— Semua customer —"
+        />
 
         <select v-model="filterDivisi" class="filter-select" title="Saring per divisi">
           <option value="">— Semua divisi —</option>
@@ -370,10 +373,11 @@ onMounted(load);
         </div>
         <div class="field">
           <label>Customer</label>
-          <select v-model="form.customerId">
-            <option value="" disabled>Pilih customer</option>
-            <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.kode }} — {{ c.nama }}</option>
-          </select>
+          <SearchableSelect
+            v-model="form.customerId"
+            :options="customers.map(c => ({ value: c.id, label: `${c.kode} — ${c.nama}` }))"
+            placeholder="Pilih customer"
+          />
         </div>
       </div>
 

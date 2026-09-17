@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
+import SearchableSelect from "../components/SearchableSelect.vue";
 
 const customers = ref([]);
 const rows = ref([]);
@@ -283,10 +284,11 @@ onMounted(async () => {
         </div>
         <div class="field">
           <label>Customer</label>
-          <select v-model="filter.customerId">
-            <option value="">Semua Customer</option>
-            <option v-for="c in filteredCustomerOptions" :key="c.id" :value="c.id">{{ c.kode }} — {{ c.nama }}</option>
-          </select>
+          <SearchableSelect
+            v-model="filter.customerId"
+            :options="filteredCustomerOptions.map(c => ({ value: c.id, label: `${c.kode} — ${c.nama}` }))"
+            placeholder="Semua Customer"
+          />
         </div>
         <div class="field">
           <label>Durasi</label>
@@ -418,7 +420,7 @@ onMounted(async () => {
       <div class="msub">Masukkan satu baris transaksi. Total dihitung otomatis dari jumlah × harga.</div>
 
       <div class="row">
-        <div class="field"><label>Customer</label><select v-model="form.customerId"><option v-for="c in customers" :key="c.id" :value="c.id">{{ c.kode }} — {{ c.nama }}</option></select></div>
+        <div class="field"><label>Customer</label><SearchableSelect v-model="form.customerId" :options="customers.map(c => ({ value: c.id, label: `${c.kode} — ${c.nama}` }))" placeholder="Pilih customer" /></div>
         <div class="field"><label>Tanggal</label><input v-model="form.tanggal" type="date" /></div>
       </div>
       <div class="row">
@@ -427,10 +429,12 @@ onMounted(async () => {
       </div>
       <div class="field">
         <label>Pilih Harga Customer (opsional)</label>
-        <select v-model="form.hargaKey" @change="applyPrice">
-          <option value="">-- Pilih master harga --</option>
-          <option v-for="p in priceOptions" :key="p.id" :value="`${p.destinationCode}|${p.stockCode}`">{{ p.destinationCode }} / {{ p.stockCode }} — {{ p.stockName }} — {{ rupiah(p.hargaM3) }}</option>
-        </select>
+        <SearchableSelect
+          v-model="form.hargaKey"
+          @change="applyPrice"
+          :options="priceOptions.map(p => ({ value: `${p.destinationCode}|${p.stockCode}`, label: `${p.destinationCode} / ${p.stockCode} — ${p.stockName}`, sub: rupiah(p.hargaM3) }))"
+          placeholder="-- Pilih master harga --"
+        />
       </div>
       <div class="field"><label>Jenis Barang</label><input v-model="form.jenisBarang" placeholder="Pasir Bangka / Split / Batu Belah" /></div>
       <div class="row row-4">

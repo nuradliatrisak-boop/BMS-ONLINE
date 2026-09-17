@@ -188,3 +188,120 @@ function escapeHtml(v) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
+
+// Upgrade <select> biasa jadi bisa diketik buat nyaring opsi (dipakai buat
+// dropdown yang isinya banyak: customer, stock, armada, dll), tanpa perlu
+// ubah kode lain yang sudah baca/tulis ".value" atau dengar event "change"
+// dari select itu -- select aslinya tetap ada di DOM (disembunyikan),
+// cuma ditambah tampilan input+daftar di atasnya, dan disinkronkan otomatis.
+//
+// Pemakaian: panggil sekali setelah elemen <select>-nya ada di DOM, boleh
+// sebelum opsinya diisi (baru keisi belakangan lewat appendChild, tetap
+// otomatis ke-refresh):
+//   makeSearchableSelect(document.getElementById("customerId"), { placeholder: "Cari customer..." });
+function makeSearchableSelect(select, opts) {
+  if (!select || select.getAttribute("data-searchable") === "1") return;
+  select.setAttribute("data-searchable", "1");
+  opts = opts || {};
+
+  var wrap = document.createElement("div");
+  wrap.className = "ss-wrap";
+  select.parentNode.insertBefore(wrap, select);
+  wrap.appendChild(select);
+  select.className = (select.className || "") + " ss-native";
+
+  var input = document.createElement("input");
+  input.type = "text";
+  input.className = "ss-input";
+  input.autocomplete = "off";
+  input.placeholder = opts.placeholder || "Ketik untuk cari...";
+  wrap.appendChild(input);
+
+  var list = document.createElement("div");
+  list.className = "ss-list";
+  list.style.display = "none";
+  wrap.appendChild(list);
+
+  function currentLabel() {
+    var opt = select.options[select.selectedIndex];
+    return opt ? opt.textContent : "";
+  }
+
+  function renderList(filter) {
+    list.innerHTML = "";
+    var q = (filter || "").toLowerCase();
+    var any = false;
+    for (var i = 0; i < select.options.length; i++) {
+      var opt = select.options[i];
+      if (opt.disabled) continue;
+      var text = opt.textContent;
+      if (q && text.toLowerCase().indexOf(q) === -1) continue;
+      any = true;
+      (function (opt, text) {
+        var item = document.createElement("div");
+        item.className = "ss-item";
+        if (opt.value === select.value) item.className += " active";
+        item.textContent = text;
+        item.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          select.value = opt.value;
+          input.value = text;
+          list.style.display = "none";
+          var ev;
+          try {
+            ev = new Event("change", { bubbles: true });
+          } catch (err) {
+            ev = document.createEvent("Event");
+            ev.initEvent("change", true, true);
+          }
+          select.dispatchEvent(ev);
+        });
+        list.appendChild(item);
+      })(opt, text);
+    }
+    if (!any) {
+      var empty = document.createElement("div");
+      empty.className = "ss-empty";
+      empty.textContent = "Tidak ada hasil";
+      list.appendChild(empty);
+    }
+    list.style.display = "block";
+  }
+
+  input.addEventListener("focus", function () {
+    input.value = "";
+    renderList("");
+  });
+  input.addEventListener("input", function () {
+    renderList(input.value);
+  });
+  input.addEventListener("blur", function () {
+    setTimeout(function () {
+      list.style.display = "none";
+      input.value = currentLabel();
+    }, 150);
+  });
+
+  // Supaya kode lain yang set "select.value = ..." langsung dari luar
+  // (misal setelah reload data) tetap bikin tampilan input ini ikut update.
+  var nativeDescriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+  Object.defineProperty(select, "value", {
+    get: function () {
+      return nativeDescriptor.get.call(select);
+    },
+    set: function (v) {
+      nativeDescriptor.set.call(select, v);
+      input.value = currentLabel();
+    },
+    configurable: true,
+  });
+
+  // Banyak halaman ngisi <option> belakangan (setelah fetch API selesai),
+  // jadi label yang ditampilkan perlu ikut di-refresh begitu itu terjadi.
+  var mo = new MutationObserver(function () {
+    input.value = currentLabel();
+  });
+  mo.observe(select, { childList: true });
+
+  input.value = currentLabel();
+}

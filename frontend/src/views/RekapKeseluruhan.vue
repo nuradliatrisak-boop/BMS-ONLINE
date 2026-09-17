@@ -6,6 +6,7 @@ import { printRekapKeseluruhan } from "../services/print.js";
 import { exportRekapKeseluruhanExcel } from "../utils/excelExport.js";
 import { exportRekapKeseluruhanPdf } from "../utils/pdfExport.js";
 import InvoiceDrilldownModal from "../components/InvoiceDrilldownModal.vue";
+import RincianTransaksiModal from "../components/RincianTransaksiModal.vue";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -24,10 +25,29 @@ const divisiPilihan = ref("ALL"); // "ALL" = semua divisi sekaligus
 // yang jadi sumber angka itu (divisi baris tsb + rentang tanggal filter).
 const showDrilldown = ref(false);
 const drilldownDivisi = ref("");
-function openInvoiceDrilldown(divisi, r) {
-  if (r.kategori !== "Invoice (Sistem)") return;
-  drilldownDivisi.value = divisi;
-  showDrilldown.value = true;
+
+// Drill-down umum: baris "Invoice (Sistem)" -> InvoiceDrilldownModal (di
+// atas). Baris kategori lain (mis. Uang Makan, Pembayaran Cash, dst) yang
+// nominalnya bukan 0 -> RincianTransaksiModal, nampilin transaksi manual
+// yang jadi sumber angka baris itu, per divisi baris tsb.
+const showRincian = ref(false);
+const rincianDivisi = ref("");
+const rincianCtx = ref({ kelompok: "", kelompokLabel: "", kategori: "", subKategori: "" });
+function openRowDetail(divisi, k, r) {
+  if (!r.nominal) return;
+  if (r.kategori === "Invoice (Sistem)") {
+    drilldownDivisi.value = divisi;
+    showDrilldown.value = true;
+    return;
+  }
+  rincianDivisi.value = divisi;
+  rincianCtx.value = {
+    kelompok: k.key,
+    kelompokLabel: k.label,
+    kategori: r.kategori,
+    subKategori: r.subKategori || "",
+  };
+  showRincian.value = true;
 }
 const data = ref(null);
 const loading = ref(false);
@@ -175,8 +195,8 @@ onMounted(async () => {
                 <tr
                   v-for="(r, i) in k.rows"
                   :key="r.kategori + (r.subKategori || '')"
-                  :class="{ 'clickable-row': r.kategori === 'Invoice (Sistem)' }"
-                  @click="openInvoiceDrilldown(d.divisi, r)"
+                  :class="{ 'clickable-row': !!r.nominal }"
+                  @click="openRowDetail(d.divisi, k, r)"
                 >
                   <td>{{ i + 1 }}</td>
                   <td>{{ r.kategori }}</td>
@@ -225,6 +245,19 @@ onMounted(async () => {
       :sampai="sampai"
       :label="periodeLabel"
       @close="showDrilldown = false"
+    />
+
+    <RincianTransaksiModal
+      v-if="showRincian"
+      :divisi="rincianDivisi"
+      :kelompok="rincianCtx.kelompok"
+      :kelompok-label="rincianCtx.kelompokLabel"
+      :kategori="rincianCtx.kategori"
+      :sub-kategori="rincianCtx.subKategori"
+      :dari="dari"
+      :sampai="sampai"
+      :label="periodeLabel"
+      @close="showRincian = false"
     />
   </div>
 </template>

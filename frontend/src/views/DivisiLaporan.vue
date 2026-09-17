@@ -7,6 +7,7 @@ import { exportLaporanDivisiExcel, exportSolarStokExcel } from "../utils/excelEx
 import { exportLaporanDivisiPdf, exportSolarStokPdf } from "../utils/pdfExport.js";
 import { exportSolarStokWord } from "../utils/wordExport.js";
 import InvoiceDrilldownModal from "../components/InvoiceDrilldownModal.vue";
+import RincianTransaksiModal from "../components/RincianTransaksiModal.vue";
 
 const tab = ref("laba-rugi"); // "laba-rugi" | "solar"
 
@@ -76,9 +77,27 @@ const drilldownRange = computed(() => {
     sampai: `${bulan.value}-${String(lastDay).padStart(2, "0")}`,
   };
 });
-function openInvoiceDrilldown(r) {
-  if (r.kategori !== "Invoice (Sistem)") return;
-  showDrilldown.value = true;
+// Drill-down umum: baris "Invoice (Sistem)" -> InvoiceDrilldownModal (di
+// atas). Baris kategori lain (mis. Uang Makan, Pembayaran Cash, dst) yang
+// nominalnya bukan 0 -> RincianTransaksiModal, nampilin transaksi manual
+// yang jadi sumber angka baris itu. Baris kosong (nominal 0, cuma tampil
+// biar formatnya konsisten) sengaja tidak diklik karena memang belum ada
+// datanya.
+const showRincian = ref(false);
+const rincianCtx = ref({ kelompok: "", kelompokLabel: "", kategori: "", subKategori: "" });
+function openRowDetail(k, r) {
+  if (!r.nominal) return;
+  if (r.kategori === "Invoice (Sistem)") {
+    showDrilldown.value = true;
+    return;
+  }
+  rincianCtx.value = {
+    kelompok: k.key,
+    kelompokLabel: k.label,
+    kategori: r.kategori,
+    subKategori: r.subKategori || "",
+  };
+  showRincian.value = true;
 }
 
 const kelompokOptions = computed(() => config.value[divisi.value]?.kelompok || []);
@@ -678,8 +697,8 @@ onMounted(async () => {
               <tr
                 v-for="(r, i) in k.rows"
                 :key="r.kategori + (r.subKategori || '')"
-                :class="{ 'clickable-row': r.kategori === 'Invoice (Sistem)' }"
-                @click="openInvoiceDrilldown(r)"
+                :class="{ 'clickable-row': !!r.nominal }"
+                @click="openRowDetail(k, r)"
               >
                 <td>{{ i + 1 }}</td>
                 <td>{{ r.kategori }}</td>
@@ -1095,16 +1114,29 @@ onMounted(async () => {
         {{ solarUploading ? "Menyimpan..." : editingSolarId ? "Simpan Perubahan" : "Simpan" }}
       </button>
     </div>
-
-    <InvoiceDrilldownModal
-      v-if="showDrilldown"
-      :divisi="divisi"
-      :dari="drilldownRange.dari"
-      :sampai="drilldownRange.sampai"
-      :label="bulanLabel"
-      @close="showDrilldown = false"
-    />
   </div>
+
+  <InvoiceDrilldownModal
+    v-if="showDrilldown"
+    :divisi="divisi"
+    :dari="drilldownRange.dari"
+    :sampai="drilldownRange.sampai"
+    :label="bulanLabel"
+    @close="showDrilldown = false"
+  />
+
+  <RincianTransaksiModal
+    v-if="showRincian"
+    :divisi="divisi"
+    :kelompok="rincianCtx.kelompok"
+    :kelompok-label="rincianCtx.kelompokLabel"
+    :kategori="rincianCtx.kategori"
+    :sub-kategori="rincianCtx.subKategori"
+    :dari="drilldownRange.dari"
+    :sampai="drilldownRange.sampai"
+    :label="bulanLabel"
+    @close="showRincian = false"
+  />
 </template>
 
 <style scoped>

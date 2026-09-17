@@ -454,6 +454,55 @@ router.get("/rekap-keseluruhan", async (req, res, next) => {
   }
 });
 
+// Rincian transaksi manual yang jadi sumber angka SATU baris kategori pada
+// Laporan Divisi / Rekap Keseluruhan (mis. klik baris "Uang Makan" atau
+// "Pembayaran Cash" -> tampil daftar transaksi manual yang dijumlah jadi
+// angka baris itu, lengkap tanggal & catatan, bisa dicetak dari frontend).
+// Baris "Invoice (Sistem)" TIDAK lewat sini -- itu drill-down ke tabel
+// Invoice asli (lihat GET /invoices dari InvoiceDrilldownModal).
+// Sengaja TIDAK dibatasi per-divisi akun yang login, sama seperti
+// /rekap-keseluruhan, supaya konsisten (laporan itu sendiri juga bisa
+// menampilkan semua divisi ke user manapun yang login).
+// Query: ?divisi=&kelompok=&kategori=&subKategori=(opsional)&dari=YYYY-MM-DD&sampai=YYYY-MM-DD
+router.get("/rincian", async (req, res, next) => {
+  try {
+    const { divisi, kelompok, kategori, dari, sampai } = req.query;
+    const subKategori = req.query.subKategori || "";
+    if (!divisi || !kelompok || !kategori || !dari || !sampai) {
+      return res.status(400).json({
+        error: "divisi, kelompok, kategori, dari, dan sampai wajib diisi",
+      });
+    }
+
+    const tglMulai = new Date(`${dari}T00:00:00`);
+    const tglAkhir = new Date(`${sampai}T23:59:59.999`);
+
+    const all = await prisma.divisiTx.findMany({
+      where: { divisi, kelompok, tanggal: { gte: tglMulai, lte: tglAkhir } },
+      orderBy: { tanggal: "asc" },
+    });
+    // Grouping-nya harus persis sama dengan yang dipakai buat menyusun baris
+    // di /laporan/:divisi/:bulan dan /rekap-keseluruhan, supaya totalnya cocok.
+    const items = all.filter(
+      (t) => t.kategori === kategori && (t.subKategori || "") === subKategori
+    );
+    const total = items.reduce((s, t) => s + t.nominal, 0);
+
+    res.json({
+      divisi,
+      kelompok,
+      kategori,
+      subKategori: subKategori || null,
+      dari,
+      sampai,
+      items,
+      total,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // Import massal dari Excel (dipakai oleh parser di frontend, lihat
 // frontend/src/utils/excelImport.js). Body: { items: [{ divisi, tipe,
 // kelompok, kategori, subKategori, qty, hargaSatuan, nominal, tanggal,

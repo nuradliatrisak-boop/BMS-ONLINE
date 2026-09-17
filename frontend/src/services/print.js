@@ -588,6 +588,121 @@ export function printRekapKeseluruhan(data) {
   `);
 }
 
+// ============================================================
+// CETAK RINCIAN TRANSAKSI (drill-down dari Laporan Divisi / Rekap
+// Keseluruhan -- klik baris kategori APAPUN, mis. "Uang Makan" atau
+// "Pembayaran Cash", untuk lihat & cetak daftar transaksi manual yang jadi
+// sumber angka baris itu). Dua bentuk: daftar semua (satu tabel) atau satu
+// baris saja (nota ringkas per transaksi).
+// ============================================================
+function rincianRincianText(t) {
+  if (t.subKategori) return esc(t.subKategori);
+  if (t.qty && t.hargaSatuan) return `${t.qty} x ${rupiah(t.hargaSatuan)}`;
+  return "-";
+}
+
+export function printRincianTransaksi(data) {
+  if (!data) return;
+  const origin = window.location.origin;
+  const kopSuratUrl = `${origin}/letterhead/kop-surat.jpeg`;
+  const watermarkUrl = `${origin}/letterhead/bm-logo-transparent.png`;
+
+  const rows = data.items.length
+    ? data.items
+        .map(
+          (t, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${fmtDate(t.tanggal)}</td>
+          <td>${rincianRincianText(t)}</td>
+          <td class="num">${rupiah(t.nominal)}</td>
+          <td>${esc(t.keterangan || "-")}</td>
+        </tr>`
+        )
+        .join("")
+    : `<tr><td colspan="5" class="empty">Belum ada data.</td></tr>`;
+
+  openPrint(`
+    <style>
+      @page { size: A4; margin: 14mm; }
+      * { box-sizing: border-box; }
+      body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; }
+      .watermark {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 65%; max-width: 400px; opacity: 0.07; z-index: -1; pointer-events: none;
+      }
+      .head { text-align: center; margin-bottom: 14px; }
+      .kop { width: 100%; max-height: 90px; object-fit: contain; margin-bottom: 6px; }
+      .title { font-weight: 700; margin-top: 2px; }
+      .period { color: #555; font-size: 12px; margin-top: 2px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+      th, td { border: 1px solid #999; padding: 3px 6px; font-size: 11px; }
+      th { background: #f0f0f0; text-align: left; }
+      .num { text-align: right; white-space: nowrap; }
+      .empty { text-align: center; color: #777; padding: 8px; }
+      tfoot td { background: #fafafa; }
+    </style>
+    <img class="watermark" src="${watermarkUrl}" alt="" />
+    <div class="head">
+      <img class="kop" src="${kopSuratUrl}" alt="PT. Bintang Muara Sejati" />
+      <div class="title">RINCIAN TRANSAKSI &mdash; ${esc((data.divisi || "").toUpperCase())} / ${esc(
+    (data.kategori || "").toUpperCase()
+  )}${data.subKategori ? ` (${esc(data.subKategori)})` : ""}</div>
+      <div class="period">${esc(data.kelompokLabel || "")}${data.label ? ` &mdash; ${esc(data.label)}` : ""}</div>
+    </div>
+    <table>
+      <thead>
+        <tr><th style="width:32px">No</th><th>Tanggal</th><th>Rincian</th><th class="num">Nominal</th><th>Catatan</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr><td colspan="3"><b>Total</b></td><td class="num"><b>${rupiah(data.total)}</b></td><td></td></tr>
+      </tfoot>
+    </table>
+  `);
+}
+
+// Cetak SATU baris transaksi saja (nota ringkas) -- dipakai tombol "Cetak"
+// per baris di modal rincian transaksi.
+export function printRincianTransaksiSatuan(t, ctx) {
+  if (!t) return;
+  const origin = window.location.origin;
+  const kopSuratUrl = `${origin}/letterhead/kop-surat.jpeg`;
+  const watermarkUrl = `${origin}/letterhead/bm-logo-transparent.png`;
+
+  openPrint(`
+    <style>
+      @page { size: A5; margin: 14mm; }
+      * { box-sizing: border-box; }
+      body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #111; }
+      .watermark {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 70%; max-width: 300px; opacity: 0.07; z-index: -1; pointer-events: none;
+      }
+      .head { text-align: center; margin-bottom: 14px; }
+      .kop { width: 100%; max-height: 80px; object-fit: contain; margin-bottom: 6px; }
+      .title { font-weight: 700; margin-top: 2px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+      td { padding: 5px 6px; font-size: 12px; vertical-align: top; }
+      td.label { width: 120px; color: #555; }
+      .num { text-align: right; font-weight: 700; }
+    </style>
+    <img class="watermark" src="${watermarkUrl}" alt="" />
+    <div class="head">
+      <img class="kop" src="${kopSuratUrl}" alt="PT. Bintang Muara Sejati" />
+      <div class="title">NOTA TRANSAKSI &mdash; ${esc((ctx?.divisi || "").toUpperCase())}</div>
+    </div>
+    <table>
+      <tr><td class="label">Kelompok</td><td>${esc(ctx?.kelompokLabel || "-")}</td></tr>
+      <tr><td class="label">Kategori</td><td>${esc(t.kategori || ctx?.kategori || "-")}</td></tr>
+      <tr><td class="label">Rincian</td><td>${rincianRincianText(t)}</td></tr>
+      <tr><td class="label">Tanggal</td><td>${fmtDate(t.tanggal)}</td></tr>
+      <tr><td class="label">Catatan</td><td>${esc(t.keterangan || "-")}</td></tr>
+      <tr><td class="label">Nominal</td><td class="num">${rupiah(t.nominal)}</td></tr>
+    </table>
+  `);
+}
+
 export function printGrid(w, h) {
   let v = "";
   let g = "";

@@ -6,6 +6,7 @@ import { parseDivisiExcel } from "../utils/excelImport.js";
 import { exportLaporanDivisiExcel, exportSolarStokExcel } from "../utils/excelExport.js";
 import { exportLaporanDivisiPdf, exportSolarStokPdf } from "../utils/pdfExport.js";
 import { exportSolarStokWord } from "../utils/wordExport.js";
+import InvoiceDrilldownModal from "../components/InvoiceDrilldownModal.vue";
 
 const tab = ref("laba-rugi"); // "laba-rugi" | "solar"
 
@@ -62,6 +63,23 @@ const bulanLabel = computed(() => {
   const [y, m] = bulan.value.split("-");
   return `${BULAN_NAMA[Number(m) - 1]} ${y}`;
 });
+
+// Drill-down: klik baris "Invoice (Sistem)" -> tampilkan daftar invoice
+// yang jadi sumber angka itu (divisi + rentang bulan yang lagi dibuka).
+const showDrilldown = ref(false);
+const drilldownRange = computed(() => {
+  if (!bulan.value) return { dari: "", sampai: "" };
+  const [y, m] = bulan.value.split("-").map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  return {
+    dari: `${bulan.value}-01`,
+    sampai: `${bulan.value}-${String(lastDay).padStart(2, "0")}`,
+  };
+});
+function openInvoiceDrilldown(r) {
+  if (r.kategori !== "Invoice (Sistem)") return;
+  showDrilldown.value = true;
+}
 
 const kelompokOptions = computed(() => config.value[divisi.value]?.kelompok || []);
 
@@ -657,7 +675,12 @@ onMounted(async () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(r, i) in k.rows" :key="r.kategori + (r.subKategori || '')">
+              <tr
+                v-for="(r, i) in k.rows"
+                :key="r.kategori + (r.subKategori || '')"
+                :class="{ 'clickable-row': r.kategori === 'Invoice (Sistem)' }"
+                @click="openInvoiceDrilldown(r)"
+              >
                 <td>{{ i + 1 }}</td>
                 <td>{{ r.kategori }}</td>
                 <td v-if="k.hasQty || k.rows.some((x) => x.subKategori)">{{ r.subKategori || "-" }}</td>
@@ -1072,6 +1095,15 @@ onMounted(async () => {
         {{ solarUploading ? "Menyimpan..." : editingSolarId ? "Simpan Perubahan" : "Simpan" }}
       </button>
     </div>
+
+    <InvoiceDrilldownModal
+      v-if="showDrilldown"
+      :divisi="divisi"
+      :dari="drilldownRange.dari"
+      :sampai="drilldownRange.sampai"
+      :label="bulanLabel"
+      @close="showDrilldown = false"
+    />
   </div>
 </template>
 

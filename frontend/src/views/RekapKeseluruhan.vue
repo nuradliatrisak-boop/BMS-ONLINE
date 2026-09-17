@@ -5,6 +5,7 @@ import { toast } from "../services/toast.js";
 import { printRekapKeseluruhan } from "../services/print.js";
 import { exportRekapKeseluruhanExcel } from "../utils/excelExport.js";
 import { exportRekapKeseluruhanPdf } from "../utils/pdfExport.js";
+import InvoiceDrilldownModal from "../components/InvoiceDrilldownModal.vue";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -18,6 +19,16 @@ const divisiList = ref([]);
 const dari = ref(firstDayOfMonthStr());
 const sampai = ref(todayStr());
 const divisiPilihan = ref("ALL"); // "ALL" = semua divisi sekaligus
+
+// Drill-down: klik baris "Invoice (Sistem)" -> tampilkan daftar invoice
+// yang jadi sumber angka itu (divisi baris tsb + rentang tanggal filter).
+const showDrilldown = ref(false);
+const drilldownDivisi = ref("");
+function openInvoiceDrilldown(divisi, r) {
+  if (r.kategori !== "Invoice (Sistem)") return;
+  drilldownDivisi.value = divisi;
+  showDrilldown.value = true;
+}
 const data = ref(null);
 const loading = ref(false);
 
@@ -161,7 +172,12 @@ onMounted(async () => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(r, i) in k.rows" :key="r.kategori + (r.subKategori || '')">
+                <tr
+                  v-for="(r, i) in k.rows"
+                  :key="r.kategori + (r.subKategori || '')"
+                  :class="{ 'clickable-row': r.kategori === 'Invoice (Sistem)' }"
+                  @click="openInvoiceDrilldown(d.divisi, r)"
+                >
                   <td>{{ i + 1 }}</td>
                   <td>{{ r.kategori }}</td>
                   <td v-if="adaRincian(k)">{{ r.subKategori || "-" }}</td>
@@ -201,6 +217,15 @@ onMounted(async () => {
         </div>
       </div>
     </template>
+
+    <InvoiceDrilldownModal
+      v-if="showDrilldown"
+      :divisi="drilldownDivisi"
+      :dari="dari"
+      :sampai="sampai"
+      :label="periodeLabel"
+      @close="showDrilldown = false"
+    />
   </div>
 </template>
 

@@ -1216,3 +1216,7 @@ textarea {
     width: 100% !important;
   }
 }
+/* Baris tabel yang bisa diklik (dipakai di berbagai halaman: daftar
+   Invoice, drill-down Invoice (Sistem) di Laporan Divisi/Rekap, dll) */
+.clickable-row { cursor: pointer; }
+.clickable-row:hover td { background: #f5f8fb; }

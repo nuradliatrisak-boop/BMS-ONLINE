@@ -225,6 +225,63 @@ export async function exportRekapKeseluruhanPdf(data) {
 }
 
 // ------------------------------------------------------------
+// Alat Berat (rekap per unit Excavator/Alat Berat, satu bulan) --
+// dipakai halaman "Alat Berat". Orientasi bisa dipilih user
+// (Portrait/Landscape) karena tabelnya cukup banyak kolom.
+// ------------------------------------------------------------
+export async function exportAlatBeratPdf({ bulanLabel, unit, total, orientation = "portrait" }) {
+  const [kopImg, logoImg] = await Promise.all([loadImageDataUrl(KOP_SURAT_URL), loadImageDataUrl(LOGO_WATERMARK_URL)]);
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation });
+  const margin = 14;
+
+  let y = drawSectionHeader(doc, {
+    kopImg,
+    logoImg,
+    margin,
+    title: "REKAP SEWA ALAT BERAT",
+    periodLabel: `Bulan ${bulanLabel}`,
+  });
+
+  const body = unit.length
+    ? unit.map((u, i) => {
+        const rincian = Object.fromEntries((u.rincian || []).map((r) => [r.subKategori, r.nominal]));
+        return [
+          i + 1,
+          u.nama,
+          rupiah(u.pendapatan),
+          rupiah(rincian["Uang Makan"] || 0),
+          rupiah(rincian["Sparepart"] || 0),
+          rupiah(rincian["Solar"] || 0),
+          rupiah(u.pengeluaran),
+          rupiah(u.hasilBersih),
+        ];
+      })
+    : [[{ content: "Belum ada data.", colSpan: 8, styles: { halign: "center", textColor: 130 } }]];
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: margin, right: margin },
+    head: [["No", "Unit", "Pendapatan", "Uang Makan", "Sparepart", "Solar", "Total Pengeluaran", "Hasil Bersih"]],
+    body,
+    foot: [[
+      { content: "TOTAL", colSpan: 2, styles: { fontStyle: "bold" } },
+      { content: rupiah(total.pendapatan), styles: { fontStyle: "bold" } },
+      "", "",
+      { content: "", styles: { fontStyle: "bold" } },
+      { content: rupiah(total.pengeluaran), styles: { fontStyle: "bold" } },
+      { content: rupiah(total.hasilBersih), styles: { fontStyle: "bold" } },
+    ]],
+    theme: "grid",
+    styles: { fontSize: 8.5, cellPadding: 1.6 },
+    headStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },
+    footStyles: { fillColor: [250, 250, 250], textColor: 20 },
+    columnStyles: { 0: { cellWidth: 10 }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" }, 7: { halign: "right" } },
+  });
+
+  doc.save(`rekap-alat-berat-${bulanLabel.toLowerCase().replace(/\s+/g, "-")}-${orientation}.pdf`);
+}
+
+// ------------------------------------------------------------
 // Stok Solar (BBM) - halaman Laporan Divisi tab "Stok Solar"
 // ------------------------------------------------------------
 export async function exportSolarStokPdf({ bulanLabel, items, totalMasuk, totalKeluar, saldoSaatIni }) {

@@ -182,7 +182,22 @@ async function removeRow(id) {
 }
 
 function printReport() {
+  applyPrintOrientation();
   window.print();
+}
+
+// Orientasi kertas cetak Rekap Penjualan (Landscape/Portrait) -- karena
+// window.print() browser dikontrol dari @page CSS, orientasinya diterapkan
+// dengan menyuntik <style> baru ke <head> tepat sebelum print supaya
+// override aturan default di bawah (selalu ditaruh paling akhir).
+const printOrientation = ref("landscape"); // "landscape" | "portrait"
+function applyPrintOrientation() {
+  const old = document.getElementById("rekap-penjualan-print-orientation");
+  if (old) old.remove();
+  const styleTag = document.createElement("style");
+  styleTag.id = "rekap-penjualan-print-orientation";
+  styleTag.textContent = `@media print { @page { size: A4 ${printOrientation.value}; margin: 9mm; } }`;
+  document.head.appendChild(styleTag);
 }
 
 async function exportExcel() {
@@ -266,6 +281,13 @@ onMounted(async () => {
       <div class="desc">Rekap tagihan customer dengan format tabel seperti lembar rekap BMS.</div>
     </div>
     <div class="top-actions">
+      <div class="field orientasi-field">
+        <label>Orientasi Cetak</label>
+        <select v-model="printOrientation">
+          <option value="landscape">Horizontal (Landscape)</option>
+          <option value="portrait">Vertikal (Portrait)</option>
+        </select>
+      </div>
       <button class="btn btn-ghost" @click="printReport">🖨 Cetak Rekap / PDF</button>
       <button class="btn btn-ghost" @click="exportExcel">⬇ Export Excel</button>
       <button class="btn btn-primary" @click="openModal">＋ Tambah Baris</button>
@@ -455,7 +477,9 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.top-actions { display:flex; gap:8px; }
+.top-actions { display:flex; gap:8px; align-items:flex-end; }
+.orientasi-field { min-width:170px; margin-bottom:0; }
+.orientasi-field select { height:38px; }
 .filter-card { margin-bottom:16px; }
 .rekap-summary { margin-bottom:16px; }
 .opt { font-weight:400; color:var(--ink-soft); font-size:11px; }
@@ -469,8 +493,9 @@ onMounted(async () => {
 .print-document { display:none; }
 
 @media (max-width:700px) {
-  .top-actions { flex-direction:column; }
+  .top-actions { flex-direction:column; align-items:stretch; }
   .top-actions .btn { width:100%; justify-content:center; }
+  .orientasi-field { width:100%; }
   .row-4 { grid-template-columns:1fr 1fr; }
 }
 

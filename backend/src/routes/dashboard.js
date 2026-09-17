@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
+import { DIVISI_LIST } from "../config/divisiConfig.js";
 
 const router = Router();
 
@@ -96,6 +97,85 @@ router.get("/", async (req, res, next) => {
       .sort((a, b) => b.sisa - a.sisa)
       .slice(0, 10);
 
+    // ------------------------------------------------------------
+    // Statistik tambahan: ringkasan SEMUA KATEGORI/DIVISI BISNIS bulan ini
+    // (gabungan Invoice + transaksi manual divisi, bukan cuma dari Invoice
+    // seperti angka-angka di atas), dan data harian buat kalender aktivitas
+    // di Dashboard.
+    // ------------------------------------------------------------
+    const now = new Date();
+    const bulanIni = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const awalBulan = new Date(now.getFullYear(), now.getMonth(), 1);
+    const akhirBulan = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const [invoicesBulanIni, txBulanIni, suratJalanBulanIni] = await Promise.all([
+      prisma.invoice.findMany({
+        where: { ...where, tanggal: { gte: awalBulan, lte: akhirBulan } },
+        include: { items: true },
+      }),
+      prisma.divisiTx.findMany({
+        where: { ...where, tanggal: { gte: awalBulan, lte: akhirBulan } },
+      }),
+      prisma.suratJalan.findMany({
+        where: { ...where, tanggal: { gte: awalBulan, lte: akhirBulan } },
+        select: { id: true, tanggal: true },
+      }),
+    ]);
+
+    // Ringkasan per divisi bulan ini (Pendapatan = Invoice + transaksi
+    // manual bertipe PENJUALAN, Pengeluaran = transaksi manual bertipe
+    // PENGELUARAN) -- ini yang bikin Dashboard nampilin SEMUA kategori
+    // bisnis, bukan cuma yang lewat Invoice.
+    const perDivisiBulanIni = DIVISI_LIST.map((divisi) => {
+      const invDivisi = invoicesBulanIni.filter((i) => i.divisi === divisi);
+      const penjualanInvoice = invDivisi.reduce(
+        (s, i) => s + i.items.reduce((a, it) => a + Number(it.qty) * Number(it.hargaSatuan), 0),
+        0
+      );
+      const txDivisi = txBulanIni.filter((t) => t.divisi === divisi);
+      const penjualanTx = txDivisi.filter((t) => t.tipe === "PENJUALAN").reduce((s, t) => s + t.nominal, 0);
+      const pengeluaranTx = txDivisi.filter((t) => t.tipe === "PENGELUARAN").reduce((s, t) => s + t.nominal, 0);
+      const totalPenjualan = penjualanInvoice + penjualanTx;
+      return {
+        divisi,
+        totalPenjualan,
+        totalPengeluaran: pengeluaranTx,
+        labaBersih: totalPenjualan - pengeluaranTx,
+      };
+    }).filter((d) => d.totalPenjualan || d.totalPengeluaran);
+
+    // Data harian bulan ini buat kalender aktivitas: tiap tanggal yang ada
+    // kegiatannya (invoice terbit, transaksi manual dicatat, atau surat
+    // jalan dibuat) dikumpulkan jumlah & nilainya, dipakai frontend buat
+    // menandai tanggal ramai di kalender.
+    const kalenderMap = new Map();
+    function tambahKalender(tgl, field, nilai) {
+      const key = tgl.toISOString().slice(0, 10);
+      const h = kalenderMap.get(key) || {
+        tanggal: key,
+        invoiceCount: 0,
+        invoiceTotal: 0,
+        txCount: 0,
+        txTotal: 0,
+        suratJalanCount: 0,
+      };
+      h[field] += nilai;
+      kalenderMap.set(key, h);
+    }
+    for (const inv of invoicesBulanIni) {
+      const total = inv.items.reduce((s, it) => s + Number(it.qty) * Number(it.hargaSatuan), 0);
+      tambahKalender(inv.tanggal, "invoiceCount", 1);
+      tambahKalender(inv.tanggal, "invoiceTotal", total);
+    }
+    for (const t of txBulanIni) {
+      tambahKalender(t.tanggal, "txCount", 1);
+      tambahKalender(t.tanggal, "txTotal", t.tipe === "PENJUALAN" ? t.nominal : -t.nominal);
+    }
+    for (const sj of suratJalanBulanIni) {
+      tambahKalender(sj.tanggal, "suratJalanCount", 1);
+    }
+    const kalender = [...kalenderMap.values()].sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+
     res.json({
       totalInvoice: invoices.length,
       totalTagihan,
@@ -112,6 +192,10 @@ router.get("/", async (req, res, next) => {
         total: uangMakan._sum.nominal || 0,
         jumlahTransaksi: uangMakan._count || 0,
       },
+      // --- statistik tambahan v2: semua kategori + kalender ---
+      bulanIni,
+      perDivisiBulanIni,
+      kalender,
     });
   } catch (e) {
     next(e);

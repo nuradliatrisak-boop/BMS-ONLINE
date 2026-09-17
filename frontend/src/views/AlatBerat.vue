@@ -1,12 +1,26 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
+import { parseDivisiExcel } from "../utils/excelImport.js";
+import { exportAlatBeratExcel } from "../utils/excelExport.js";
+import { exportAlatBeratPdf } from "../utils/pdfExport.js";
+
+const BULAN_NAMA = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
 
 const bulan = ref(new Date().toISOString().slice(0, 7));
 const rekap = ref(null); // hasil /divisi-tx/alat-berat/rekap/:bulan
 const txAll = ref([]); // transaksi divisi "Alat Berat" bulan ini
 const loading = ref(true);
+
+const bulanLabel = computed(() => {
+  if (!bulan.value) return "-";
+  const [y, m] = bulan.value.split("-");
+  return `${BULAN_NAMA[Number(m) - 1]} ${y}`;
+});
 
 function rupiah(n) {
   return "Rp " + Math.round(n || 0).toLocaleString("id-ID");
@@ -147,6 +161,86 @@ async function removeTx(t) {
   }
 }
 
+// --- Export Excel / PDF ---
+const pdfOrientation = ref("portrait"); // "portrait" | "landscape"
+function exportExcel() {
+  if (!rekap.value) return;
+  exportAlatBeratExcel({ bulanLabel: bulanLabel.value, unit: rekap.value.unit, total: rekap.value.total });
+}
+const exportingPdf = ref(false);
+async function exportPdf() {
+  if (!rekap.value) return;
+  exportingPdf.value = true;
+  try {
+    await exportAlatBeratPdf({
+      bulanLabel: bulanLabel.value,
+      unit: rekap.value.unit,
+      total: rekap.value.total,
+      orientation: pdfOrientation.value,
+    });
+  } catch (e) {
+    toast("Gagal membuat PDF: " + (e?.message || String(e)));
+  } finally {
+    exportingPdf.value = false;
+  }
+}
+
+// --- Import dari Excel (pakai file "Pengeluaran <Bulan> <Tahun>.xlsx" yang
+// sama dengan importer di Laporan Divisi, tapi di sini cuma sheet "ALAT
+// BERAT" yang dipakai/diimport -- sheet lain di file itu diabaikan). ---
+const showImportModal = ref(false);
+const importBulan = ref(new Date().toISOString().slice(0, 7));
+const importFile = ref(null);
+const importResult = ref(null); // { penjualan, pengeluaran, items }
+const importParsing = ref(false);
+const importSaving = ref(false);
+const importError = ref("");
+
+function onImportFileChange(e) {
+  importFile.value = e.target.files?.[0] || null;
+  importResult.value = null;
+  importError.value = "";
+}
+
+async function previewImport() {
+  if (!importFile.value) return toast("Pilih file Excel dulu");
+  importParsing.value = true;
+  importError.value = "";
+  importResult.value = null;
+  try {
+    const parsed = await parseDivisiExcel(importFile.value, importBulan.value);
+    const items = parsed.items.filter((it) => it.divisi === "Alat Berat");
+    if (!parsed.sheetsFound.includes("ALAT BERAT")) {
+      importError.value = 'Sheet "ALAT BERAT" tidak ditemukan di file ini.';
+      return;
+    }
+    const penjualan = items.filter((it) => it.tipe === "PENJUALAN").reduce((s, it) => s + it.nominal, 0);
+    const pengeluaran = items.filter((it) => it.tipe === "PENGELUARAN").reduce((s, it) => s + it.nominal, 0);
+    importResult.value = { items, penjualan, pengeluaran };
+  } catch (e) {
+    importError.value = e?.message || "Gagal membaca file Excel";
+  } finally {
+    importParsing.value = false;
+  }
+}
+
+async function confirmImport() {
+  if (!importResult.value?.items?.length) return;
+  importSaving.value = true;
+  try {
+    const res = await api.post("/divisi-tx/import", { items: importResult.value.items });
+    toast(`${res.dibuat} transaksi diimport${res.dilewati ? `, ${res.dilewati} dilewati (duplikat)` : ""}`);
+    showImportModal.value = false;
+    importFile.value = null;
+    importResult.value = null;
+    await load();
+  } catch (e) {
+    toast(e?.message || "Gagal mengimport data");
+  } finally {
+    importSaving.value = false;
+  }
+}
+
 watch(bulan, load);
 onMounted(load);
 </script>
@@ -162,6 +256,18 @@ onMounted(load);
         <label>Bulan</label>
         <input v-model="bulan" type="month" />
       </div>
+      <div class="field" style="margin:0; min-width:150px;">
+        <label>Orientasi PDF</label>
+        <select v-model="pdfOrientation">
+          <option value="portrait">Portrait</option>
+          <option value="landscape">Landscape</option>
+        </select>
+      </div>
+      <button class="btn btn-ghost" @click="showImportModal = true">⬆ Import Excel</button>
+      <button class="btn btn-ghost" @click="exportExcel">⬇ Export Excel</button>
+      <button class="btn btn-ghost" :disabled="exportingPdf" @click="exportPdf">
+        {{ exportingPdf ? "Membuat PDF..." : "⬇ Export PDF" }}
+      </button>
       <button class="btn btn-primary" @click="showTambahUnit = true">+ Tambah Unit</button>
     </div>
   </div>
@@ -205,6 +311,52 @@ onMounted(load);
         <input v-model="namaUnitBaru" placeholder="Mis. Komatsu 07" />
       </div>
       <button class="btn btn-primary" @click="tambahUnitBaru">Tambah</button>
+    </div>
+  </div>
+
+  <!-- Modal import Excel -->
+  <div v-if="showImportModal" class="modal-bg" @click.self="showImportModal = false">
+    <div class="modal" style="max-width: 640px; width: 92%">
+      <button class="modal-close" @click="showImportModal = false">×</button>
+      <h2>Import Alat Berat dari Excel</h2>
+      <div class="desc" style="margin-bottom: 14px">
+        Untuk file "Pengeluaran &lt;Bulan&gt; &lt;Tahun&gt;.xlsx" yang sama dengan yang dipakai di
+        Laporan Divisi &mdash; di sini cuma sheet <b>ALAT BERAT</b>-nya saja yang dibaca &amp; diimport.
+      </div>
+
+      <div class="row" style="margin-bottom: 12px">
+        <div class="field">
+          <label>Bulan data ini</label>
+          <input v-model="importBulan" type="month" />
+        </div>
+        <div class="field">
+          <label>File Excel</label>
+          <input type="file" accept=".xlsx,.xls" @change="onImportFileChange" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" :disabled="importParsing" @click="previewImport">
+        {{ importParsing ? "Membaca file..." : "Baca & Preview" }}
+      </button>
+
+      <div v-if="importError" class="empty" style="color: #b91c1c; margin-top: 12px">{{ importError }}</div>
+
+      <div v-if="importResult?.items?.length" style="margin-top: 16px">
+        <div class="card" style="padding: 10px 14px">
+          <b>Alat Berat</b> &mdash; {{ importResult.items.length }} baris data
+          <div class="desc">
+            Pendapatan {{ rupiah(importResult.penjualan) }} &middot; Pengeluaran {{ rupiah(importResult.pengeluaran) }} &middot;
+            Hasil Bersih {{ rupiah(importResult.penjualan - importResult.pengeluaran) }}
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top: 10px" :disabled="importSaving" @click="confirmImport">
+          {{ importSaving ? "Menyimpan..." : `Simpan ${importResult.items.length} Transaksi` }}
+        </button>
+        <div class="desc" style="margin-top: 8px">
+          Baris yang datanya persis sama dengan transaksi yang sudah ada otomatis dilewati, jadi aman
+          diimport ulang.
+        </div>
+      </div>
     </div>
   </div>
 

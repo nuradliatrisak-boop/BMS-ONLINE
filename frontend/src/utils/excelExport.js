@@ -385,7 +385,7 @@ export function exportAlatBeratExcel({
 // ------------------------------------------------------------
 // Stok Solar (BBM) - Alat Berat
 // ------------------------------------------------------------
-export function exportStokSolarExcel({
+export function exportSolarStokExcel({
   bulanLabel,
   items,
   totalMasuk,

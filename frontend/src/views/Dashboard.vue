@@ -5,9 +5,12 @@
 // statistiknya langsung ikut berubah.
 import { ref, onMounted, computed } from "vue";
 import { api } from "../services/api.js";
+import PetaTitik from "../components/PetaTitik.vue";
 
 const stats = ref(null);
 const loading = ref(true);
+const reminder = ref([]);
+const peta = ref({ titik: [] });
 
 function rupiah(n) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
@@ -106,6 +109,38 @@ async function muat() {
   loading.value = true;
   stats.value = await api.get("/dashboard");
   loading.value = false;
+  // Pengingat & peta dimuat terpisah supaya kegagalan salah satunya
+  // (mis. peta gagal karena offline) tidak menghalangi angka utama tampil.
+  try {
+    const r = await api.get("/dashboard/reminder");
+    reminder.value = r.reminder || [];
+  } catch (e) {
+    reminder.value = [];
+  }
+  try {
+    peta.value = await api.get("/dashboard/peta");
+  } catch (e) {
+    peta.value = { titik: [] };
+  }
+}
+
+const titikPetaStrategis = computed(() =>
+  (peta.value?.titik || []).map((p) => ({
+    lat: p.lat,
+    lng: p.lng,
+    label: p.lokasi,
+    jenis: p.jenis,
+    valueLabel:
+      p.jenis === "solar"
+        ? `Solar • ${p.liter} Liter • ${p.baris} transaksi`
+        : `Sewa Alat • ${rupiah(p.nilai)} • ${p.baris} baris`,
+  }))
+);
+
+function labelTingkat(t) {
+  if (t === "urgent") return "Mendesak";
+  if (t === "peringatan") return "Perhatian";
+  return "Info";
 }
 
 onMounted(muat);
@@ -181,8 +216,25 @@ onMounted(muat);
         </div>
       </div>
 
+      <!-- Pengingat: hal-hal penting yang perlu segera ditindak -->
+      <div class="card" style="margin-top: 14px" v-if="reminder.length">
+        <div class="section-title">Pengingat</div>
+        <div class="pengingat-list">
+          <div v-for="(r, i) in reminder" :key="i" class="pengingat-item" :class="`tingkat-${r.tingkat}`">
+            <span class="pengingat-badge">{{ labelTingkat(r.tingkat) }}</span>
+            <div class="pengingat-body">
+              <div class="pengingat-judul">
+                <router-link v-if="r.link" :to="r.link">{{ r.judul }}</router-link>
+                <span v-else>{{ r.judul }}</span>
+              </div>
+              <div class="note">{{ r.detail }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Kalender aktivitas bulan ini -->
-      <div class="card" style="margin-top: 14px" v-if="kalenderWeeks.length">
+      <div class="card kalender-card" style="margin-top: 14px" v-if="kalenderWeeks.length">
         <div class="section-title">Kalender Aktivitas &mdash; {{ namaBulan(stats.bulanIni) }}</div>
         <div class="kalender">
           <div class="kalender-head">
@@ -203,6 +255,16 @@ onMounted(muat);
         <div class="note" style="margin-top: 8px">
           Makin gelap warnanya = makin banyak kegiatan (invoice, transaksi divisi, surat jalan) di
           tanggal itu. Arahkan kursor ke tanggalnya untuk lihat rinciannya.
+        </div>
+      </div>
+
+      <!-- Peta Strategis: gabungan titik lokasi Sewa Alat Berat & Solar Keluar -->
+      <div class="card" style="margin-top: 14px">
+        <div class="section-title">Peta Strategis &mdash; Lokasi Sewa Alat Berat &amp; Solar</div>
+        <PetaTitik :points="titikPetaStrategis" :height="300" empty-text="Belum ada titik lokasi. Isi kolom Lokasi di Rekap Sewa Alat / Solar Keluar, titiknya otomatis muncul di sini." />
+        <div class="row" style="margin-top: 8px; gap: 14px; font-size: 12px">
+          <span><span class="legenda-dot" style="background:#c8a04a"></span> Sewa Alat Berat</span>
+          <span><span class="legenda-dot" style="background:#4a7fc9"></span> Solar</span>
         </div>
       </div>
 
@@ -363,25 +425,28 @@ onMounted(muat);
 .kalender-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 3px;
 }
-.kalender-head { margin-bottom: 4px; }
+.kalender-card {
+  max-width: 360px;
+}
+.kalender-head { margin-bottom: 3px; }
 .kalender-head-cell {
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   opacity: 0.6;
-  padding: 2px 0;
+  padding: 1px 0;
 }
-.kalender-row { margin-bottom: 4px; }
+.kalender-row { margin-bottom: 3px; }
 .kalender-cell {
   aspect-ratio: 1 / 1;
-  border-radius: 6px;
+  border-radius: 5px;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  padding: 3px 5px;
-  font-size: 11px;
+  padding: 2px 4px;
+  font-size: 9px;
   background: rgba(127, 127, 127, 0.08);
 }
 .kalender-cell.kosong { background: transparent; }
@@ -390,4 +455,44 @@ onMounted(muat);
 .kalender-cell.lvl-3 { background: rgba(200, 160, 74, 0.85); color: #fff; }
 .kalender-cell.hari-ini { outline: 2px solid #254f8f; outline-offset: -2px; }
 .kalender-tanggal { font-weight: 600; }
+
+.pengingat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pengingat-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(127, 127, 127, 0.06);
+  border-left: 3px solid rgba(127, 127, 127, 0.4);
+}
+.pengingat-item.tingkat-urgent { border-left-color: #c0392b; }
+.pengingat-item.tingkat-peringatan { border-left-color: #c8a04a; }
+.pengingat-item.tingkat-info { border-left-color: #4a7fc9; }
+.pengingat-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.15);
+  white-space: nowrap;
+  margin-top: 2px;
+}
+.pengingat-judul {
+  font-weight: 600;
+  font-size: 13px;
+}
+.legenda-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
 </style>

@@ -7,19 +7,23 @@
 // yang tampil di Dashboard & daftar Invoice -- bukan hitungan terpisah.
 import { ref, onMounted, computed, watch } from "vue";
 import SearchableSelect from "../components/SearchableSelect.vue";
+import PetaTitik from "../components/PetaTitik.vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 
 const loading = ref(true);
 const loadingRincian = ref(false);
+const loadingPeta = ref(false);
 const ringkasan = ref(null);
 const rincian = ref({ total: 0, baris: [] });
-const opsi = ref({ customer: [], kategori: [], unit: [] });
+const peta = ref({ titik: [], tanpaKoordinat: [] });
+const opsi = ref({ customer: [], kategori: [], unit: [], lokasi: [] });
 
 const filter = ref({
   customerId: "",
   kategori: "",
   unit: "",
+  lokasi: "",
   dari: "",
   sampai: "",
   q: "",
@@ -65,11 +69,23 @@ async function muat() {
   try {
     ringkasan.value = await api.get(`/rekap-alat${queryString()}`);
     if (tampilRincian.value) await muatRincian();
+    await muatPeta();
   } catch (e) {
     console.error(e);
     toast("Gagal memuat rekap sewa alat");
   } finally {
     loading.value = false;
+  }
+}
+
+async function muatPeta() {
+  loadingPeta.value = true;
+  try {
+    peta.value = await api.get(`/rekap-alat/peta${queryString()}`);
+  } catch (e) {
+    /* peta gagal dimuat tidak menghalangi halaman */
+  } finally {
+    loadingPeta.value = false;
   }
 }
 
@@ -90,14 +106,14 @@ async function bukaRincian() {
 }
 
 function reset() {
-  filter.value = { customerId: "", kategori: "", unit: "", dari: "", sampai: "", q: "" };
+  filter.value = { customerId: "", kategori: "", unit: "", lokasi: "", dari: "", sampai: "", q: "" };
   muat();
 }
 
 // Dropdown langsung menerapkan filter begitu dipilih (tanpa klik tombol),
 // supaya cepat dipakai staf.
 watch(
-  () => [filter.value.customerId, filter.value.kategori, filter.value.unit],
+  () => [filter.value.customerId, filter.value.kategori, filter.value.unit, filter.value.lokasi],
   () => muat()
 );
 
@@ -105,10 +121,57 @@ const maxKategori = computed(() => {
   const list = ringkasan.value?.perKategori || [];
   return list.reduce((m, k) => Math.max(m, k.nilai), 0) || 1;
 });
+const maxLokasi = computed(() => {
+  const list = ringkasan.value?.perLokasi || [];
+  return list.reduce((m, k) => Math.max(m, k.nilai), 0) || 1;
+});
 const maxBulan = computed(() => {
   const list = ringkasan.value?.perBulan || [];
   return list.reduce((m, k) => Math.max(m, k.nilai), 0) || 1;
 });
+
+const titikPeta = computed(() =>
+  (peta.value?.titik || []).map((p) => ({
+    lat: p.lat,
+    lng: p.lng,
+    label: p.lokasi,
+    valueLabel: `${rupiah(p.nilai)} • ${p.baris} baris`,
+  }))
+);
+
+// --- Edit lokasi langsung dari baris rincian (buat isi/perbaiki lokasi
+// data lama tanpa harus buka invoice-nya satu-satu). Begitu disimpan,
+// backend otomatis geocode ulang lokasinya. ---
+const editingLokasiId = ref(null);
+const editingLokasiValue = ref("");
+const savingLokasi = ref(false);
+
+function mulaiEditLokasi(b) {
+  editingLokasiId.value = b.id;
+  editingLokasiValue.value = b.lokasi || "";
+}
+function batalEditLokasi() {
+  editingLokasiId.value = null;
+}
+async function simpanLokasi(b) {
+  savingLokasi.value = true;
+  try {
+    await api.put(`/invoices/${b.invoiceId}/items/${b.id}`, { lokasi: editingLokasiValue.value || null });
+    b.lokasi = editingLokasiValue.value || null;
+    toast("Lokasi disimpan, titik peta akan muncul setelah dimuat ulang");
+    editingLokasiId.value = null;
+    await muatPeta();
+    // Ringkasan per-lokasi ikut disegarkan supaya konsisten dengan rincian.
+    ringkasan.value = await api.get(`/rekap-alat${queryString()}`);
+    if (!opsi.value.lokasi.includes(editingLokasiValue.value) && editingLokasiValue.value) {
+      opsi.value.lokasi = [...opsi.value.lokasi, editingLokasiValue.value].sort();
+    }
+  } catch (e) {
+    toast(e?.message || "Gagal menyimpan lokasi");
+  } finally {
+    savingLokasi.value = false;
+  }
+}
 
 onMounted(async () => {
   try {
@@ -156,6 +219,14 @@ onMounted(async () => {
             v-model="filter.unit"
             :options="opsi.unit.map(u => ({ value: u, label: u }))"
             placeholder="— Semua unit —"
+          />
+        </div>
+        <div class="field">
+          <label>Lokasi</label>
+          <SearchableSelect
+            v-model="filter.lokasi"
+            :options="opsi.lokasi.map(l => ({ value: l, label: l }))"
+            placeholder="— Semua lokasi —"
           />
         </div>
         <div class="field">
@@ -208,6 +279,48 @@ onMounted(async () => {
           <div class="val">{{ rupiah(ringkasan.sisaPiutang) }}</div>
           <div class="note">dari total tagihan invoice terkait</div>
         </div>
+      </div>
+
+      <!-- ================= PETA LOKASI SEWA ALAT BERAT ================= -->
+      <div class="card" style="margin-top: 14px">
+        <div class="section-title">Peta Lokasi Sewa Alat Berat</div>
+        <PetaTitik :points="titikPeta" :height="260" empty-text="Belum ada titik lokasi. Isi kolom Lokasi di rincian baris di bawah, titiknya akan otomatis muncul di sini." />
+        <div class="note" v-if="peta.tanpaKoordinat?.length" style="margin-top: 8px">
+          {{ peta.tanpaKoordinat.length }} nama lokasi belum ketemu koordinatnya (cek ejaan nama lokasinya):
+          {{ peta.tanpaKoordinat.join(", ") }}
+        </div>
+      </div>
+
+      <!-- ================= PER LOKASI ================= -->
+      <div class="card" style="margin-top: 14px" v-if="ringkasan.perLokasi?.length">
+        <div class="section-title">Berdasarkan Lokasi</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Lokasi</th>
+                <th class="num">Jam</th>
+                <th class="num">Baris</th>
+                <th class="num">Nilai</th>
+                <th style="width: 25%">Porsi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="l in ringkasan.perLokasi" :key="l.lokasi" style="cursor:pointer" @click="filter.lokasi = filter.lokasi === l.lokasi ? '' : l.lokasi">
+                <td><strong>{{ l.lokasi }}</strong></td>
+                <td class="num">{{ angka(l.jam) }}</td>
+                <td class="num">{{ l.baris }}</td>
+                <td class="num">{{ rupiah(l.nilai) }}</td>
+                <td>
+                  <div class="bar-track">
+                    <div class="bar-fill" :style="{ width: (l.nilai / maxLokasi) * 100 + '%' }"></div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="desc" style="margin-top: 8px">Klik salah satu lokasi untuk memfilter halaman ini.</div>
       </div>
 
       <!-- ================= PER KATEGORI ALAT ================= -->
@@ -346,6 +459,7 @@ onMounted(async () => {
                 <th>No Invoice</th>
                 <th>Unit</th>
                 <th>Kategori</th>
+                <th>Lokasi</th>
                 <th class="num">Qty</th>
                 <th class="num">Harga</th>
                 <th class="num">Nilai</th>
@@ -363,6 +477,17 @@ onMounted(async () => {
                 </td>
                 <td>{{ b.unitAlat }}</td>
                 <td>{{ b.kategoriAlat }}</td>
+                <td>
+                  <div v-if="editingLokasiId === b.id" style="display:flex; gap:4px; align-items:center">
+                    <input v-model="editingLokasiValue" placeholder="mis. Cimanggis 2" style="width:120px" @keyup.enter="simpanLokasi(b)" />
+                    <button class="btn btn-primary btn-sm" :disabled="savingLokasi" @click="simpanLokasi(b)">✓</button>
+                    <button class="btn btn-ghost btn-sm" :disabled="savingLokasi" @click="batalEditLokasi">✕</button>
+                  </div>
+                  <span v-else style="cursor:pointer" :title="b.lokasi ? 'Klik untuk ubah' : 'Klik untuk isi lokasi'" @click="mulaiEditLokasi(b)">
+                    {{ b.lokasi || "— isi lokasi —" }}
+                    <span v-if="b.lokasi && b.lokasiLat == null" class="note" title="Belum ketemu koordinatnya">(?)</span>
+                  </span>
+                </td>
                 <td class="num">{{ angka(b.qty) }} {{ b.satuan }}</td>
                 <td class="num">{{ rupiah(b.hargaSatuan) }}</td>
                 <td class="num">{{ rupiah(b.nilai) }}</td>

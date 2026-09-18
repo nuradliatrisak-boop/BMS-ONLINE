@@ -202,4 +202,189 @@ router.get("/", async (req, res, next) => {
   }
 });
 
+// ------------------------------------------------------------
+// PENGINDAT / REMINDER -- daftar hal penting yang perlu segera ditindak,
+// dikumpulkan dari beberapa sumber sekaligus supaya admin tidak perlu
+// buka satu-satu menu Invoice/Dokumen/Jadwal Setor tiap hari:
+//   - Invoice belum lunas yang jatuh temponya sudah lewat atau <= 7 hari lagi
+//   - Dokumen aset (STNK/KIR/dll) yang sudah/akan kadaluarsa dalam 30 hari
+//   - Jadwal Setor Solar hari ini yang belum direalisasi
+// Diurutkan dari yang paling mendesak (lewat/expired dulu).
+// ------------------------------------------------------------
+router.get("/reminder", async (req, res, next) => {
+  try {
+    const where = scopeDivisi(req);
+    const now = new Date();
+    const H7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const H30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const todayStr = now.toISOString().slice(0, 10);
+
+    const reminder = [];
+
+    // --- Invoice jatuh tempo (belum lunas, <= 7 hari lagi atau sudah lewat) ---
+    const invoicesJT = await prisma.invoice.findMany({
+      where: { ...where, status: { not: "LUNAS" }, jatuhTempo: { lte: H7 } },
+      include: { customer: { select: { nama: true } }, items: true, pembayaran: true },
+      orderBy: { jatuhTempo: "asc" },
+      take: 30,
+    });
+    for (const inv of invoicesJT) {
+      if (!inv.jatuhTempo) continue;
+      const total = inv.items.reduce((s, it) => s + Number(it.qty) * Number(it.hargaSatuan), 0);
+      const dibayar = inv.pembayaran.reduce((s, p) => s + Number(p.nominal), 0);
+      const sisa = total - dibayar;
+      if (sisa <= 0) continue;
+      const terlambat = inv.jatuhTempo < now;
+      reminder.push({
+        jenis: "invoice_jatuh_tempo",
+        tingkat: terlambat ? "urgent" : "peringatan",
+        judul: `Invoice ${inv.no} — ${inv.customer?.nama || "(tanpa customer)"}`,
+        detail: terlambat
+          ? `Sudah lewat jatuh tempo (${inv.jatuhTempo.toISOString().slice(0, 10)}), sisa tagihan Rp ${Math.round(sisa).toLocaleString("id-ID")}`
+          : `Jatuh tempo ${inv.jatuhTempo.toISOString().slice(0, 10)}, sisa tagihan Rp ${Math.round(sisa).toLocaleString("id-ID")}`,
+        tanggal: inv.jatuhTempo.toISOString().slice(0, 10),
+        link: `/invoices/${inv.id}`,
+      });
+    }
+
+    // --- Dokumen aset kadaluarsa/segera kadaluarsa (<= 30 hari) ---
+    const dokumenJT = await prisma.dokumen.findMany({
+      where: { berlakuSampai: { lte: H30 } },
+      orderBy: { berlakuSampai: "asc" },
+      take: 30,
+    });
+    if (dokumenJT.length) {
+      const idArmada = dokumenJT.filter((d) => d.asetTipe === "MOBIL").map((d) => d.asetId);
+      const idKapal = dokumenJT.filter((d) => d.asetTipe === "KAPAL").map((d) => d.asetId);
+      const idAlat = dokumenJT.filter((d) => d.asetTipe === "ALAT_BERAT").map((d) => d.asetId);
+      const [armadaList, kapalList, alatList] = await Promise.all([
+        idArmada.length ? prisma.armada.findMany({ where: { id: { in: idArmada } } }) : [],
+        idKapal.length ? prisma.kapal.findMany({ where: { id: { in: idKapal } } }) : [],
+        idAlat.length ? prisma.alatBeratUnit.findMany({ where: { id: { in: idAlat } } }) : [],
+      ]);
+      const namaAset = new Map();
+      for (const a of armadaList) namaAset.set(`MOBIL:${a.id}`, a.nopol);
+      for (const k of kapalList) namaAset.set(`KAPAL:${k.id}`, k.nama);
+      for (const u of alatList) namaAset.set(`ALAT_BERAT:${u.id}`, u.nama);
+
+      for (const d of dokumenJT) {
+        if (!d.berlakuSampai) continue;
+        const nama = namaAset.get(`${d.asetTipe}:${d.asetId}`) || "(aset tidak ditemukan)";
+        const terlambat = d.berlakuSampai < now;
+        reminder.push({
+          jenis: "dokumen_kadaluarsa",
+          tingkat: terlambat ? "urgent" : "peringatan",
+          judul: `${d.label} — ${nama}`,
+          detail: terlambat
+            ? `Sudah kadaluarsa sejak ${d.berlakuSampai.toISOString().slice(0, 10)}`
+            : `Berlaku sampai ${d.berlakuSampai.toISOString().slice(0, 10)}`,
+          tanggal: d.berlakuSampai.toISOString().slice(0, 10),
+          link: null,
+        });
+      }
+    }
+
+    // --- Jadwal Setor Solar hari ini yang belum direalisasi ---
+    const awalHari = new Date(`${todayStr}T00:00:00`);
+    const akhirHari = new Date(`${todayStr}T23:59:59.999`);
+    const jadwalHariIni = await prisma.solarJadwalSetor.count({
+      where: { tanggal: { gte: awalHari, lte: akhirHari }, status: "BELUM" },
+    });
+    if (jadwalHariIni > 0) {
+      reminder.push({
+        jenis: "jadwal_setor_solar",
+        tingkat: "info",
+        judul: "Jadwal Setor Solar hari ini",
+        detail: `${jadwalHariIni} sopir belum realisasi setor hari ini`,
+        tanggal: todayStr,
+        link: "/laporan-divisi",
+      });
+    }
+
+    const urutan = { urgent: 0, peringatan: 1, info: 2 };
+    reminder.sort((a, b) => (urutan[a.tingkat] - urutan[b.tingkat]) || a.tanggal.localeCompare(b.tanggal));
+
+    res.json({ reminder });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ------------------------------------------------------------
+// PETA STRATEGIS -- gabungan titik lokasi Sewa Alat Berat & Solar Keluar
+// dalam satu daftar, ditandai `jenis` supaya frontend bisa kasih warna
+// beda per jenis di satu peta yang sama (Dashboard).
+// Filter opsional: dari/sampai (YYYY-MM-DD), berlaku untuk kedua jenis data.
+// ------------------------------------------------------------
+router.get("/peta", async (req, res, next) => {
+  try {
+    const invoiceWhere = scopeDivisi(req);
+    const { dari, sampai } = req.query;
+
+    const tglFilter = {};
+    if (dari) tglFilter.gte = new Date(dari);
+    if (sampai) {
+      const akhir = new Date(sampai);
+      akhir.setHours(23, 59, 59, 999);
+      tglFilter.lte = akhir;
+    }
+
+    const [itemAlat, txSolar] = await Promise.all([
+      prisma.invoiceItem.findMany({
+        where: {
+          kategoriAlat: { not: null },
+          lokasi: { not: null },
+          ...(dari || sampai ? { tglPakai: tglFilter } : {}),
+          invoice: invoiceWhere,
+        },
+        select: { lokasi: true, lokasiLat: true, lokasiLng: true, qty: true, hargaSatuan: true },
+      }),
+      prisma.solarTx.findMany({
+        where: {
+          tipe: "KELUAR",
+          lokasi: { not: null },
+          ...(dari || sampai ? { tanggal: tglFilter } : {}),
+        },
+        select: { lokasi: true, lokasiLat: true, lokasiLng: true, liter: true },
+      }),
+    ]);
+
+    const alatMap = new Map();
+    for (const it of itemAlat) {
+      if (it.lokasiLat == null || it.lokasiLng == null) continue;
+      const p = alatMap.get(it.lokasi) || {
+        jenis: "alat_berat",
+        lokasi: it.lokasi,
+        lat: it.lokasiLat,
+        lng: it.lokasiLng,
+        nilai: 0,
+        baris: 0,
+      };
+      p.nilai += Number(it.qty) * Number(it.hargaSatuan);
+      p.baris += 1;
+      alatMap.set(it.lokasi, p);
+    }
+
+    const solarMap = new Map();
+    for (const t of txSolar) {
+      if (t.lokasiLat == null || t.lokasiLng == null) continue;
+      const p = solarMap.get(t.lokasi) || {
+        jenis: "solar",
+        lokasi: t.lokasi,
+        lat: t.lokasiLat,
+        lng: t.lokasiLng,
+        liter: 0,
+        baris: 0,
+      };
+      p.liter += t.liter;
+      p.baris += 1;
+      solarMap.set(t.lokasi, p);
+    }
+
+    res.json({ titik: [...alatMap.values(), ...solarMap.values()] });
+  } catch (e) {
+    next(e);
+  }
+});
+
 export default router;

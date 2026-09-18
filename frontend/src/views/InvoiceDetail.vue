@@ -298,6 +298,7 @@ const manualItem = ref({
   qty: 1,
   satuan: "jam",
   hargaSatuan: 0,
+  lokasi: "",
 });
 
 function resetManualItemForm() {
@@ -308,6 +309,7 @@ function resetManualItemForm() {
     qty: 1,
     satuan: "jam",
     hargaSatuan: 0,
+    lokasi: "",
   };
 }
 
@@ -346,6 +348,7 @@ async function submitManualItem() {
       kategoriAlat: manualItem.value.kategoriAlat,
       unitAlat: manualItem.value.unitAlat || null,
       tglPakai: manualItem.value.tanggal || null,
+      lokasi: manualItem.value.lokasi || null,
     });
     toast("Item berhasil ditambahkan");
     showManualItemModal.value = false;
@@ -766,6 +769,11 @@ onMounted(load);
             <label>Biaya Mobilisasi</label>
             <input v-model.number="manualItem.hargaSatuan" type="number" min="0" />
           </div>
+        </div>
+
+        <div class="field">
+          <label>Lokasi <span class="optional">(opsional — titiknya otomatis muncul di peta)</span></label>
+          <input v-model="manualItem.lokasi" placeholder="mis. Cimanggis 2, Kp. Rambutan" />
         </div>
 
         <div class="modal-actions">

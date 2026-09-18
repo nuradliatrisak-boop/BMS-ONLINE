@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import prisma from "../prismaClient.js";
 import { uploadBukti, UPLOAD_DIR } from "../middleware/upload.js";
+import { geocodeLokasi } from "../services/geocode.js";
 
 const router = Router();
 
@@ -90,6 +91,45 @@ router.get("/", async (req, res, next) => {
   }
 });
 
+// GET /api/solar-tx/peta -> titik lokasi Solar Keluar (lat/lng) + total liter,
+// buat "Peta Solar". Terima filter waktu yang sama dengan GET / (bulan ATAU
+// dari/sampai). Lokasi yang belum ketemu koordinatnya (geocoding gagal/belum
+// sempat jalan) dikumpulkan terpisah di `tanpaKoordinat`.
+router.get("/peta", async (req, res, next) => {
+  try {
+    const { bulan, dari, sampai } = req.query;
+    const list = await prisma.solarTx.findMany({ where: { tipe: "KELUAR" } });
+
+    let filtered = list;
+    if (bulan) {
+      filtered = list.filter((t) => t.tanggal.toISOString().slice(0, 7) === bulan);
+    } else if (dari || sampai) {
+      const dariMs = dari ? new Date(dari + "T00:00:00").getTime() : -Infinity;
+      const sampaiMs = sampai ? new Date(sampai + "T23:59:59.999").getTime() : Infinity;
+      filtered = list.filter((t) => {
+        const ms = new Date(t.tanggal).getTime();
+        return ms >= dariMs && ms <= sampaiMs;
+      });
+    }
+
+    const map = new Map();
+    for (const t of filtered) {
+      if (!t.lokasi || t.lokasiLat == null || t.lokasiLng == null) continue;
+      const p = map.get(t.lokasi) || { lokasi: t.lokasi, lat: t.lokasiLat, lng: t.lokasiLng, liter: 0, jumlah: 0 };
+      p.liter += t.liter;
+      p.jumlah += 1;
+      map.set(t.lokasi, p);
+    }
+    const tanpaKoordinat = [
+      ...new Set(filtered.filter((t) => t.lokasi && (t.lokasiLat == null || t.lokasiLng == null)).map((t) => t.lokasi)),
+    ];
+
+    res.json({ titik: [...map.values()].sort((a, b) => b.liter - a.liter), tanpaKoordinat });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // POST /api/solar-tx  (multipart/form-data, field "bukti" opsional untuk file)
 router.post("/", uploadBukti.single("bukti"), async (req, res, next) => {
   try {
@@ -108,6 +148,11 @@ router.post("/", uploadBukti.single("bukti"), async (req, res, next) => {
 
     const tipeUp = String(tipe).toUpperCase();
     const no = await generateNoSolar(tipeUp, tanggal);
+    const lokasiFinal = tipeUp === "KELUAR" ? lokasi || null : null;
+    // Geocode otomatis dari teks lokasi (opsional) -> titik langsung muncul
+    // di Peta Solar tanpa staf perlu menandai manual. Gagal geocode tidak
+    // menggagalkan penyimpanan transaksinya.
+    const geo = lokasiFinal ? await geocodeLokasi(lokasiFinal) : { lat: null, lng: null };
 
     const tx = await prisma.solarTx.create({
       data: {
@@ -116,7 +161,9 @@ router.post("/", uploadBukti.single("bukti"), async (req, res, next) => {
         tanggal: new Date(tanggal),
         nama: String(nama).trim(),
         liter: literNum,
-        lokasi: tipeUp === "KELUAR" ? lokasi || null : null,
+        lokasi: lokasiFinal,
+        lokasiLat: geo.lat,
+        lokasiLng: geo.lng,
         keterangan: keterangan || null,
         buktiFile: req.file ? req.file.filename : null,
         buktiNama: req.file ? req.file.originalname : null,
@@ -163,13 +210,24 @@ router.put("/:id", uploadBukti.single("bukti"), async (req, res, next) => {
       buktiNama = null;
     }
 
+    const lokasiFinal = current.tipe === "KELUAR" ? lokasi || null : null;
+    // Geocode ulang hanya kalau teks lokasinya berubah, supaya tidak
+    // memanggil layanan geocoding setiap kali baris ini diedit (mis. cuma
+    // ganti keterangan/bukti).
+    let geo = { lat: current.lokasiLat, lng: current.lokasiLng };
+    if (lokasiFinal !== current.lokasi) {
+      geo = lokasiFinal ? await geocodeLokasi(lokasiFinal) : { lat: null, lng: null };
+    }
+
     const tx = await prisma.solarTx.update({
       where: { id: req.params.id },
       data: {
         tanggal: new Date(tanggal),
         nama: String(nama).trim(),
         liter: literNum,
-        lokasi: current.tipe === "KELUAR" ? lokasi || null : null,
+        lokasi: lokasiFinal,
+        lokasiLat: geo.lat,
+        lokasiLng: geo.lng,
         keterangan: keterangan || null,
         buktiFile,
         buktiNama,

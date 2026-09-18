@@ -8,6 +8,7 @@ import { exportLaporanDivisiPdf, exportSolarStokPdf } from "../utils/pdfExport.j
 import { exportSolarStokWord } from "../utils/wordExport.js";
 import InvoiceDrilldownModal from "../components/InvoiceDrilldownModal.vue";
 import RincianTransaksiModal from "../components/RincianTransaksiModal.vue";
+import PetaTitik from "../components/PetaTitik.vue";
 
 const tab = ref("laba-rugi"); // "laba-rugi" | "solar"
 
@@ -419,6 +420,29 @@ const solarKeluarListFiltered = computed(() => {
 const totalKeluarFiltered = computed(() =>
   solarKeluarListFiltered.value.reduce((s, t) => s + t.liter, 0)
 );
+
+// --- Titik peta Solar Keluar, dikelompokkan per lokasi (dari data periode
+// yang sedang ditampilkan). Lokasi yang belum ketemu koordinatnya (belum
+// sempat/gagal digeocode) dikumpulkan terpisah supaya kelihatan perlu dicek.
+const titikSolarPeta = computed(() => {
+  const map = new Map();
+  for (const t of solarKeluarList.value) {
+    if (t.lokasiLat == null || t.lokasiLng == null) continue;
+    const lok = (t.lokasi || "").trim() || "(Tanpa nama)";
+    const p = map.get(lok) || { lat: t.lokasiLat, lng: t.lokasiLng, label: lok, liter: 0, jumlah: 0 };
+    p.liter += t.liter;
+    p.jumlah += 1;
+    map.set(lok, p);
+  }
+  return [...map.values()].map((p) => ({ ...p, valueLabel: `${p.liter} Liter • ${p.jumlah} transaksi` }));
+});
+const solarTanpaKoordinat = computed(() => {
+  const seen = new Set();
+  for (const t of solarKeluarList.value) {
+    if (t.lokasi && (t.lokasiLat == null || t.lokasiLng == null)) seen.add(t.lokasi);
+  }
+  return [...seen];
+});
 
 // Rekap per wilayah selalu dihitung dari SELURUH data bulan itu (tidak ikut
 // filter di atas), supaya tetap bisa lihat perbandingan semua wilayah
@@ -838,6 +862,15 @@ onMounted(async () => {
               </tr>
             </tfoot>
           </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="section-title">Peta Lokasi Solar Keluar</div>
+        <PetaTitik :points="titikSolarPeta" :height="260" empty-text="Belum ada titik lokasi solar keluar pada periode ini." />
+        <div class="note" v-if="solarTanpaKoordinat.length" style="margin-top: 8px">
+          {{ solarTanpaKoordinat.length }} nama lokasi belum ketemu koordinatnya (cek ejaan nama lokasinya):
+          {{ solarTanpaKoordinat.join(", ") }}
         </div>
       </div>
 

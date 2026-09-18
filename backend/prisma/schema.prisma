@@ -280,9 +280,14 @@ model InvoiceItem {
   kategoriAlat String?   // "Bucket" / "Breker" / "Mobilisasi" -> dipakai statistik per kategori alat
   unitAlat     String?   // nama unit alatnya, mis. "PC 200", "SANY PC - 075", "Longarm"
   tglPakai     DateTime? // tanggal pemakaian alat pada baris ini (bukan tanggal invoice)
+  // --- lokasi sewa (opsional), dipakai statistik/filter per lokasi & peta ---
+  lokasi       String?   // nama lokasi bebas, diketik staf mis. "Cimanggis 2", "Kp. Rambutan"
+  lokasiLat    Float?    // hasil geocoding otomatis dari `lokasi` (lihat services/geocode.js)
+  lokasiLng    Float?    // null kalau lokasi belum ada/gagal digeocode -- tidak wajib diisi
 
   @@index([kategoriAlat])
   @@index([unitAlat])
+  @@index([lokasi])
 }
 
 model Pembayaran {
@@ -368,6 +373,8 @@ model SolarTx {
   nama       String    // nama sopir (MASUK) atau nama operator (KELUAR)
   liter      Float
   lokasi     String?   // hanya untuk KELUAR (lokasi/unit alat berat tujuan solar)
+  lokasiLat  Float?    // hasil geocoding otomatis dari `lokasi` (lihat services/geocode.js)
+  lokasiLng  Float?    // null kalau lokasi belum ada/gagal digeocode -- tidak wajib diisi
   keterangan String?
   buktiFile  String?   // path file bukti (foto surat jalan / dokumen pendukung), disimpan di /uploads
   buktiNama  String?   // nama file asli saat diupload (untuk ditampilkan)
@@ -377,6 +384,19 @@ model SolarTx {
   jadwalSetor SolarJadwalSetor?
 
   @@index([tipe, tanggal])
+}
+
+// Cache hasil geocoding (teks lokasi -> koordinat lat/lng) supaya tidak
+// perlu memanggil layanan geocoding (Nominatim/OpenStreetMap) berulang
+// kali untuk teks lokasi yang sama -- juga menghormati batas rate limit
+// layanan gratis tsb (maks. 1 request/detik). Lihat backend/src/services/geocode.js.
+model GeoCache {
+  id          String   @id @default(cuid())
+  query       String   @unique // teks lokasi yang sudah dinormalisasi (lowercase, trim)
+  lat         Float?   // null = pernah dicoba tapi tidak ketemu (supaya tidak dicoba ulang terus)
+  lng         Float?
+  displayName String?  // nama lengkap hasil dari layanan geocoding, buat referensi/debug
+  createdAt   DateTime @default(now())
 }
 
 // Checklist harian "Jadwal Setor Solar" -- daftar sopir yang wajib

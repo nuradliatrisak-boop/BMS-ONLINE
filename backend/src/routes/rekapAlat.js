@@ -10,12 +10,13 @@
 // import maupun saat admin input invoice manual.
 //
 // Endpoint:
-//   GET /api/rekap-alat             -> ringkasan (total, per customer, per kategori, per unit, per bulan)
+//   GET /api/rekap-alat             -> ringkasan (total, per customer, per kategori, per unit, per lokasi, per bulan)
 //   GET /api/rekap-alat/rincian     -> daftar baris item (buat tabel detail + pencarian)
-//   GET /api/rekap-alat/opsi        -> isi dropdown pencarian (customer, kategori, unit)
+//   GET /api/rekap-alat/opsi        -> isi dropdown pencarian (customer, kategori, unit, lokasi)
+//   GET /api/rekap-alat/peta        -> titik-titik lokasi (lat/lng) + statistiknya, buat Peta Sewa Alat Berat
 //
 // Query filter yang dipahami semua endpoint di atas:
-//   customerId, kategori, unit, dari (YYYY-MM-DD), sampai (YYYY-MM-DD), q (kata kunci)
+//   customerId, kategori, unit, lokasi, dari (YYYY-MM-DD), sampai (YYYY-MM-DD), q (kata kunci)
 
 import { Router } from "express";
 import prisma from "../prismaClient.js";
@@ -35,6 +36,7 @@ function buildWhere(req) {
 
   if (req.query.kategori) where.kategoriAlat = String(req.query.kategori);
   if (req.query.unit) where.unitAlat = String(req.query.unit);
+  if (req.query.lokasi) where.lokasi = String(req.query.lokasi);
 
   const dari = req.query.dari ? new Date(String(req.query.dari)) : null;
   const sampai = req.query.sampai ? new Date(String(req.query.sampai)) : null;
@@ -98,6 +100,7 @@ router.get("/", async (req, res, next) => {
     const perKategori = new Map();
     const perUnit = new Map();
     const perBulan = new Map();
+    const perLokasi = new Map();
 
     let totalNilai = 0;
     let totalJam = 0;
@@ -135,6 +138,25 @@ router.get("/", async (req, res, next) => {
       bln.nilai += nilai;
       bln.jam += jam;
       perBulan.set(bk, bln);
+
+      // Statistik per lokasi (dipakai tabel "Sewa Alat per Lokasi" + filter
+      // lokasi di halaman Rekap Alat). Baris tanpa lokasi dikumpulkan
+      // terpisah supaya tidak mengotori daftar lokasi asli.
+      if (it.lokasi) {
+        const lk = perLokasi.get(it.lokasi) || {
+          lokasi: it.lokasi,
+          lat: it.lokasiLat ?? null,
+          lng: it.lokasiLng ?? null,
+          nilai: 0,
+          jam: 0,
+          baris: 0,
+        };
+        lk.nilai += nilai;
+        lk.jam += jam;
+        lk.baris += 1;
+        if (lk.lat == null && it.lokasiLat != null) { lk.lat = it.lokasiLat; lk.lng = it.lokasiLng; }
+        perLokasi.set(it.lokasi, lk);
+      }
     }
 
     // Pembayaran & piutang dihitung per invoice yang punya baris sewa alat,
@@ -167,6 +189,7 @@ router.get("/", async (req, res, next) => {
       perCustomer: urut([...perCustomer.values()]),
       perKategori: urut([...perKategori.values()]),
       perUnit: urut([...perUnit.values()]).slice(0, 30),
+      perLokasi: urut([...perLokasi.values()]),
       perBulan: [...perBulan.values()].sort((a, b) => a.bulan.localeCompare(b.bulan)),
     });
   } catch (e) {
@@ -190,6 +213,9 @@ router.get("/rincian", async (req, res, next) => {
         tglPakai: it.tglPakai,
         unitAlat: it.unitAlat,
         kategoriAlat: it.kategoriAlat,
+        lokasi: it.lokasi,
+        lokasiLat: it.lokasiLat,
+        lokasiLng: it.lokasiLng,
         keterangan: it.keterangan,
         qty: it.qty,
         satuan: it.satuan,
@@ -212,17 +238,20 @@ router.get("/opsi", async (req, res, next) => {
       select: {
         kategoriAlat: true,
         unitAlat: true,
+        lokasi: true,
         invoice: { select: { customer: { select: { id: true, nama: true } } } },
       },
     });
 
     const kategori = new Set();
     const unit = new Set();
+    const lokasi = new Set();
     const customerMap = new Map();
 
     for (const it of items) {
       if (it.kategoriAlat) kategori.add(it.kategoriAlat);
       if (it.unitAlat) unit.add(it.unitAlat);
+      if (it.lokasi) lokasi.add(it.lokasi);
       const c = it.invoice?.customer;
       if (c) customerMap.set(c.id, c.nama);
     }
@@ -230,10 +259,48 @@ router.get("/opsi", async (req, res, next) => {
     res.json({
       kategori: [...kategori].sort(),
       unit: [...unit].sort(),
+      lokasi: [...lokasi].sort(),
       customer: [...customerMap.entries()]
         .map(([id, nama]) => ({ id, nama }))
         .sort((a, b) => a.nama.localeCompare(b.nama)),
     });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ---------- PETA (titik lokasi + statistik, buat "Peta Sewa Alat Berat") ----------
+// Terima filter yang sama seperti endpoint lain (customerId, kategori, unit,
+// dari, sampai, q). Baris tanpa lokasi/koordinat otomatis dilewati (peta
+// cuma menampilkan titik yang sudah ketemu koordinatnya).
+router.get("/peta", async (req, res, next) => {
+  try {
+    const items = await ambilItem(req);
+    const map = new Map();
+
+    for (const it of items) {
+      if (!it.lokasi || it.lokasiLat == null || it.lokasiLng == null) continue;
+      const nilai = Number(it.qty) * Number(it.hargaSatuan);
+      const p = map.get(it.lokasi) || {
+        lokasi: it.lokasi,
+        lat: it.lokasiLat,
+        lng: it.lokasiLng,
+        nilai: 0,
+        baris: 0,
+      };
+      p.nilai += nilai;
+      p.baris += 1;
+      map.set(it.lokasi, p);
+    }
+
+    // Baris yang lokasinya sudah diisi TAPI belum punya koordinat (mis.
+    // geocoding gagal/belum sempat jalan) -- ditampilkan terpisah supaya
+    // admin tahu perlu backfill/perbaiki nama lokasinya.
+    const tanpaKoordinat = [
+      ...new Set(items.filter((it) => it.lokasi && (it.lokasiLat == null || it.lokasiLng == null)).map((it) => it.lokasi)),
+    ];
+
+    res.json({ titik: [...map.values()].sort((a, b) => b.nilai - a.nilai), tanpaKoordinat });
   } catch (e) {
     next(e);
   }

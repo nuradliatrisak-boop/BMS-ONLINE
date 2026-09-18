@@ -3,6 +3,7 @@ import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
 import { buildInvoiceWorkbook } from "../services/invoiceXlsx.js";
 import { DEFAULTS as PRINT_CALIB_DEFAULTS } from "./printCalib.js";
+import { geocodeLokasi } from "../services/geocode.js";
 
 const router = Router();
 
@@ -96,7 +97,11 @@ function ringkas(inv) {
 // otomatis ikut data Surat Jalan tsb (kecuali dikirim manual), hargaSatuan
 // tetap harus dikirim dari frontend (auto-suggest dari harga customer, atau
 // diketik manual, lalu masih bisa diubah lewat tombol "Update Harga").
-async function buildItemData(tx, it) {
+//
+// `lokasiGeo` (opsional): hasil geocoding {lat,lng} yang SUDAH DIHITUNG DI
+// LUAR transaksi DB (lihat pemanggilnya) -- supaya panggilan ke layanan
+// geocoding (bisa lambat/kena rate limit) tidak menahan transaksi Postgres.
+async function buildItemData(tx, it, lokasiGeo = null) {
   let keterangan = it.keterangan;
   let qty = it.qty;
   let satuan = it.satuan;
@@ -129,7 +134,25 @@ async function buildItemData(tx, it) {
     kategoriAlat: it.kategoriAlat || null,
     unitAlat: it.unitAlat || null,
     tglPakai: it.tglPakai ? new Date(it.tglPakai) : null,
+    // Lokasi sewa (opsional) + koordinat hasil geocoding otomatis, dipakai
+    // statistik & peta per lokasi di menu Rekap Sewa Alat / Dashboard.
+    lokasi: it.lokasi || null,
+    lokasiLat: lokasiGeo?.lat ?? null,
+    lokasiLng: lokasiGeo?.lng ?? null,
   };
+}
+
+// Geocode field `lokasi` tiap item SEBELUM masuk transaksi DB (panggilan ke
+// layanan geocoding eksternal bisa lambat -- tidak boleh menahan transaksi
+// Postgres terbuka lama-lama). Aman dipakai untuk item tanpa lokasi (hasilnya
+// null, tidak memanggil apa-apa).
+async function geocodeItems(items) {
+  return Promise.all(
+    (items || []).map(async (it) => ({
+      it,
+      geo: it.lokasi ? await geocodeLokasi(it.lokasi) : null,
+    }))
+  );
 }
 
 // ============================================================
@@ -264,10 +287,12 @@ router.post("/", async (req, res, next) => {
       });
     }
 
+    const itemsGeo = await geocodeItems(items);
+
     const invoice = await prisma.$transaction(async (tx) => {
       const no = await generateNomorInvoice(tx, tanggal);
       const itemsData = await Promise.all(
-        (items || []).map((it) => buildItemData(tx, it))
+        itemsGeo.map(({ it, geo }) => buildItemData(tx, it, geo))
       );
 
       return tx.invoice.create({
@@ -354,8 +379,9 @@ router.put("/:id", async (req, res, next) => {
 
 router.post("/:id/items", async (req, res, next) => {
   try {
+    const lokasiGeo = req.body.lokasi ? await geocodeLokasi(req.body.lokasi) : null;
     const itemData = await prisma.$transaction((tx) =>
-      buildItemData(tx, req.body)
+      buildItemData(tx, req.body, lokasiGeo)
     );
 
     await prisma.invoiceItem.create({
@@ -381,7 +407,15 @@ router.post("/:id/items", async (req, res, next) => {
 // Dipakai tombol "Update Harga": ubah harga satuan / qty satu baris item
 router.put("/:id/items/:itemId", async (req, res, next) => {
   try {
-    const { hargaSatuan, qty, keterangan } = req.body;
+    const { hargaSatuan, qty, keterangan, lokasi } = req.body;
+
+    // Kalau lokasi ikut dikirim & berubah, geocode ulang supaya titik di
+    // peta ikut pindah. Kalau lokasi dikosongkan, titiknya ikut dihapus.
+    let lokasiData = {};
+    if (lokasi !== undefined) {
+      const geo = lokasi ? await geocodeLokasi(lokasi) : { lat: null, lng: null };
+      lokasiData = { lokasi: lokasi || null, lokasiLat: geo.lat, lokasiLng: geo.lng };
+    }
 
     await prisma.invoiceItem.update({
       where: { id: req.params.itemId },
@@ -389,6 +423,7 @@ router.put("/:id/items/:itemId", async (req, res, next) => {
         ...(hargaSatuan !== undefined ? { hargaSatuan: Number(hargaSatuan) } : {}),
         ...(qty !== undefined ? { qty: Number(qty) } : {}),
         ...(keterangan !== undefined ? { keterangan } : {}),
+        ...lokasiData,
       },
     });
 

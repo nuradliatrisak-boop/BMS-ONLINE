@@ -138,6 +138,23 @@ export const DIVISI_CONFIG = {
         subKategoriKendaraan: true,
       },
       {
+        // Uang cash yang DIKELUARKAN perusahaan ke sopir untuk operasional
+        // sekali jalan (Uang Jalan/split biaya jalan tol-jembatan timbang dst,
+        // solar per trip) + pembelian material terkait trip tsb (mis. beli
+        // pasir/batu) -- BEDA dengan kelompok "pendapatan" > "Uang Jalan
+        // Tronton/Cold Diesel" di atas, yang itu adalah tarif SEWA yang
+        // ditagihkan ke Supplier (pendapatan Armada). Ini murni pengeluaran
+        // operasional per kendaraan/sopir, dicatat per nomor polisi seperti
+        // Sparepart -- rinciannya (mis. "Split 160.000, Bangka 280.000,
+        // Solar 730.000") ditulis di kolom Catatan tiap transaksi.
+        key: "operasional",
+        label: "Pengeluaran Operasional Sopir (Uang Jalan, Beli Material, dst)",
+        tipe: "PENGELUARAN",
+        kategoriDefault: ["Uang Jalan Sopir", "Pembelian Material"],
+        allowCustom: true,
+        subKategoriKendaraan: true,
+      },
+      {
         key: "bulanan",
         label: "Pengeluaran Bulanan",
         tipe: "PENGELUARAN",

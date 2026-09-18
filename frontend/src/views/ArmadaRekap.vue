@@ -24,6 +24,13 @@ const groupBy = ref("nopol"); // "nopol" | "sopir"
 const data = ref(null);
 const loading = ref(false);
 
+// Search (Nopol/Sopir) & filter Jenis kendaraan (Tronton / Cold Diesel / dst)
+const search = ref("");
+const filterJenis = ref("Semua");
+const jenisTersedia = computed(() =>
+  Array.from(new Set((data.value?.rekap || []).map((r) => r.jenis).filter(Boolean))).sort()
+);
+
 function rupiah(n) {
   return "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 }
@@ -39,7 +46,13 @@ const bulanLabel = computed(() => {
 const rows = computed(() => {
   if (!data.value) return [];
   const showAll = !auth.isAdmin || divisi.value === "Semua Divisi";
-  const base = data.value.rekap.filter((r) => showAll || r.divisi === divisi.value);
+  const q = search.value.trim().toLowerCase();
+  const base = data.value.rekap.filter((r) => {
+    if (!(showAll || r.divisi === divisi.value)) return false;
+    if (filterJenis.value !== "Semua" && r.jenis !== filterJenis.value) return false;
+    if (!q) return true;
+    return (r.nopol || "").toLowerCase().includes(q) || (r.sopir || "").toLowerCase().includes(q);
+  });
 
   if (groupBy.value === "nopol") return base;
 
@@ -123,6 +136,19 @@ onMounted(load);
           <select v-model="groupBy">
             <option value="nopol">Nomor Polisi (Kendaraan)</option>
             <option value="sopir">Sopir</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Cari (Nopol / Sopir)</label>
+          <input v-model="search" placeholder="Contoh: B 9244 atau Aceng" />
+        </div>
+
+        <div class="field">
+          <label>Jenis</label>
+          <select v-model="filterJenis">
+            <option value="Semua">Semua Jenis</option>
+            <option v-for="j in jenisTersedia" :key="j" :value="j">{{ j }}</option>
           </select>
         </div>
       </div>

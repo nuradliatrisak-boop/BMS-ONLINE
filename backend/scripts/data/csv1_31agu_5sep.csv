@@ -1,0 +1,56 @@
+Tanggal,Nopol,Sopir,Jenis Armada,Kategori,Nominal,Keterangan,Catatan Tujuan/Lokasi
+2026-08-31,B 9598 UVY,Yadi,Tronton,Uang Jalan Sopir,1000000,Cilegon,Reno -> Hihido? (kurang jelas)
+2026-08-31,B 9598 UVY,Yadi,Tronton,Pembelian Material,1200000,,Reno -> Hihido? (kurang jelas)
+2026-08-31,B 9847 UIU,Tono,Tronton,Uang Jalan Sopir,1000000,Cilegon,Bram Rusun Pulogadung
+2026-08-31,B 9847 UIU,Tono,Tronton,Pembelian Material,1200000,,Bram Rusun Pulogadung
+2026-08-31,B 9848 UIU,Pandi (tertulis "Pardi"),Tronton,Uang Jalan Sopir,1000000,Batu Belah,Bram Rusun Pulo Gadung
+2026-08-31,B 9848 UIU,Pandi (tertulis "Pardi"),Tronton,Pembelian Material,1800000,,Bram Rusun Pulo Gadung
+2026-08-31,B 9372 UYZ,Purnomo,Tronton,Uang Jalan Sopir,1000000,Batu Belah,Bram Rusun Pulogadung
+2026-08-31,B 9372 UYZ,Purnomo,Tronton,Pembelian Material,1000000,,Bram Rusun Pulogadung
+2026-09-01,B 9656 UYX,Tajri (tertulis "Tairi"),Tronton,Uang Jalan Sopir,3000000,"Bangka 2.000.000 + Cilegon 1.000.000",PKL
+2026-09-01,B 9656 UYX,Tajri (tertulis "Tairi"),Tronton,Pembelian Material,8990000,,PKL
+2026-09-01,B 9656 UYX,Tajri (tertulis "Tairi"),Tronton,Pembelian Material,1200000,,PKL
+2026-09-01,B 9534 UIS,Miskun,Tronton,Uang Jalan Sopir,1370000,"Bangka 370.000 + Cilegon 1.000.000",Alam 14
+2026-09-01,B 9534 UIS,Miskun,Tronton,Pembelian Material,9960000,,Alam 14
+2026-09-01,B 9534 UIS,Miskun,Tronton,Pembelian Material,1200000,,PKL
+2026-09-01,B 9659 UYY,Anto,Tronton,Uang Jalan Sopir,1500000,Split,Pull
+2026-09-01,B 9659 UYY,Anto,Tronton,Pembelian Material,5200000,,Pull
+2026-09-01,B 9598 UVY,Yadi,Tronton,Uang Jalan Sopir,400000,Kalimantan (200rb + 200rb),Pull
+2026-09-01,B 9598 UVY,Yadi,Tronton,Pembelian Material,5200000,,Pull
+2026-09-01,B 9598 UVY,Yadi,Tronton,Pembelian Material,5200000,,Pull
+2026-09-03,B 9656 UYX,Tajri,Tronton,Uang Jalan Sopir,1370000,"Bangka 370.000 + Cilegon 1.000.000",Alam Jaya
+2026-09-03,B 9656 UYX,Tajri,Tronton,Pembelian Material,9000000,,Alam Jaya
+2026-09-03,B 9656 UYX,Tajri,Tronton,Pembelian Material,1200000,,PKL
+2026-09-03,B 9598 UVY,Yadi,Tronton,Uang Jalan Sopir,1500000,Batu Belah,Bram Rusun
+2026-09-03,B 9598 UVY,Yadi,Tronton,Pembelian Material,1800000,,Bram Rusun
+2026-09-03,B 9848 UIU,Pandi,Tronton,Uang Jalan Sopir,1500000,Batu Belah,Bram Rusun
+2026-09-03,B 9848 UIU,Pandi,Tronton,Pembelian Material,1800000,,Bram Rusun
+2026-09-03,B 9534 UIS,Miskun,Tronton,Uang Jalan Sopir,1500000,Cilegon,Bram Rusun
+2026-09-03,B 9534 UIS,Miskun,Tronton,Pembelian Material,1800000,,Bram Rusun
+2026-09-04,B 9656 UYX,Tajri,Tronton,Uang Jalan Sopir,1500000,Cilegon,Pull
+2026-09-04,B 9656 UYX,Tajri,Tronton,Pembelian Material,1200000,,Pull
+2026-09-04,B 9372 UYZ,Purnomo,Tronton,Uang Jalan Sopir,1500000,Batu Belah,Kohar -> P.Pari
+2026-09-04,B 9372 UYZ,Purnomo,Tronton,Pembelian Material,1800000,,Kohar -> P.Pari
+2026-09-04,B 9659 UYY,Anto,Tronton,Uang Jalan Sopir,1500000,Batu Belah,Kohar P Pari
+2026-09-04,B 9659 UYY,Anto,Tronton,Pembelian Material,1800000,,Kohar P Pari
+2026-09-04,B 9848 UIU,Pandi,Tronton,Uang Jalan Sopir,1500000,Batu Belah,Kohar P Pari
+2026-09-04,B 9848 UIU,Pandi,Tronton,Pembelian Material,1800000,,Kohar P Pari
+2026-09-04,B 9534 UIS,Miskun,Tronton,Uang Jalan Sopir,1500000,Batu Belah,Kohar P Pari
+2026-09-04,B 9534 UIS,Miskun,Tronton,Pembelian Material,1800000,,Kohar P Pari
+2026-09-05,B 9656 UYX,Tajri,Tronton,Uang Jalan Sopir,1500000,Split,Pull
+2026-09-05,B 9656 UYX,Tajri,Tronton,Pembelian Material,5234000,,Pull
+2026-09-05,B 9598 UVY,Yadi,Tronton,Uang Jalan Sopir,1500000,Beskos,Pull
+2026-09-05,B 9598 UVY,Yadi,Tronton,Pembelian Material,4137000,,Pull
+2026-09-01,B 9489 UYX,Kariadi,Cold Diesel,Uang Jalan Sopir,1170000,"Bangka 160.000 + Cilegon 280.000 + Solar 730.000",Aneka Jaya & LTM Cimanggis
+2026-09-01,B 9489 UYX,Kariadi,Cold Diesel,Pembelian Material,1870000,,Aneka Jaya & LTM Cimanggis
+2026-09-01,B 9782 UYV,Aceng,Cold Diesel,Uang Jalan Sopir,1170000,"Split 160.000 + Cilegon 280.000 + Solar 730.000",Maju Jaya & LTM Cimanggis
+2026-09-01,B 9661 UYW,Nanang,Cold Diesel,Uang Jalan Sopir,890000,"Bangka 160.000 + Solar 730.000",Aneka Jaya
+2026-09-01,B 9661 UYW,Nanang,Cold Diesel,Pembelian Material,1060000,,Aneka Jaya
+2026-09-01,(?),Erul (nama tak yakin - cek dgn owner),Cold Diesel,Uang Jalan Sopir,1050000,"Cilegon 160.000 + Bangka 160.000 + Solar 730.000",Sumber Baru Yanto
+2026-09-01,(?),Erul (nama tak yakin - cek dgn owner),Cold Diesel,Pembelian Material,1840000,,Sumber Baru Yanto
+2026-09-01,B 9086 UYY,Dargo,Cold Diesel,Uang Jalan Sopir,1250000,"Split 240.000 + Bangka 240.000 + Solar 770.000",Sahabat Pik Katamerah
+2026-09-01,B 9069 UIS,Edi,Cold Diesel,Uang Jalan Sopir,1210000,"Split 240.000 + Bangka 240.000 + Solar 730.000",Sahabat Mayan Permai
+2026-09-01,B 9201 UYZ,Yanto,Cold Diesel,Uang Jalan Sopir,1130000,"Cilegon 160.000 + Cilegon 240.000 + Solar 730.000",RMU -> Kemayoran / MKP
+2026-09-01,B 9789 UYW,Wartono,Cold Diesel,Uang Jalan Sopir,1150000,"Bangka 180.000 + Cilegon 240.000 + Solar 730.000",Alam Jaya Parid
+2026-09-01,B 9789 UYW,Wartono,Cold Diesel,Pembelian Material,2000000,,Alam Jaya Parid
+2026-09-01,B 9305 UYX,Parno,Cold Diesel,Uang Jalan Sopir,1180000,"Rental ke-9 450.000 + Solar 730.000",(kosong)

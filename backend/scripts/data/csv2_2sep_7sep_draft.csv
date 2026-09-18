@@ -1,0 +1,46 @@
+Tanggal,Halaman/Jenis,Sopir (tertulis),Sopir (dugaan cocok tabel),Nopol (dugaan),Uang Jalan Sopir (breakdown kecil),Pembelian Material,Tujuan/Keterangan,Tingkat Yakin
+2026-09-02,Cold Diesel,Nanan,Nanang,B 9661 UYW,"Kalimantan 24.000? + Bangka 16.000? + Solar 73.000?",1860000?,Maju 14,RENDAH
+2026-09-02,Cold Diesel,Hderny/Harindi,(tidak yakin - cek nama),?,"Cilegon 24.000 + Solar 73.000",,Lim -> Kemanggisan,RENDAH
+2026-09-02,Cold Diesel,Epul,Epul,?,"Kalimantan 24.000 + Solar 72.000",,Cimanggu(?),RENDAH
+2026-09-02,Cold Diesel,Rudi,Rudi,B 9488 UYX,"Bangka 24.000 + Solar 73.000",,Duren Sawit,RENDAH
+2026-09-02,Cold Diesel,Doga,Dargo,B 9086 UYY,"Split 24.000 + Cilegon 24.000 + Solar 73.000",,Sahabat -> Camhorn / Rnu -> Marjoring(?),RENDAH
+2026-09-02,Cold Diesel,Gumi,(tidak ada di tabel 27 nama - cek),?,"Cilegon 16.000 + Solar 73.000",,Rnu -> Bantil(?),RENDAH
+2026-09-02,Cold Diesel,Yanto,Yanto,B 9201 UYZ,"Bangka 24.000 + Cilegon 16.000 + Solar 73.000",,Shov2 -> Boyasi / Kpnu -> Gading Sengon,RENDAH
+2026-09-02,Cold Diesel,Parru,Parno,B 9305 UYX,"Rental ke-10 45.000? + Solar 73.000",,Rnu -> Cikaring(?),RENDAH
+2026-09-03,Cold Diesel,Edi,Edi,B 9069 UIS,"Split 16.000 + Solar 73.000",,Rnu -> Bdiny Sengon,SEDANG
+2026-09-03,Cold Diesel,Alex,Alex,B 9188 UYX,"Cilegon 16.000 + Solar 73.000",,Rnu -> Sempn,SEDANG
+2026-09-03,Cold Diesel,Gumi,(cek nama),?,"Cilegon 16.000 + Solar 73.000",,Rnu -> Gading Sengon,RENDAH
+2026-09-03,Cold Diesel,Yayie/Yale,(tidak yakin nama),?,"Cilegon 16.000 + Solar 73.000",,Rnu -> Gading Sengon,RENDAH
+2026-09-03,Cold Diesel,Parno,Parno,B 9305 UYX,"Rental ke-11 45.000",1460000,Rnu -> Rowutan,SEDANG
+2026-09-04,Cold Diesel,Hariindi/Harindi,(cek nama),?,"Bangka 16.000 + Cilegon 28.000 + Solar 73.000",1870000,Aneka 14,RENDAH
+2026-09-04,Cold Diesel,Acory/Aceng,Aceng,B 9782 UYV,"Split 16.000 + Cilegon 24.000 + Solar 73.000",,Malu 14 / Cikarang Cimanggis,RENDAH
+2026-09-04,Cold Diesel,Nanamg,Nanang,B 9661 UYW,"Bangka 16.000 + Solar 73.000",1080000,Alam 14,RENDAH
+2026-09-04,Cold Diesel,Epul,Epul,?,"Cilegon 16.000 + Banda 16.000 + Solar 73.000",2040000,Alam 14 -> hambur?,RENDAH
+2026-09-04,Cold Diesel,Wartono,Wartono,B 9789 UYW,"Bangah 24.000 + Bangah 18.000? + Solar 16.000?",2080000,Alam 14,RENDAH
+2026-09-05,Cold Diesel,Edi,Edi,B 9069 UIS,"Split 16.000 + Cilegon 73.000?",,Rnu -> Bdiny Sengan,RENDAH
+2026-09-05,Cold Diesel,Alex,Alex,B 9188 UYX,"Cilegon 16.000 + Solar 73.000",,Rnu -> Gading Sengon,RENDAH
+2026-09-05,Cold Diesel,Gumi,(cek nama),?,"Cilegon 16.000 + Solar 73.000",,Rnu -> Gading Sengon,RENDAH
+2026-09-05,Cold Diesel,Yale,(cek nama),?,"Cilegon 16.000 + Solar 73.000",,Rnu -> Gading Sengon,RENDAH
+2026-09-05,Cold Diesel,Parno,Parno,B 9305 UYX,"Rental ke-11 45.000",1460000,Rnu -> Rowutan,RENDAH
+2026-09-05,Cold Diesel,Epul,Epul,?,,1460000,,RENDAH
+2026-09-05,Cold Diesel,Dargo,Dargo,B 9086 UYY,"Bangka 16.000 + Cilegon 2.000?",,Rnu -> Balik / Rnu -> Holim,RENDAH
+2026-09-05,Cold Diesel,Edi,Edi,B 9069 UIS,"Cilegon 24.000",,Rnu -> Holim,RENDAH
+2026-09-06,Cold Diesel,Acom(Aceng?),Aceng,B 9782 UYV,"Cilegon 16.000 + Solar 73.000",,S baru Yanto,SEDANG
+2026-09-06,Cold Diesel,Harind,(cek nama),?,"Bangka 16.000 + Solar 73.000",2130000,Maju 14,SEDANG
+2026-09-06,Cold Diesel,Wartuno,Wartono,B 9789 UYW,"Bangka 16.000 + Cilegon 24.000 + Solar 73.000",2030000,Alam 14,SEDANG
+2026-09-06,Cold Diesel,Epul,Epul,?,"Bangka 24.000 + Solar 73.000",,Lim -> Anggur Neli,SEDANG
+2026-09-06,Cold Diesel,Nanang,Nanang,B 9661 UYW,"Cilegon 24.000 + Solar 73.000",,Lim -> Anggur Neli,SEDANG
+2026-09-06,Cold Diesel,Dargo,Dargo,B 9086 UYY,"Cilegon 16.000 + Cilegon 24.000 + Solar 73.000",,Rnu -> Sunter / Rnu -> Halim,SEDANG
+2026-09-06,Cold Diesel,Yanto,Yanto,B 9201 UYZ,"Bangka 16.000 + Bangka 24.000 + Solar 73.000",,Rnu -> Kb Gading / Rnu -> Halim,SEDANG
+2026-09-06,Cold Diesel,Harindi,(cek nama),?,"Bangka 24.000 + Kalimantan 16.000 + Solar 73.000",,S ha2 -> Boyasi / Aneka -> Kb Gading,SEDANG
+2026-09-06,Cold Diesel,Rudi,Rudi,B 9488 UYX,"Cilegon 24.000 + Bangka 16.000 + Cilegon 24.000 + Solar 73.000",,Rnu -> Halim / Rnu -> Kb Gading / Rnu -> Perjaan,SEDANG
+2026-09-06,Cold Diesel,Parno,Parno,B 9305 UYX,"Rental ke-14 45.000",730000,Rnu -> Rowutan,SEDANG
+2026-09-07,Tronton (kolom kanan halaman ini),Warfuru/Wartono,(cek - halaman ini utk Tronton),?,"Bangka 16.000",2030000,Alam 14,RENDAH
+2026-09-07,Tronton,Epul,Epul,?,"Bangka 24.000 + Solar 17.000?",,Lim -> Anggun Peli,RENDAH
+2026-09-07,Tronton,Nanang/Nanamg,Nanang,B 9661 UYW,"Cilegon 24.000",,Lim -> Anggur Doli,RENDAH
+2026-09-07,Tronton,Dargo,Dargo,B 9086 UYY,"Cilegon 16.000 + Cilegon 24.000",,Rnu -> Sunter / Rnu -> Halim,RENDAH
+2026-09-07,Tronton,Edi,Edi,B 9069 UIS,"Bangcan 16.000 + Split 24.000 + Cilegon 24.000",,Rnu -> Kb Gading / Muiz -> Plait / Rnu -> Performa,RENDAH
+2026-09-07,Tronton,Nano,(cek nama),?,"Bancan 16.000 + Split 16.000 + Cilegon 20.000",,Rnu -> Kb Gading (x2),RENDAH
+2026-09-07,Tronton,Yanto,Yanto,B 9201 UYZ,"Split 24.000 + Bandah 24.000 + Cilegon 16.000",,Muiz -> Plait / Rnu -> Halim / Rnu -> Riverton(?),RENDAH
+2026-09-07,Tronton,Rudi,Rudi,B 9488 UYX,"Cilegon 16.000 + Bangha 24.000 + Bangha 24.000",,Rnu -> Kb Gading / Titop -> Bahari (x2),RENDAH
+2026-09-08 s/d 2026-09-13,Tronton (mulai 7/9-13/9 dari kolom kiri buku Tronton),Yadi/Pandi/Anto/Miskun/Tajri/Purnomo (berulang tiap hari),(cocokkan dgn tabel 13 sopir Tronton),lihat tabel index,"Rata-rata Batu Belah / Cilegon / Bangka / Split per baris, 1.5-2 juta per entri",1.8 - 9.8 juta per entri (variatif),Tujuan dominan: Bram -> Rusun Pulogadung / Depan / PKL / Alam 14,SEDANG (pola berulang jelas terlihat tapi digit satuan & ribuan banyak yang buram)

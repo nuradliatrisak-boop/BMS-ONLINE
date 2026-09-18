@@ -20,6 +20,24 @@ const txAll = ref([]); // semua transaksi divisi Armada bulan ini (utk rincian p
 const bulan = ref(new Date().toISOString().slice(0, 10).slice(0, 7));
 const loading = ref(true);
 
+// --- Search & filter daftar kendaraan ---
+const search = ref("");
+const filterDivisi = ref("Semua");
+const filterJenis = ref("Semua");
+const jenisTersedia = computed(() => Array.from(new Set(list.value.map((a) => a.jenis).filter(Boolean))).sort());
+const filteredList = computed(() => {
+  const q = search.value.trim().toLowerCase();
+  return list.value.filter((a) => {
+    if (filterDivisi.value !== "Semua" && a.divisi !== filterDivisi.value) return false;
+    if (filterJenis.value !== "Semua" && a.jenis !== filterJenis.value) return false;
+    if (!q) return true;
+    return (
+      (a.nopol || "").toLowerCase().includes(q) ||
+      (a.sopir || "").toLowerCase().includes(q)
+    );
+  });
+});
+
 function rupiah(n) {
   return "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 }
@@ -82,6 +100,13 @@ function txFor(nopol) {
   return txAll.value
     .filter((t) => t.subKategori === nopol)
     .sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+}
+
+function kelompokTotal(nopol, kelompok) {
+  if (!nopol) return 0;
+  return txFor(nopol)
+    .filter((t) => t.kelompok === kelompok)
+    .reduce((s, t) => s + t.nominal, 0);
 }
 
 function openModal() {
@@ -213,24 +238,88 @@ function kategoriSparepart(jenis) {
   return `Sparepart ${jenis}`;
 }
 
+// --- Kolom/kategori pengeluaran-pendapatan per kendaraan: 3 kelompok bawaan
+// (Pendapatan, Sparepart, Operasional Sopir) + kolom CUSTOM bebas yang bisa
+// ditambah user sendiri (nama & kelompok pendapatan/pengeluaran bebas), dan
+// otomatis "diingat" untuk dipakai lagi di kendaraan lain (diambil dari
+// kategori yang sudah pernah dipakai sebelumnya di divisi Armada).
+const CUSTOM_OPT = "__custom__";
+const KELOMPOK_OPTIONS = [
+  { key: "pendapatan", label: "Pendapatan" },
+  { key: "sparepart", label: "Pengeluaran — Sparepart" },
+  { key: "operasional", label: "Pengeluaran — Operasional Sopir (Uang Jalan, Beli Material, dst)" },
+];
+
+// Daftar kategori custom yang pernah dipakai (dikumpulkan dari semua transaksi
+// divisi Armada yang sudah ada), supaya kolom baru yang pernah diketik user
+// bisa dipilih lagi lewat dropdown -- bukan diketik ulang tiap saat.
+const kategoriTerpakai = computed(() => {
+  const map = { pendapatan: new Set(), sparepart: new Set(), operasional: new Set() };
+  for (const t of txAll.value) {
+    if (map[t.kelompok]) map[t.kelompok].add(t.kategori);
+  }
+  return map;
+});
+
+function kategoriDefaultUntuk(kelompok, jenis) {
+  if (kelompok === "pendapatan") return [kategoriHasil(jenis), kategoriUangJalan(jenis)];
+  if (kelompok === "sparepart") return [kategoriSparepart(jenis)];
+  return ["Uang Jalan Sopir", "Pembelian Material"];
+}
+
+function kategoriOptionsUntuk(kelompok, jenis) {
+  const set = new Set(kategoriDefaultUntuk(kelompok, jenis));
+  for (const k of kategoriTerpakai.value[kelompok] || []) set.add(k);
+  return Array.from(set);
+}
+
 // --- Form catat transaksi cepat dari dalam kartu kendaraan ---
 const showTxModal = ref(false);
-const txForm = ref({ jenisTx: "hasil", nominal: "", tanggal: new Date().toISOString().slice(0, 10), keterangan: "" });
+const txForm = ref({
+  kelompok: "operasional",
+  kategori: "",
+  kategoriCustom: false,
+  nominal: "",
+  tanggal: new Date().toISOString().slice(0, 10),
+  keterangan: "",
+});
 const editingTxId = ref(null);
 
-function openTambahTx(jenisTx) {
+const kategoriOptionsAktif = computed(() =>
+  detailArmada.value ? kategoriOptionsUntuk(txForm.value.kelompok, detailArmada.value.jenis) : []
+);
+
+function onTxKategoriSelect(val) {
+  if (val === CUSTOM_OPT) {
+    txForm.value.kategoriCustom = true;
+    txForm.value.kategori = "";
+  } else {
+    txForm.value.kategoriCustom = false;
+    txForm.value.kategori = val;
+  }
+}
+
+function openTambahTx(kelompok, kategoriAwal) {
   editingTxId.value = null;
-  txForm.value = { jenisTx, nominal: "", tanggal: new Date().toISOString().slice(0, 10), keterangan: "" };
+  txForm.value = {
+    kelompok,
+    kategori: kategoriAwal || "",
+    kategoriCustom: !kategoriAwal,
+    nominal: "",
+    tanggal: new Date().toISOString().slice(0, 10),
+    keterangan: "",
+  };
   showTxModal.value = true;
 }
 
 function openEditTx(t) {
   editingTxId.value = t.id;
-  let jenisTx = "hasil";
-  if (t.kelompok === "sparepart") jenisTx = "sparepart";
-  else if ((t.kategori || "").toLowerCase().startsWith("uang jalan")) jenisTx = "uangjalan";
+  const kelompok = t.kelompok === "sparepart" ? "sparepart" : t.kelompok === "operasional" ? "operasional" : "pendapatan";
+  const opsi = detailArmada.value ? kategoriOptionsUntuk(kelompok, detailArmada.value.jenis) : [];
   txForm.value = {
-    jenisTx,
+    kelompok,
+    kategori: t.kategori || "",
+    kategoriCustom: !opsi.includes(t.kategori),
     nominal: t.nominal,
     tanggal: new Date(t.tanggal).toISOString().slice(0, 10),
     keterangan: t.keterangan || "",
@@ -244,23 +333,19 @@ function isAutoMirror(t) {
 
 async function submitTx() {
   if (!detailArmada.value) return;
+  if (!txForm.value.kategori) {
+    return toast("Kategori/kolom wajib dipilih atau diisi");
+  }
   if (!txForm.value.nominal || Number(txForm.value.nominal) <= 0) {
     return toast("Nominal wajib diisi dan lebih dari 0");
   }
-  const jenis = detailArmada.value.jenis;
-  let kelompok = "pendapatan";
-  let kategori = kategoriHasil(jenis);
-  if (txForm.value.jenisTx === "uangjalan") kategori = kategoriUangJalan(jenis);
-  if (txForm.value.jenisTx === "sparepart") {
-    kelompok = "sparepart";
-    kategori = kategoriSparepart(jenis);
-  }
 
+  const kelompok = txForm.value.kelompok;
   const payload = {
     divisi: "Armada",
     tipe: kelompok === "pendapatan" ? "penjualan" : "pengeluaran",
     kelompok,
-    kategori,
+    kategori: txForm.value.kategori,
     subKategori: detailArmada.value.nopol,
     nominal: Number(txForm.value.nominal),
     tanggal: txForm.value.tanggal,
@@ -314,6 +399,27 @@ onMounted(load);
   </div>
 
   <div class="content">
+    <div class="card" style="margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+      <div class="field" style="margin:0; flex:1; min-width:200px;">
+        <label>Cari (Nopol / Sopir)</label>
+        <input v-model="search" placeholder="Contoh: B 9244 atau Aceng" />
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Divisi</label>
+        <select v-model="filterDivisi">
+          <option value="Semua">Semua Divisi</option>
+          <option v-for="d in DIVISI" :key="d" :value="d">{{ d }}</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Jenis</label>
+        <select v-model="filterJenis">
+          <option value="Semua">Semua Jenis</option>
+          <option v-for="j in jenisTersedia" :key="j" :value="j">{{ j }}</option>
+        </select>
+      </div>
+    </div>
+
     <div v-if="loading" class="empty">Memuat data…</div>
 
     <div v-else-if="!list.length" class="empty">
@@ -322,8 +428,13 @@ onMounted(load);
       <button class="btn btn-primary" style="margin-top:14px;" @click="openModal">+ Tambah Armada</button>
     </div>
 
+    <div v-else-if="!filteredList.length" class="empty">
+      <div class="big">🔎</div>
+      <div>Tidak ada armada yang cocok dengan pencarian/filter.</div>
+    </div>
+
     <div v-else class="armada-grid">
-      <div v-for="a in list" :key="a.id" class="card armada-card" @click="openDetail(a)">
+      <div v-for="a in filteredList" :key="a.id" class="card armada-card" @click="openDetail(a)">
         <div class="armada-card-top">
           <div class="armada-nopol mono">{{ a.nopol }}</div>
           <span class="tag">{{ a.jenis }}</span>
@@ -342,7 +453,7 @@ onMounted(load);
               <b>{{ rupiah(rekapFor(a.nopol)?.pendapatan || 0) }}</b>
             </div>
             <div>
-              <span>Sparepart</span>
+              <span>Pengeluaran</span>
               <b>{{ rupiah(rekapFor(a.nopol)?.sparepart || 0) }}</b>
             </div>
             <div>
@@ -448,7 +559,7 @@ onMounted(load);
           <b>{{ rupiah(rekapFor(detailArmada.nopol)?.pendapatan || 0) }}</b>
         </div>
         <div>
-          <span>Pengeluaran Sparepart</span>
+          <span>Total Pengeluaran (Sparepart + Operasional + lainnya)</span>
           <b>{{ rupiah(rekapFor(detailArmada.nopol)?.sparepart || 0) }}</b>
         </div>
         <div>
@@ -459,10 +570,24 @@ onMounted(load);
         </div>
       </div>
 
-      <div style="display:flex; gap:8px; margin:14px 0;">
-        <button class="btn btn-ghost btn-sm" @click="openTambahTx('hasil')">+ Hasil Mobil</button>
-        <button class="btn btn-ghost btn-sm" @click="openTambahTx('uangjalan')">+ Uang Jalan</button>
-        <button class="btn btn-ghost btn-sm" @click="openTambahTx('sparepart')">+ Sparepart</button>
+      <div class="armada-summary armada-summary-detail" style="margin-top:8px;">
+        <div>
+          <span>Pengeluaran Operasional Sopir</span>
+          <b>{{ rupiah(kelompokTotal(detailArmada?.nopol, "operasional")) }}</b>
+        </div>
+        <div>
+          <span>Pengeluaran Sparepart</span>
+          <b>{{ rupiah(kelompokTotal(detailArmada?.nopol, "sparepart")) }}</b>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; margin:14px 0; flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" @click="openTambahTx('pendapatan', kategoriHasil(detailArmada.jenis))">+ Hasil Mobil</button>
+        <button class="btn btn-ghost btn-sm" @click="openTambahTx('pendapatan', kategoriUangJalan(detailArmada.jenis))">+ Uang Jalan (Sewa)</button>
+        <button class="btn btn-ghost btn-sm" @click="openTambahTx('operasional', 'Uang Jalan Sopir')">+ Uang Jalan Sopir</button>
+        <button class="btn btn-ghost btn-sm" @click="openTambahTx('operasional', 'Pembelian Material')">+ Beli Material</button>
+        <button class="btn btn-ghost btn-sm" @click="openTambahTx('sparepart', kategoriSparepart(detailArmada.jenis))">+ Sparepart</button>
+        <button class="btn btn-ghost btn-sm" @click="openTambahTx('operasional')">+ Kolom Lain (Custom)</button>
       </div>
 
       <div class="section-title">
@@ -509,12 +634,25 @@ onMounted(load);
       <h2>{{ editingTxId ? "Edit" : "Catat" }} Transaksi &mdash; {{ detailArmada?.nopol }}</h2>
 
       <div class="field">
-        <label>Jenis</label>
-        <select v-model="txForm.jenisTx">
-          <option value="hasil">Hasil Mobil (Pendapatan)</option>
-          <option value="uangjalan">Uang Jalan (Pendapatan)</option>
-          <option value="sparepart">Sparepart (Pengeluaran)</option>
+        <label>Kelompok</label>
+        <select v-model="txForm.kelompok" @change="txForm.kategori = ''; txForm.kategoriCustom = false;">
+          <option v-for="k in KELOMPOK_OPTIONS" :key="k.key" :value="k.key">{{ k.label }}</option>
         </select>
+      </div>
+
+      <div class="field">
+        <label>Kategori / Kolom</label>
+        <select :value="txForm.kategoriCustom ? CUSTOM_OPT : txForm.kategori" @change="onTxKategoriSelect($event.target.value)">
+          <option value="" disabled>Pilih kategori</option>
+          <option v-for="k in kategoriOptionsAktif" :key="k" :value="k">{{ k }}</option>
+          <option :value="CUSTOM_OPT">+ Kolom baru (ketik manual)</option>
+        </select>
+        <input
+          v-if="txForm.kategoriCustom"
+          v-model="txForm.kategori"
+          placeholder="Nama kolom/kategori baru, mis. Uang Tol, Denda, dst"
+          style="margin-top:6px;"
+        />
       </div>
 
       <div class="row">

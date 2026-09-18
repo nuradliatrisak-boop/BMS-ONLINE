@@ -425,28 +425,31 @@ onMounted(muat);
 .kalender-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
+  gap: 6px;
 }
 .kalender-card {
-  max-width: 360px;
+  /* Sengaja dibatasi supaya tidak memenuhi lebar layar penuh di desktop,
+     tapi cukup lega -- bukan mini seperti sebelumnya. Di tablet/HP dia
+     otomatis full-width lewat media query di bawah. */
+  max-width: 520px;
 }
-.kalender-head { margin-bottom: 3px; }
+.kalender-head { margin-bottom: 6px; }
 .kalender-head-cell {
   text-align: center;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   opacity: 0.6;
-  padding: 1px 0;
+  padding: 2px 0;
 }
-.kalender-row { margin-bottom: 3px; }
+.kalender-row { margin-bottom: 6px; }
 .kalender-cell {
   aspect-ratio: 1 / 1;
-  border-radius: 5px;
+  border-radius: 7px;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  padding: 2px 4px;
-  font-size: 9px;
+  padding: 4px 6px;
+  font-size: 13px;
   background: rgba(127, 127, 127, 0.08);
 }
 .kalender-cell.kosong { background: transparent; }
@@ -455,6 +458,19 @@ onMounted(muat);
 .kalender-cell.lvl-3 { background: rgba(200, 160, 74, 0.85); color: #fff; }
 .kalender-cell.hari-ini { outline: 2px solid #254f8f; outline-offset: -2px; }
 .kalender-tanggal { font-weight: 600; }
+
+/* Tablet & HP: kalender full-width dan selnya dibesarkan lagi supaya
+   nyaman disentuh (touch target) di layar kecil. */
+@media (max-width: 768px) {
+  .kalender-card { max-width: none; }
+  .kalender-cell { font-size: 14px; padding: 5px 6px; border-radius: 8px; }
+  .kalender-head-cell { font-size: 11px; }
+}
+@media (max-width: 480px) {
+  .kalender-head,
+  .kalender-row { gap: 4px; }
+  .kalender-cell { font-size: 13px; padding: 4px 5px; }
+}
 
 .pengingat-list {
   display: flex;

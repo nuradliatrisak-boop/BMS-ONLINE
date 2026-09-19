@@ -27,7 +27,8 @@ const rows = ref([]);
 const summary = ref({ count: 0, jumlah: 0, total: 0 });
 const groups = ref([]); // hasil tampilan "Rekap Keseluruhan" (per penerima)
 // Tampilan "Rekapan Invoice" (format lembar BMS: per invoice + pembayaran)
-const invRows = ref([]);
+const invRows = ref([]); // baris mentah dari server: 1 baris = 1 (invoice x penerima)
+const penerimaList = ref([]); // daftar penerima (PT) yang ada di periode ini
 const invSummary = ref({ count: 0, totalTagihan: 0, totalDibayar: 0, sisa: 0 });
 // Sisa Deposit (opsional, input manual): tampil sebagai baris pertama rekap
 const deposit = ref({ aktif: false, tanggal: "", noRef: "", nominal: 0 });
@@ -39,6 +40,7 @@ const filter = ref({
   customerId: savedUi.customerId || "",
   customerSearch: "",
   view: savedUi.view || "rincian", // "rincian" (per surat jalan) | "keseluruhan" (total per penerima) | "invoice" (format lembar BMS)
+  penerima: savedUi.penerima || "", // view "invoice": "" = semua (per invoice) | "__TOTAL__" = total per PT | nama PT tertentu
   belumLunas: !!savedUi.belumLunas, // khusus view "invoice": hanya invoice yang masih ada sisa tagihan
   mode: savedUi.mode || "bulan", // "bulan" atau "rentang"
   bulan: savedUi.bulan || new Date().toISOString().slice(0, 7),
@@ -152,6 +154,9 @@ async function load() {
       if (filter.value.belumLunas) params.set("belumLunas", "1");
       const d = await api.get(`/rekap-penjualan/invoice-rekap?${params.toString()}`);
       invRows.value = d.rows || [];
+      penerimaList.value = d.penerimaList || [];
+      const pn = filter.value.penerima;
+      if (pn && pn !== "__TOTAL__" && !penerimaList.value.includes(pn)) filter.value.penerima = "";
       invSummary.value = d.summary || { count: 0, totalTagihan: 0, totalDibayar: 0, sisa: 0 };
       return;
     }
@@ -415,12 +420,60 @@ function angka(n) {
   return Math.round(Number(n) || 0).toLocaleString("id-ID");
 }
 const depositNominal = computed(() => (deposit.value.aktif ? Number(deposit.value.nominal) || 0 : 0));
-const invTotalTagihan = computed(() => invSummary.value.totalTagihan || 0);
-const invTotalBayar = computed(() => (invSummary.value.totalDibayar || 0) + depositNominal.value);
+// Baris yang dipilih lewat filter "Penerima" (nama PT tertentu / semua)
+const invFiltered = computed(() => {
+  const p = filter.value.penerima;
+  return p && p !== "__TOTAL__" ? invRows.value.filter((r) => r.penerima === p) : invRows.value;
+});
+function noPendek(no) {
+  return String(no || "").replace(/^BMS-INV-/, "");
+}
+// Baris yang benar-benar tampil/dicetak/diexport.
+//  - "Semua Penerima (per invoice)": 1 baris per invoice, kolom Customer = PT penerimanya
+//  - "Semua Penerima (total per PT)": 1 baris per PT, berisi total seluruh invoice PT itu
+//  - nama PT tertentu: hanya invoice PT itu (persis lembar rekap satu customer)
+const displayRows = computed(() => {
+  if (filter.value.penerima !== "__TOTAL__") return invFiltered.value;
+  const m = new Map();
+  for (const r of invFiltered.value) {
+    const g = m.get(r.penerima) || { key: "g|" + r.penerima, penerima: r.penerima, customer: r.penerima, tanggal: r.tanggal, nos: [], total: 0, dibayar: 0, pembayaran: [] };
+    if (new Date(r.tanggal) > new Date(g.tanggal)) g.tanggal = r.tanggal;
+    g.nos.push(noPendek(r.no));
+    g.total += r.total;
+    g.dibayar += r.dibayar;
+    g.pembayaran.push(...r.pembayaran);
+    m.set(r.penerima, g);
+  }
+  return [...m.values()]
+    .sort((a, b) => a.penerima.localeCompare(b.penerima))
+    .map((g) => ({
+      ...g,
+      no: [...new Set(g.nos)].join(", "),
+      pembayaran: [...g.pembayaran].sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal)),
+    }));
+});
+const jumlahInvoice = computed(() => new Set(invFiltered.value.map((r) => r.id)).size);
+// Nama pada baris "Rekapan Invoice" di kop cetak: PT terpilih, atau customer-nya
+const rekapNama = computed(() => {
+  const p = filter.value.penerima;
+  return p && p !== "__TOTAL__" ? p : selectedCustomer.value?.nama || "-";
+});
+// Pilih PT tertentu -> alamat/tujuan ikut alamat PT itu (kalau ada di daftar Penerima customer)
+function onPenerimaChange() {
+  const p = filter.value.penerima;
+  if (!p || p === "__TOTAL__") return;
+  const r = headerRecipientOptions.value.find((x) => x.nama.trim().toLowerCase() === p.trim().toLowerCase());
+  if (r) {
+    headerForm.value.recipientId = r.id;
+    headerForm.value.tujuan = r.alamat;
+  }
+}
+const invTotalTagihan = computed(() => displayRows.value.reduce((s, r) => s + r.total, 0));
+const invTotalBayar = computed(() => displayRows.value.reduce((s, r) => s + r.dibayar, 0) + depositNominal.value);
 const invSisa = computed(() => invTotalTagihan.value - invTotalBayar.value);
 // baris kosong pengisi supaya tabel cetak terlihat penuh seperti lembar aslinya
 const fillerRows = computed(() => {
-  const used = invRows.value.length + (deposit.value.aktif ? 1 : 0);
+  const used = displayRows.value.length + (deposit.value.aktif ? 1 : 0);
   return Math.max(0, 15 - used);
 });
 // Saat Sisa Deposit dicentang, no. referensi default = nomor rekap sebelumnya
@@ -454,14 +507,14 @@ function applyPrintOrientation() {
 
 async function exportExcel() {
   if (filter.value.view === "invoice") {
-    if (!invRows.value.length) return toast("Tidak ada data untuk diexport");
+    if (!displayRows.value.length) return toast("Tidak ada data untuk diexport");
     const XLSXi = await import("xlsx");
     await commitNoInvoice();
     const out = [];
     if (deposit.value.aktif) {
       out.push({ No: "", Tanggal: tglSingkat(deposit.value.tanggal), "No.Invoice": deposit.value.noRef, Customer: "Sisa Deposit", "Jumlah Tagihan": "", "Tanggal Pembayaran": "", "Jumlah Pembayaran": depositNominal.value });
     }
-    invRows.value.forEach((r, i) => {
+    displayRows.value.forEach((r, i) => {
       out.push({
         No: i + 1,
         Tanggal: tglSingkat(r.tanggal),
@@ -555,6 +608,7 @@ watch(
 watch(
   () => filter.value.customerId,
   async () => {
+    filter.value.penerima = ""; // daftar penerima beda tiap customer
     await flushHeader(); // simpan dulu draft customer sebelumnya
     await loadHeader();
   }
@@ -570,6 +624,7 @@ watch(
       customerId: f.customerId,
       view: f.view,
       belumLunas: f.belumLunas,
+      penerima: f.penerima,
       mode: f.mode,
       bulan: f.bulan,
       dari: f.dari,
@@ -671,6 +726,16 @@ onBeforeUnmount(() => {
         <div class="field"><label>PIC / Kepada</label><input v-model="headerForm.pic" placeholder="Contoh: Bp. Ali" /></div>
       </div>
       <div v-if="filter.view === 'invoice'" class="deposit-box">
+        <div class="row">
+          <div class="field">
+            <label>Penerima <span class="opt">({{ penerimaList.length }} penerima di periode ini)</span></label>
+            <select v-model="filter.penerima" @change="onPenerimaChange">
+              <option value="">Semua Penerima (per invoice)</option>
+              <option value="__TOTAL__">Semua Penerima (total per PT)</option>
+              <option v-for="n in penerimaList" :key="n" :value="n">{{ n }}</option>
+            </select>
+          </div>
+        </div>
         <label class="chk"><input v-model="filter.belumLunas" type="checkbox" /> Hanya invoice yang belum lunas</label>
         <label class="chk"><input v-model="deposit.aktif" type="checkbox" /> Ada Sisa Deposit <span class="opt">(input manual, jadi baris pertama rekap)</span></label>
         <div v-if="deposit.aktif" class="row">
@@ -696,7 +761,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-if="filter.view === 'invoice'" class="rekap-summary grid g3">
-      <div class="stat"><div class="lbl">JUMLAH INVOICE</div><div class="val">{{ invSummary.count }}</div></div>
+      <div class="stat"><div class="lbl">JUMLAH INVOICE</div><div class="val">{{ jumlahInvoice }}</div></div>
       <div class="stat"><div class="lbl">TOTAL TAGIHAN</div><div class="val">{{ rupiah(invTotalTagihan) }}</div></div>
       <div class="stat"><div class="lbl">SISA TAGIHAN</div><div class="val">{{ rupiah(invSisa) }}</div></div>
     </div>
@@ -708,7 +773,7 @@ onBeforeUnmount(() => {
 
     <div class="card">
       <div v-if="loading" class="empty">Memuat rekap...</div>
-      <div v-else-if="filter.view === 'invoice' ? !invRows.length : !rows.length" class="empty">
+      <div v-else-if="filter.view === 'invoice' ? !displayRows.length : !rows.length" class="empty">
         <div class="big">🧾</div>
         <strong>Belum ada data rekap</strong>
         <div class="empty-desc">Tambahkan baris dari surat jalan yang sudah selesai untuk membentuk rekap tagihan customer.</div>
@@ -723,7 +788,7 @@ onBeforeUnmount(() => {
             <tr v-if="deposit.aktif">
               <td></td><td>{{ tglSingkat(deposit.tanggal) }}</td><td class="mono">{{ deposit.noRef }}</td><td><i>Sisa Deposit</i></td><td></td><td></td><td class="num">{{ angka(depositNominal) }}</td>
             </tr>
-            <tr v-for="(r, idx) in invRows" :key="r.id">
+            <tr v-for="(r, idx) in displayRows" :key="r.key">
               <td>{{ idx + 1 }}</td><td>{{ tglSingkat(r.tanggal) }}</td><td class="mono">{{ r.no }}</td><td>{{ r.customer }}</td>
               <td class="num">{{ angka(r.total) }}</td>
               <td><div v-for="(p, pi) in r.pembayaran" :key="pi">{{ labelBayar(p) }}</div></td>
@@ -805,7 +870,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div v-if="filter.view === 'invoice'" class="print-meta print-meta-inv">
-        <div><span>Rekapan Invoice</span><strong>: {{ selectedCustomer?.nama || "-" }}</strong></div>
+        <div><span>Rekapan Invoice</span><strong>: {{ rekapNama }}</strong></div>
         <div><span>No. Invoice</span><strong>: {{ headerForm.noInvoice || "-" }}</strong></div>
         <div><span>Tanggal</span><strong>: {{ tanggalCetak }}</strong></div>
         <div><span>Alamat</span><strong>: {{ headerForm.tujuan || selectedCustomer?.alamat || "-" }}</strong></div>
@@ -826,7 +891,7 @@ onBeforeUnmount(() => {
           <tr v-if="deposit.aktif">
             <td></td><td>{{ tglSingkat(deposit.tanggal) }}</td><td>{{ deposit.noRef }}</td><td>Sisa Deposit</td><td></td><td></td><td class="num">{{ angka(depositNominal) }}</td>
           </tr>
-          <tr v-for="(r, idx) in invRows" :key="r.id">
+          <tr v-for="(r, idx) in displayRows" :key="r.key">
             <td>{{ idx + 1 }}</td><td>{{ tglSingkat(r.tanggal) }}</td><td>{{ r.no }}</td><td class="left">{{ r.customer }}</td>
             <td class="num">{{ angka(r.total) }}</td>
             <td><div v-for="(p, pi) in r.pembayaran" :key="pi">{{ labelBayar(p) }}</div></td>

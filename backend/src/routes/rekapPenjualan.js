@@ -120,33 +120,52 @@ router.get("/invoice-rekap", async (req, res, next) => {
       orderBy: [{ tanggal: "asc" }, { createdAt: "asc" }],
     });
 
-    let rows = invoices.map((inv) => {
+    // 1 baris = 1 (invoice x penerima). Invoice yang isinya ke beberapa penerima
+    // (mis. Pak Alexander -> PT Aiko + PT lain) dipecah per penerima; pembayaran
+    // invoice dibagi proporsional terhadap nilai tiap penerima. Untuk invoice
+    // 1 penerima (kasus umum) angkanya persis sama dengan invoice aslinya.
+    // Halaman yang menggabung per penerima ("Semua Penerima - total per PT").
+    let rows = [];
+    const semuaPenerima = new Set();
+    for (const inv of invoices) {
       const total = inv.items.reduce((s, it) => s + Number(it.qty) * Number(it.hargaSatuan), 0);
-      const dibayar = inv.pembayaran.reduce((s, p) => s + Number(p.nominal || 0), 0);
-      const penerima = [
-        ...new Set(inv.items.map((it) => (it.suratJalan?.penerima || "").trim()).filter(Boolean)),
-      ];
-      return {
-        id: inv.id,
-        no: inv.no,
-        tanggal: inv.tanggal,
-        customer: penerima.length ? penerima.join(", ") : inv.customer?.nama || "",
-        total,
-        dibayar,
-        sisa: total - dibayar,
-        pembayaran: inv.pembayaran.map((p) => ({
-          tanggal: p.tanggal,
-          metode: p.metode || "",
-          nominal: Number(p.nominal || 0),
-        })),
-      };
-    });
+      const dibayarInv = inv.pembayaran.reduce((s, p) => s + Number(p.nominal || 0), 0);
+      const per = new Map();
+      for (const it of inv.items) {
+        const nama = (it.suratJalan?.penerima || "").trim() || inv.customer?.nama || "";
+        per.set(nama, (per.get(nama) || 0) + Number(it.qty) * Number(it.hargaSatuan));
+      }
+      if (!per.size) per.set(inv.customer?.nama || "", 0);
+      for (const [nama, share] of per) {
+        const ratio = total > 0 ? share / total : per.size === 1 ? 1 : 0;
+        const dibayar = dibayarInv * ratio;
+        semuaPenerima.add(nama);
+        rows.push({
+          key: `${inv.id}|${nama}`,
+          id: inv.id,
+          no: inv.no,
+          tanggal: inv.tanggal,
+          penerima: nama,
+          customer: nama,
+          total: share,
+          dibayar,
+          sisa: share - dibayar,
+          pembayaran: inv.pembayaran.map((p) => ({
+            tanggal: p.tanggal,
+            metode: p.metode || "",
+            nominal: Number(p.nominal || 0) * ratio,
+          })),
+        });
+      }
+    }
     if (belumLunas === "1") rows = rows.filter((r) => r.sisa > 0.5);
+    const penerimaList = [...semuaPenerima].sort((x, y) => x.localeCompare(y));
 
     const totalTagihan = rows.reduce((s, r) => s + r.total, 0);
     const totalDibayar = rows.reduce((s, r) => s + r.dibayar, 0);
     res.json({
       rows,
+      penerimaList,
       summary: { count: rows.length, totalTagihan, totalDibayar, sisa: totalTagihan - totalDibayar },
     });
   } catch (e) {

@@ -28,6 +28,7 @@ const summary = ref({ count: 0, jumlah: 0, total: 0 });
 const groups = ref([]); // hasil tampilan "Rekap Keseluruhan" (per penerima)
 // Tampilan "Rekapan Invoice" (format lembar BMS: per invoice + pembayaran)
 const invRows = ref([]); // baris mentah dari server: 1 baris = 1 (invoice x penerima)
+const penerimaList = ref([]); // daftar penerima (PT) yang ada di periode ini
 const invSummary = ref({ count: 0, totalTagihan: 0, totalDibayar: 0, sisa: 0 });
 // Sisa Deposit (opsional, input manual): tampil sebagai baris pertama rekap
 const deposit = ref({ aktif: false, tanggal: "", noRef: "", nominal: 0 });
@@ -39,6 +40,7 @@ const filter = ref({
   customerId: savedUi.customerId || "",
   customerSearch: "",
   view: savedUi.view || "rincian", // "rincian" (per surat jalan) | "keseluruhan" (total per penerima) | "invoice" (format lembar BMS)
+  penerima: savedUi.penerima || "", // view "invoice": "" = semua (per invoice) | "__TOTAL__" = total per PT | nama PT tertentu
   belumLunas: !!savedUi.belumLunas, // khusus view "invoice": hanya invoice yang masih ada sisa tagihan
   mode: savedUi.mode || "bulan", // "bulan" atau "rentang"
   bulan: savedUi.bulan || new Date().toISOString().slice(0, 7),
@@ -88,32 +90,7 @@ const priceOptions = computed(() => formCustomer.value?.prices || []);
 // alamat penerima yang sesuai untuk lembar rekap ini. Kalau customer belum
 // punya daftar Penerima, tujuan default ke alamat customer itu sendiri.
 // Field tetap bisa diketik ulang / diedit manual setelah dipilih.
-// Nama penerima dinormalisasi (huruf kecil, tanpa titik/spasi) supaya "PT. Alko"
-// dan "pt alko" dianggap sama -- dipakai untuk menghilangkan penerima dobel di
-// master Customer dan untuk mencocokkan nama penerima pada invoice.
-function normNama(n) {
-  return String(n || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
-}
-const ALL_RECIPIENTS = "__ALL__"; // nilai dropdown "Semua Penerima"
-const headerRecipientOptions = computed(() => {
-  const seen = new Set();
-  const out = [];
-  for (const r of selectedCustomer.value?.recipients || []) {
-    const k = normNama(r.nama);
-    if (seen.has(k)) continue; // buang dobel (nama sama)
-    seen.add(k);
-    out.push(r);
-  }
-  return out;
-});
-// id penerima dobel -> id penerima pertama dengan nama yang sama
-function canonicalRecipientId(id) {
-  if (!id || id === ALL_RECIPIENTS) return id || "";
-  const all = selectedCustomer.value?.recipients || [];
-  const r = all.find((x) => x.id === id);
-  if (!r) return "";
-  return headerRecipientOptions.value.find((x) => normNama(x.nama) === normNama(r.nama))?.id || "";
-}
+const headerRecipientOptions = computed(() => selectedCustomer.value?.recipients || []);
 
 function applyDefaultHeaderTujuan() {
   headerForm.value.recipientId = "";
@@ -125,11 +102,6 @@ function applyDefaultHeaderTujuan() {
 }
 
 function onHeaderRecipientChange() {
-  if (headerForm.value.recipientId === ALL_RECIPIENTS) {
-    // semua penerima -> alamat customer sendiri (mis. alamat Pak Alexander)
-    headerForm.value.tujuan = selectedCustomer.value?.alamat || "";
-    return;
-  }
   const r = headerRecipientOptions.value.find((x) => x.id === headerForm.value.recipientId);
   if (r) headerForm.value.tujuan = r.alamat;
 }
@@ -182,6 +154,9 @@ async function load() {
       if (filter.value.belumLunas) params.set("belumLunas", "1");
       const d = await api.get(`/rekap-penjualan/invoice-rekap?${params.toString()}`);
       invRows.value = d.rows || [];
+      penerimaList.value = d.penerimaList || [];
+      const pn = filter.value.penerima;
+      if (pn && pn !== "__TOTAL__" && !penerimaList.value.includes(pn)) filter.value.penerima = "";
       invSummary.value = d.summary || { count: 0, totalTagihan: 0, totalDibayar: 0, sisa: 0 };
       return;
     }
@@ -251,7 +226,7 @@ function applyHeader(h) {
     pic: h.pic || "",
     noInvoice: h.noInvoice || "",
     tanggal: h.tanggal || new Date().toISOString().slice(0, 10),
-    recipientId: canonicalRecipientId(h.recipientId),
+    recipientId: h.recipientId || "",
     tujuan: h.tujuan || "",
   };
   deposit.value = {
@@ -445,45 +420,29 @@ function angka(n) {
   return Math.round(Number(n) || 0).toLocaleString("id-ID");
 }
 const depositNominal = computed(() => (deposit.value.aktif ? Number(deposit.value.nominal) || 0 : 0));
-// Pilihan "Pilih Penerima" di header menentukan isi Rekapan Invoice:
-//  - belum dipilih          : 1 baris per invoice (customer tanpa banyak penerima)
-//  - "Semua Penerima"       : 1 baris per PT, berisi total seluruh invoice PT itu
-//  - satu PT tertentu       : invoice PT itu saja (persis lembar rekap satu customer)
-const penerimaMode = computed(() => {
-  const id = headerForm.value.recipientId;
-  if (id === ALL_RECIPIENTS) return { mode: "total" };
-  const r = id ? headerRecipientOptions.value.find((x) => x.id === id) : null;
-  return r ? { mode: "pt", nama: r.nama, key: normNama(r.nama) } : { mode: "all" };
-});
-// nama tampil = nama di master Penerima (kalau cocok), supaya konsisten & tanpa dobel
-const namaMaster = computed(() => {
-  const m = new Map();
-  for (const r of headerRecipientOptions.value) m.set(normNama(r.nama), r.nama);
-  return m;
-});
+// Baris yang dipilih lewat filter "Penerima" (nama PT tertentu / semua)
 const invFiltered = computed(() => {
-  const pm = penerimaMode.value;
-  const list = pm.mode === "pt" ? invRows.value.filter((r) => normNama(r.penerima) === pm.key) : invRows.value;
-  return list.map((r) => {
-    const nama = namaMaster.value.get(normNama(r.penerima)) || r.penerima;
-    return { ...r, penerima: nama, customer: nama };
-  });
+  const p = filter.value.penerima;
+  return p && p !== "__TOTAL__" ? invRows.value.filter((r) => r.penerima === p) : invRows.value;
 });
 function noPendek(no) {
   return String(no || "").replace(/^BMS-INV-/, "");
 }
+// Baris yang benar-benar tampil/dicetak/diexport.
+//  - "Semua Penerima (per invoice)": 1 baris per invoice, kolom Customer = PT penerimanya
+//  - "Semua Penerima (total per PT)": 1 baris per PT, berisi total seluruh invoice PT itu
+//  - nama PT tertentu: hanya invoice PT itu (persis lembar rekap satu customer)
 const displayRows = computed(() => {
-  if (penerimaMode.value.mode !== "total") return invFiltered.value;
+  if (filter.value.penerima !== "__TOTAL__") return invFiltered.value;
   const m = new Map();
   for (const r of invFiltered.value) {
-    const k = normNama(r.penerima);
-    const g = m.get(k) || { key: "g|" + k, penerima: r.penerima, customer: r.penerima, tanggal: r.tanggal, nos: [], total: 0, dibayar: 0, pembayaran: [] };
+    const g = m.get(r.penerima) || { key: "g|" + r.penerima, penerima: r.penerima, customer: r.penerima, tanggal: r.tanggal, nos: [], total: 0, dibayar: 0, pembayaran: [] };
     if (new Date(r.tanggal) > new Date(g.tanggal)) g.tanggal = r.tanggal;
     g.nos.push(noPendek(r.no));
     g.total += r.total;
     g.dibayar += r.dibayar;
     g.pembayaran.push(...r.pembayaran);
-    m.set(k, g);
+    m.set(r.penerima, g);
   }
   return [...m.values()]
     .sort((a, b) => a.penerima.localeCompare(b.penerima))
@@ -495,7 +454,20 @@ const displayRows = computed(() => {
 });
 const jumlahInvoice = computed(() => new Set(invFiltered.value.map((r) => r.id)).size);
 // Nama pada baris "Rekapan Invoice" di kop cetak: PT terpilih, atau customer-nya
-const rekapNama = computed(() => (penerimaMode.value.mode === "pt" ? penerimaMode.value.nama : selectedCustomer.value?.nama || "-"));
+const rekapNama = computed(() => {
+  const p = filter.value.penerima;
+  return p && p !== "__TOTAL__" ? p : selectedCustomer.value?.nama || "-";
+});
+// Pilih PT tertentu -> alamat/tujuan ikut alamat PT itu (kalau ada di daftar Penerima customer)
+function onPenerimaChange() {
+  const p = filter.value.penerima;
+  if (!p || p === "__TOTAL__") return;
+  const r = headerRecipientOptions.value.find((x) => x.nama.trim().toLowerCase() === p.trim().toLowerCase());
+  if (r) {
+    headerForm.value.recipientId = r.id;
+    headerForm.value.tujuan = r.alamat;
+  }
+}
 const invTotalTagihan = computed(() => displayRows.value.reduce((s, r) => s + r.total, 0));
 const invTotalBayar = computed(() => displayRows.value.reduce((s, r) => s + r.dibayar, 0) + depositNominal.value);
 const invSisa = computed(() => invTotalTagihan.value - invTotalBayar.value);
@@ -636,6 +608,7 @@ watch(
 watch(
   () => filter.value.customerId,
   async () => {
+    filter.value.penerima = ""; // daftar penerima beda tiap customer
     await flushHeader(); // simpan dulu draft customer sebelumnya
     await loadHeader();
   }
@@ -651,6 +624,7 @@ watch(
       customerId: f.customerId,
       view: f.view,
       belumLunas: f.belumLunas,
+      penerima: f.penerima,
       mode: f.mode,
       bulan: f.bulan,
       dari: f.dari,
@@ -752,6 +726,16 @@ onBeforeUnmount(() => {
         <div class="field"><label>PIC / Kepada</label><input v-model="headerForm.pic" placeholder="Contoh: Bp. Ali" /></div>
       </div>
       <div v-if="filter.view === 'invoice'" class="deposit-box">
+        <div class="row">
+          <div class="field">
+            <label>Penerima <span class="opt">({{ penerimaList.length }} penerima di periode ini)</span></label>
+            <select v-model="filter.penerima" @change="onPenerimaChange">
+              <option value="">Semua Penerima (per invoice)</option>
+              <option value="__TOTAL__">Semua Penerima (total per PT)</option>
+              <option v-for="n in penerimaList" :key="n" :value="n">{{ n }}</option>
+            </select>
+          </div>
+        </div>
         <label class="chk"><input v-model="filter.belumLunas" type="checkbox" /> Hanya invoice yang belum lunas</label>
         <label class="chk"><input v-model="deposit.aktif" type="checkbox" /> Ada Sisa Deposit <span class="opt">(input manual, jadi baris pertama rekap)</span></label>
         <div v-if="deposit.aktif" class="row">
@@ -765,7 +749,6 @@ onBeforeUnmount(() => {
           <label>Pilih Penerima <span class="opt">(customer ini punya {{ headerRecipientOptions.length }} tujuan)</span></label>
           <select v-model="headerForm.recipientId" @change="onHeaderRecipientChange">
             <option value="" disabled>Pilih penerima...</option>
-            <option value="__ALL__">★ Semua Penerima (rekap total per PT)</option>
             <option v-for="r in headerRecipientOptions" :key="r.id" :value="r.id">{{ r.nama }}</option>
           </select>
         </div>

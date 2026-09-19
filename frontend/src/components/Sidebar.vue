@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, watch, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 
@@ -11,6 +11,14 @@ const sidebarOpen = ref(false);
 function closeSidebar() {
   sidebarOpen.value = false;
 }
+
+// Kunci scroll halaman di belakang saat drawer terbuka (HP/tablet).
+watch(sidebarOpen, (terbuka) => {
+  document.body.style.overflow = terbuka ? "hidden" : "";
+});
+onBeforeUnmount(() => {
+  document.body.style.overflow = "";
+});
 
 function doLogout() {
   auth.logout();
@@ -65,7 +73,7 @@ function doLogout() {
     </div>
 
     <nav>
-      <router-link to="/" @click="closeSidebar">
+      <router-link to="/" active-class="" exact-active-class="router-link-active" @click="closeSidebar">
         <span class="ic">📊</span>
         <span>Dashboard</span>
       </router-link>

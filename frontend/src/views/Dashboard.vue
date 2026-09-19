@@ -53,7 +53,9 @@ const persenTertagih = computed(() => {
 // ("YYYY-MM"), disusun jadi grid minggu (Minggu-Sabtu) buat ditampilkan
 // sebagai kalender kecil di Dashboard.
 const HARI_NAMA = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
-const todayStr = new Date().toISOString().slice(0, 10);
+// Tanggal "hari ini" patokan WIB (bukan UTC), supaya sebelum jam 07.00 pagi
+// kalender tidak masih menandai kemarin. Format en-CA = YYYY-MM-DD.
+const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
 
 const kalenderMap = computed(() => {
   const map = new Map();
@@ -104,6 +106,41 @@ function titleHari(h) {
   if (h.suratJalanCount) parts.push(`${h.suratJalanCount} surat jalan`);
   return parts.length ? parts.join(" • ") : "Belum ada kegiatan";
 }
+
+// Tanggal yang sedang dipilih (klik/ketuk). Default: hari ini kalau masih di
+// bulan yang ditampilkan. Di HP tidak ada "hover", jadi rincian per tanggal
+// ditampilkan lewat panel ini, bukan cuma tooltip.
+const tglDipilih = ref(null);
+const tglAktif = computed(() => {
+  if (tglDipilih.value) return tglDipilih.value;
+  const bln = stats.value?.bulanIni;
+  return bln && todayStr.startsWith(bln) ? todayStr : null;
+});
+function pilihTanggal(tgl) {
+  tglDipilih.value = tgl;
+}
+function labelTanggalPanjang(tgl) {
+  const [y, m, d] = tgl.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("id-ID", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+}
+const detailAktif = computed(() => {
+  const tgl = tglAktif.value;
+  if (!tgl) return null;
+  return { tgl, label: labelTanggalPanjang(tgl), hariIni: tgl === todayStr, data: kalenderMap.value.get(tgl) || null };
+});
+const ringkasKalender = computed(() => {
+  const r = { hariAktif: 0, invoice: 0, tx: 0, sj: 0 };
+  for (const h of stats.value?.kalender || []) {
+    const n = h.invoiceCount + h.txCount + h.suratJalanCount;
+    if (n) r.hariAktif += 1;
+    r.invoice += h.invoiceCount;
+    r.tx += h.txCount;
+    r.sj += h.suratJalanCount;
+  }
+  return r;
+});
 
 async function muat() {
   loading.value = true;
@@ -235,33 +272,101 @@ onMounted(muat);
 
       <!-- Kalender aktivitas bulan ini -->
       <div class="card kalender-card" style="margin-top: 14px" v-if="kalenderWeeks.length">
-        <div class="section-title">Kalender Aktivitas &mdash; {{ namaBulan(stats.bulanIni) }}</div>
-        <div class="kalender">
-          <div class="kalender-head">
-            <div v-for="h in HARI_NAMA" :key="h" class="kalender-head-cell">{{ h }}</div>
-          </div>
-          <div v-for="(week, wi) in kalenderWeeks" :key="wi" class="kalender-row">
-            <div
-              v-for="(cell, ci) in week"
-              :key="ci"
-              class="kalender-cell"
-              :class="[cell ? `lvl-${levelAktivitas(cell.data)}` : 'kosong', cell?.tgl === todayStr ? 'hari-ini' : '']"
-              :title="cell ? titleHari(cell.data) : ''"
-            >
-              <span v-if="cell" class="kalender-tanggal">{{ cell.tanggal }}</span>
-            </div>
+        <div class="kal-header">
+          <div class="section-title" style="margin: 0">Kalender Aktivitas &mdash; {{ namaBulan(stats.bulanIni) }}</div>
+          <div class="kal-ringkas">
+            <span class="kal-chip"><b>{{ ringkasKalender.hariAktif }}</b> hari aktif</span>
+            <span class="kal-chip inv"><b>{{ ringkasKalender.invoice }}</b> invoice</span>
+            <span class="kal-chip trx"><b>{{ ringkasKalender.tx }}</b> transaksi</span>
+            <span class="kal-chip sj"><b>{{ ringkasKalender.sj }}</b> surat jalan</span>
           </div>
         </div>
-        <div class="note" style="margin-top: 8px">
-          Makin gelap warnanya = makin banyak kegiatan (invoice, transaksi divisi, surat jalan) di
-          tanggal itu. Arahkan kursor ke tanggalnya untuk lihat rinciannya.
+
+        <div class="kal-body">
+          <div class="kalender">
+            <div class="kalender-head">
+              <div v-for="h in HARI_NAMA" :key="h" class="kalender-head-cell">{{ h }}</div>
+            </div>
+            <div v-for="(week, wi) in kalenderWeeks" :key="wi" class="kalender-row">
+              <template v-for="(cell, ci) in week" :key="ci">
+                <div v-if="!cell" class="kalender-cell kosong"></div>
+                <button
+                  v-else
+                  type="button"
+                  class="kalender-cell"
+                  :class="[
+                    `lvl-${levelAktivitas(cell.data)}`,
+                    cell.tgl === todayStr ? 'hari-ini' : '',
+                    cell.tgl === tglAktif ? 'terpilih' : '',
+                  ]"
+                  :title="titleHari(cell.data)"
+                  :aria-label="`${cell.tanggal} ${namaBulan(stats.bulanIni)}: ${titleHari(cell.data)}`"
+                  @click="pilihTanggal(cell.tgl)"
+                >
+                  <span class="kal-tgl">{{ cell.tanggal }}</span>
+                  <span v-if="cell.data" class="kal-dots">
+                    <span v-if="cell.data.invoiceCount" class="kal-dot inv"><b>{{ cell.data.invoiceCount }}</b><em>Inv</em></span>
+                    <span v-if="cell.data.txCount" class="kal-dot trx"><b>{{ cell.data.txCount }}</b><em>Trx</em></span>
+                    <span v-if="cell.data.suratJalanCount" class="kal-dot sj"><b>{{ cell.data.suratJalanCount }}</b><em>SJ</em></span>
+                  </span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <aside class="kal-detail">
+            <template v-if="detailAktif">
+              <div class="kal-detail-tgl">
+                {{ detailAktif.label }}
+                <span v-if="detailAktif.hariIni" class="kal-badge-hariini">Hari ini</span>
+              </div>
+              <div v-if="!detailAktif.data" class="note" style="margin-top: 10px">
+                Belum ada kegiatan di tanggal ini.
+              </div>
+              <ul v-else class="kal-detail-list">
+                <li v-if="detailAktif.data.invoiceCount">
+                  <span class="kal-swatch inv"></span>
+                  <div>
+                    <strong>{{ detailAktif.data.invoiceCount }} invoice</strong>
+                    <div class="note">{{ rupiah(detailAktif.data.invoiceTotal) }}</div>
+                  </div>
+                </li>
+                <li v-if="detailAktif.data.txCount">
+                  <span class="kal-swatch trx"></span>
+                  <div>
+                    <strong>{{ detailAktif.data.txCount }} transaksi divisi</strong>
+                    <div class="note">{{ rupiah(detailAktif.data.txTotal) }}</div>
+                  </div>
+                </li>
+                <li v-if="detailAktif.data.suratJalanCount">
+                  <span class="kal-swatch sj"></span>
+                  <div>
+                    <strong>{{ detailAktif.data.suratJalanCount }} surat jalan</strong>
+                  </div>
+                </li>
+              </ul>
+            </template>
+            <div v-else class="note">Ketuk sebuah tanggal untuk melihat rincian kegiatannya.</div>
+          </aside>
+        </div>
+
+        <div class="kal-legenda">
+          <span class="kal-legenda-skala">
+            Sedikit
+            <i class="lv lv1"></i><i class="lv lv2"></i><i class="lv lv3"></i>
+            Banyak
+          </span>
+          <span class="kal-legenda-item"><i class="kal-swatch inv"></i> Invoice</span>
+          <span class="kal-legenda-item"><i class="kal-swatch trx"></i> Transaksi divisi</span>
+          <span class="kal-legenda-item"><i class="kal-swatch sj"></i> Surat jalan</span>
+          <span class="kal-legenda-hint">Klik / ketuk tanggal untuk lihat rincian</span>
         </div>
       </div>
 
       <!-- Peta Strategis: gabungan titik lokasi Sewa Alat Berat & Solar Keluar -->
       <div class="card" style="margin-top: 14px">
         <div class="section-title">Peta Strategis &mdash; Lokasi Sewa Alat Berat &amp; Solar</div>
-        <PetaTitik :points="titikPetaStrategis" :height="300" empty-text="Belum ada titik lokasi. Isi kolom Lokasi di Rekap Sewa Alat / Solar Keluar, titiknya otomatis muncul di sini." />
+        <PetaTitik :points="titikPetaStrategis" :height="380" empty-text="Belum ada titik lokasi. Isi kolom Lokasi di Rekap Sewa Alat / Solar Keluar, titiknya otomatis muncul di sini." />
         <div class="row" style="margin-top: 8px; gap: 14px; font-size: 12px">
           <span><span class="legenda-dot" style="background:#c8a04a"></span> Sewa Alat Berat</span>
           <span><span class="legenda-dot" style="background:#4a7fc9"></span> Solar</span>
@@ -421,55 +526,231 @@ onMounted(muat);
   opacity: 0.75;
 }
 
+/* ---------- Kalender aktivitas ---------- */
+.kal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-bottom: 16px;
+}
+.kal-ringkas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.kal-chip {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.1);
+  color: #475569;
+  white-space: nowrap;
+}
+.kal-chip b { font-weight: 700; color: #172033; }
+.kal-chip.inv { background: rgba(36, 89, 166, 0.1); color: #2459a6; }
+.kal-chip.trx { background: rgba(21, 148, 71, 0.1); color: #159447; }
+.kal-chip.sj  { background: rgba(122, 90, 248, 0.1); color: #6b4de0; }
+.kal-chip.inv b, .kal-chip.trx b, .kal-chip.sj b { color: inherit; }
+
+/* Kalender penuh selebar kartu; di layar lebar panel rincian ada di kanan. */
+.kal-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
+}
+
 .kalender-head,
 .kalender-row {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
 }
-.kalender-card {
-  /* Sengaja dibatasi supaya tidak memenuhi lebar layar penuh di desktop,
-     tapi cukup lega -- bukan mini seperti sebelumnya. Di tablet/HP dia
-     otomatis full-width lewat media query di bawah. */
-  max-width: 520px;
-}
-.kalender-head { margin-bottom: 6px; }
+.kalender-head { margin-bottom: 8px; }
 .kalender-head-cell {
   text-align: center;
   font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   opacity: 0.6;
   padding: 2px 0;
 }
-.kalender-row { margin-bottom: 6px; }
+.kalender-row { margin-bottom: 8px; }
+
 .kalender-cell {
-  aspect-ratio: 1 / 1;
-  border-radius: 7px;
+  /* reset gaya <button> */
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  min-height: 92px;
+  border-radius: 12px;
+  padding: 8px 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  background: #f1f4f8;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.kalender-cell.kosong { background: transparent; cursor: default; }
+button.kalender-cell:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(23, 32, 51, 0.12); }
+.kalender-cell.lvl-1 { background: rgba(200, 160, 74, 0.26); }
+.kalender-cell.lvl-2 { background: rgba(200, 160, 74, 0.55); }
+.kalender-cell.lvl-3 { background: rgba(200, 160, 74, 0.88); color: #fff; }
+.kalender-cell.hari-ini { outline: 2px solid #254f8f; outline-offset: -2px; }
+.kalender-cell.terpilih {
+  box-shadow: 0 0 0 3px rgba(36, 89, 166, 0.35), 0 8px 18px rgba(23, 32, 51, 0.14);
+  transform: translateY(-2px);
+}
+
+.kal-tgl {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+.kalender-cell.hari-ini .kal-tgl { background: #254f8f; color: #fff; }
+
+.kal-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.kal-dot {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  font-size: 11px;
+  line-height: 1.4;
+  font-style: normal;
+  white-space: nowrap;
+}
+.kal-dot b { font-weight: 700; }
+.kal-dot em { font-style: normal; font-size: 10px; font-weight: 600; opacity: 0.85; }
+.kal-dot.inv { color: #2459a6; }
+.kal-dot.trx { color: #159447; }
+.kal-dot.sj  { color: #6b4de0; }
+
+/* Panel rincian tanggal */
+.kal-detail {
+  background: #f7f9fc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 120px;
+}
+.kal-detail-tgl {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.35;
+}
+.kal-badge-hariini {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  font-family: "Inter", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+  background: #254f8f;
+}
+.kal-detail-list {
+  list-style: none;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kal-detail-list li {
   display: flex;
   align-items: flex-start;
-  justify-content: flex-end;
-  padding: 4px 6px;
+  gap: 10px;
   font-size: 13px;
-  background: rgba(127, 127, 127, 0.08);
 }
-.kalender-cell.kosong { background: transparent; }
-.kalender-cell.lvl-1 { background: rgba(200, 160, 74, 0.28); }
-.kalender-cell.lvl-2 { background: rgba(200, 160, 74, 0.55); }
-.kalender-cell.lvl-3 { background: rgba(200, 160, 74, 0.85); color: #fff; }
-.kalender-cell.hari-ini { outline: 2px solid #254f8f; outline-offset: -2px; }
-.kalender-tanggal { font-weight: 600; }
+.kal-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-top: 4px;
+  flex: 0 0 auto;
+}
+.kal-swatch.inv { background: #2459a6; }
+.kal-swatch.trx { background: #159447; }
+.kal-swatch.sj  { background: #7a5af8; }
 
-/* Tablet & HP: kalender full-width dan selnya dibesarkan lagi supaya
-   nyaman disentuh (touch target) di layar kecil. */
-@media (max-width: 768px) {
-  .kalender-card { max-width: none; }
-  .kalender-cell { font-size: 14px; padding: 5px 6px; border-radius: 8px; }
-  .kalender-head-cell { font-size: 11px; }
+/* Legenda */
+.kal-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  font-size: 12px;
+  color: #64748b;
 }
-@media (max-width: 480px) {
+.kal-legenda-skala {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.kal-legenda .lv { display: inline-block; width: 16px; height: 16px; border-radius: 5px; }
+.kal-legenda .lv1 { background: rgba(200, 160, 74, 0.26); }
+.kal-legenda .lv2 { background: rgba(200, 160, 74, 0.55); }
+.kal-legenda .lv3 { background: rgba(200, 160, 74, 0.88); }
+.kal-legenda-item { display: inline-flex; align-items: center; gap: 6px; }
+.kal-legenda-item .kal-swatch { margin-top: 0; }
+.kal-legenda-hint { margin-left: auto; font-style: italic; }
+
+/* Tablet: panel rincian pindah ke bawah kalender, kalender tetap full-width. */
+@media (max-width: 1100px) {
+  .kal-body { grid-template-columns: 1fr; }
+  .kal-detail { min-height: 0; }
+}
+@media (max-width: 900px) {
+  .kalender-cell { min-height: 78px; }
+}
+/* HP: sel dipadatkan; angka jumlah jadi titik warna kecil biar muat. */
+@media (max-width: 640px) {
   .kalender-head,
   .kalender-row { gap: 4px; }
-  .kalender-cell { font-size: 13px; padding: 4px 5px; }
+  .kalender-head { margin-bottom: 4px; }
+  .kalender-row { margin-bottom: 4px; }
+  .kalender-head-cell { font-size: 10.5px; letter-spacing: 0; }
+  .kalender-cell { min-height: 56px; padding: 5px 4px; gap: 4px; border-radius: 9px; align-items: center; }
+  .kal-tgl { font-size: 13px; min-width: 22px; height: 22px; padding: 0 4px; }
+  .kal-dots { gap: 3px; justify-content: center; }
+  .kal-dot { width: 7px; height: 7px; padding: 0; border-radius: 50%; }
+  .kal-dot.inv { background: #2459a6; }
+  .kal-dot.trx { background: #159447; }
+  .kal-dot.sj  { background: #7a5af8; }
+  .kal-dot b, .kal-dot em { display: none; }
+  .kal-legenda-hint { margin-left: 0; width: 100%; }
 }
 
 .pengingat-list {

@@ -4,6 +4,7 @@ import { useRoute } from "vue-router";
 import { useAuthStore } from "./stores/auth.js";
 import Sidebar from "./components/Sidebar.vue";
 import Toast from "./components/Toast.vue";
+import UtilBar from "./components/UtilBar.vue";
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -15,6 +16,7 @@ const showShell = computed(() => !route.meta.public && auth.isLoggedIn);
   <div v-if="showShell" id="app">
     <Sidebar />
     <main>
+      <UtilBar />
       <router-view />
     </main>
   </div>

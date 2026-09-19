@@ -1207,7 +1207,8 @@ textarea {
 @media print {
   .sidebar,
   .sidebar-overlay,
-  .mobile-menu-btn {
+  .mobile-menu-btn,
+  .utilbar {
     display: none !important;
   }
   main {
@@ -1220,3 +1221,114 @@ textarea {
    Invoice, drill-down Invoice (Sistem) di Laporan Divisi/Rekap, dll) */
 .clickable-row { cursor: pointer; }
 .clickable-row:hover td { background: #f5f8fb; }
+/* =========================================================
+   SIDEBAR DRAWER (TABLET POTRET & HP) -- <= 900px
+   ---------------------------------------------------------
+   Sebelumnya class .mobile-menu-btn / .sidebar-overlay / .sidebar-open /
+   .mobile-close-btn dipakai di Sidebar.vue tapi belum punya CSS sama
+   sekali, akibatnya di HP/tablet sidebar selalu terbuka menutupi konten.
+   Sekarang sidebar jadi drawer geser: tersembunyi di kiri, muncul saat
+   tombol hamburger ditekan.
+   ========================================================= */
+
+.mobile-menu-btn,
+.mobile-close-btn {
+  display: none;
+}
+.brand {
+  position: relative;
+}
+
+@media (max-width: 900px) {
+  #app {
+    display: block;
+  }
+
+  main {
+    width: 100%;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 11px;
+    left: 12px;
+    z-index: 60;
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--bms-blue-dark);
+    font-size: 21px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mobile-menu-btn:active {
+    transform: scale(0.95);
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: min(290px, 84vw);
+    min-width: 0;
+    flex: none;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    z-index: 1100;
+    transform: translateX(-105%);
+    visibility: hidden;
+    transition: transform 0.26s ease, visibility 0s linear 0.26s;
+    box-shadow: none;
+    overflow: hidden;
+  }
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.26s ease, visibility 0s;
+    box-shadow: 8px 0 32px rgba(10, 20, 40, 0.35);
+  }
+  .sidebar nav {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  /* jempol lebih nyaman di layar sentuh */
+  .sidebar nav a {
+    padding: 12px 14px;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1090;
+    background: rgba(10, 20, 40, 0.5);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+  }
+
+  .mobile-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+}

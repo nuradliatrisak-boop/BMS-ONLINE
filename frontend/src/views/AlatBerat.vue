@@ -16,6 +16,31 @@ const rekap = ref(null); // hasil /divisi-tx/alat-berat/rekap/:bulan
 const txAll = ref([]); // transaksi divisi "Alat Berat" bulan ini
 const loading = ref(true);
 
+// Ringkasan Sewa Alat ke customer (dari Tensiv -> Invoice) bulan ini.
+// Sengaja DIPISAH dari kartu per-unit di atas (yang sumbernya input manual
+// DivisiTx) -- bukan digabung ke Pendapatan/Hasil Bersih, supaya tidak
+// dobel hitung kalau staf juga sudah input manual angka yang sama. Ini
+// cuma buat staf "melihat" bahwa Tensiv & Invoice sewa alat sudah sinkron
+// tanpa perlu buka menu Rekap Sewa Alat terpisah.
+const rekapSewaAlat = ref(null); // hasil /rekap-alat
+const loadingSewaAlat = ref(false);
+
+async function loadSewaAlat() {
+  loadingSewaAlat.value = true;
+  try {
+    const [y, m] = bulan.value.split("-");
+    const akhir = new Date(Number(y), Number(m), 0).getDate(); // tanggal terakhir bulan itu
+    rekapSewaAlat.value = await api.get(
+      `/rekap-alat?dari=${bulan.value}-01&sampai=${bulan.value}-${String(akhir).padStart(2, "0")}`
+    );
+  } catch (e) {
+    // bukan fatal buat halaman ini, cukup sembunyikan kartunya
+    rekapSewaAlat.value = null;
+  } finally {
+    loadingSewaAlat.value = false;
+  }
+}
+
 const bulanLabel = computed(() => {
   if (!bulan.value) return "-";
   const [y, m] = bulan.value.split("-");
@@ -242,7 +267,9 @@ async function confirmImport() {
 }
 
 watch(bulan, load);
+watch(bulan, loadSewaAlat);
 onMounted(load);
+onMounted(loadSewaAlat);
 </script>
 
 <template>
@@ -273,6 +300,24 @@ onMounted(load);
   </div>
 
   <div class="content">
+    <!-- Ringkasan compact Sewa Alat ke Customer (Tensiv/Invoice), terpisah
+         dari kartu per-unit di bawah -- lihat komentar loadSewaAlat(). -->
+    <router-link
+      v-if="!loadingSewaAlat && rekapSewaAlat && rekapSewaAlat.totalBaris > 0"
+      to="/rekap-alat"
+      class="card sewa-alat-strip"
+    >
+      <div class="sewa-alat-strip-label">
+        📋 Sewa Alat ke Customer bulan ini <span class="msub">(dari Tensiv &amp; Invoice, lihat Rekap Sewa Alat →)</span>
+      </div>
+      <div class="sewa-alat-strip-nums">
+        <div><span>Nilai</span><b>{{ rupiah(rekapSewaAlat.totalNilai) }}</b></div>
+        <div><span>Jam</span><b>{{ rekapSewaAlat.totalJam?.toLocaleString("id-ID") || 0 }} jam</b></div>
+        <div><span>Baris</span><b>{{ rekapSewaAlat.totalBaris }}</b></div>
+        <div><span>Sisa Piutang</span><b>{{ rupiah(rekapSewaAlat.sisaPiutang) }}</b></div>
+      </div>
+    </router-link>
+
     <div v-if="loading" class="empty">Memuat data…</div>
 
     <div v-else-if="!rekap?.unit?.length" class="empty">
@@ -464,6 +509,28 @@ onMounted(load);
 </template>
 
 <style scoped>
+.sewa-alat-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+  text-decoration: none;
+  color: inherit;
+  background: #f4f8ff;
+  border: 1px solid #dbe6fb;
+  transition: box-shadow 0.15s;
+}
+.sewa-alat-strip:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06); }
+.sewa-alat-strip-label { font-size: 13px; font-weight: 600; }
+.sewa-alat-strip-nums {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.sewa-alat-strip-nums div { display: flex; flex-direction: column; font-size: 11px; color: var(--ink-soft); }
+.sewa-alat-strip-nums b { font-size: 13px; color: var(--ink, #111); }
 .armada-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

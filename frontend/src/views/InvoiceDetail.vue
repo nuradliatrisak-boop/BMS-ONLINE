@@ -23,6 +23,7 @@ const loadingBelumDitagihTensiv = ref(false);
 const savingAddTensivItem = ref(false);
 const itemEdits = ref({}); // { [itemId]: { hargaSatuan, qty } }
 const biayaEdits = ref({}); // { [itemId]: { belanjaPasir, uangMobil, uangJalan, uangKomisi, uangMakan } }
+const unitAlatList = ref([]); // master AlatBeratUnit (buat datalist saran nama unit, samain sama Tensiv)
 const openBiayaId = ref(null); // id item yang lagi dibuka rincian biayanya
 
 function toggleBiaya(itemId) {
@@ -204,6 +205,13 @@ async function load() {
         uangMakan: it.uangMakan ?? "",
       };
     }
+    if (!unitAlatList.value.length) {
+      try {
+        unitAlatList.value = await api.get("/alat-berat-unit");
+      } catch {
+        // gagal ambil master unit bukan fatal, form manual tetap bisa diisi bebas
+      }
+    }
   } catch (e) {
     toast(e?.message || "Gagal memuat invoice");
   } finally {
@@ -321,8 +329,11 @@ async function submitAddItems() {
 }
 
 // --- TAMBAH ITEM DARI TENSIV (Daftar Kerja Harian alat berat) ---
-async function openAddTensivModal() {
-  showAddTensivModal.value = true;
+// dipakai baik oleh modal "+ Dari Tensiv" maupun buat kasih hint otomatis
+// pas staf ngetik Unit Alat di form manual, supaya kalau ternyata sudah ada
+// rekaman Tensiv unit itu yang belum ditagih, staf diarahkan pakai itu
+// (bukan input manual lagi) -- ini yang bikin Tensiv & Invoice selalu nyambung.
+async function loadBelumDitagihTensiv({ silent = false } = {}) {
   loadingBelumDitagihTensiv.value = true;
   try {
     const list = await api.get(
@@ -335,10 +346,15 @@ async function openAddTensivModal() {
       hargaSatuan: 0,
     }));
   } catch (e) {
-    toast(e?.message || "Gagal memuat Tensiv yang belum ditagih");
+    if (!silent) toast(e?.message || "Gagal memuat Tensiv yang belum ditagih");
   } finally {
     loadingBelumDitagihTensiv.value = false;
   }
+}
+
+async function openAddTensivModal() {
+  showAddTensivModal.value = true;
+  await loadBelumDitagihTensiv();
 }
 
 async function submitAddTensivItems() {
@@ -408,6 +424,30 @@ function resetManualItemForm() {
 function openAddManualItemModal() {
   resetManualItemForm();
   showManualItemModal.value = true;
+  // muat diam-diam (silent) Tensiv customer ini yang belum ditagih, buat
+  // hint "unit ini ada Tensiv-nya" di bawah field Unit Alat -- gak perlu
+  // buka modal "+ Dari Tensiv" terpisah dulu buat tahu.
+  if (!belumDitagihTensivRows.value.length) {
+    loadBelumDitagihTensiv({ silent: true });
+  }
+}
+
+// Tensiv customer ini yang belum ditagih & unitnya cocok (mengandung/dikandung)
+// sama yang lagi diketik staf di field Unit Alat form manual.
+const tensivHintUntukUnit = computed(() => {
+  const q = (manualItem.value.unitAlat || "").trim().toLowerCase();
+  if (!q || manualItem.value.kategoriAlat === "Mobilisasi") return [];
+  return belumDitagihTensivRows.value
+    .map((r) => r.ts)
+    .filter((ts) => {
+      const u = (ts.unitAlat || "").trim().toLowerCase();
+      return u && (u.includes(q) || q.includes(u));
+    });
+});
+
+function pakaiTensivDariHint() {
+  showManualItemModal.value = false;
+  openAddTensivModal();
 }
 
 // Susun teks "keterangan" otomatis dari tanggal + unit + kategori, supaya
@@ -944,7 +984,22 @@ onMounted(load);
 
         <div class="field" v-if="manualItem.kategoriAlat !== 'Mobilisasi'">
           <label>Unit Alat</label>
-          <input v-model="manualItem.unitAlat" placeholder="mis. PC 200, SANY PC-075" />
+          <input
+            v-model="manualItem.unitAlat"
+            list="invoice-manual-unit-list"
+            placeholder="mis. PC 200, SANY PC-075"
+          />
+          <datalist id="invoice-manual-unit-list">
+            <option v-for="u in unitAlatList" :key="u.id" :value="u.nama" />
+          </datalist>
+          <div v-if="tensivHintUntukUnit.length" class="msub tensiv-hint">
+            Ada {{ tensivHintUntukUnit.length }} Tensiv (Daftar Kerja Harian) unit ini yang
+            belum ditagih customer ini —
+            <button type="button" class="link-btn" @click="pakaiTensivDariHint">
+              pakai dari Tensiv saja
+            </button>
+            biar jam kerjanya otomatis kebawa, gak perlu ketik ulang.
+          </div>
         </div>
         <div class="field" v-else>
           <label>Keterangan Mobilisasi <span class="optional">(opsional)</span></label>
@@ -1308,6 +1363,8 @@ onMounted(load);
 .empty.small { padding: 18px; font-size: 12px; }
 .biaya-row td { padding: 0; border-top: none; }
 .biaya-panel { background: #f7f9fc; border: 1px dashed var(--line); border-radius: 9px; padding: 12px; margin: 4px 0 10px; }
+.tensiv-hint { margin-top: 4px; padding: 6px 8px; background: #fff8e6; border: 1px dashed #e8c766; border-radius: 6px; }
+.link-btn { background: none; border: none; padding: 0; color: var(--brand, #2563eb); text-decoration: underline; cursor: pointer; font: inherit; font-size: inherit; }
 </style>
 
 <style>

@@ -4,6 +4,18 @@ import { buildDefaultDokumenData } from "../config/dokumenConfig.js";
 
 const router = Router();
 
+// Kalau sopirId diisi (pilih dari master Sopir), nama sopirnya "dicache"
+// juga ke kolom teks `sopir` supaya tampilan lama (kartu armada, search,
+// dsb) yang masih baca kolom teks tetap ikut sinkron tanpa perlu diubah.
+// Kalau sopirId dikosongkan, kolom teks tetap dipakai apa adanya (manual).
+async function resolveSopirText(sopirId, sopirManual) {
+  if (sopirId) {
+    const s = await prisma.sopir.findUnique({ where: { id: sopirId } });
+    return s ? s.nama : sopirManual || null;
+  }
+  return sopirManual || null;
+}
+
 router.get("/", async (req, res, next) => {
   try {
     // Daftar master kendaraan sengaja TIDAK dibatasi per-divisi (beda dengan
@@ -13,6 +25,7 @@ router.get("/", async (req, res, next) => {
     // semua kendaraan divisi "Armada" apa pun divisi akun yang login.
     const armada = await prisma.armada.findMany({
       orderBy: { nopol: "asc" },
+      include: { sopirRef: true },
     });
     res.json(armada);
   } catch (e) {
@@ -105,7 +118,7 @@ router.get("/rekap/:bulan", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { nopol, jenis, sopir, divisi, panjang, lebar, tinggi, volume } = req.body;
+    const { nopol, jenis, sopir, sopirId, divisi, panjang, lebar, tinggi, volume } = req.body;
     if (!nopol || !jenis || !divisi) {
       return res.status(400).json({ error: "Nopol, jenis, dan divisi wajib diisi" });
     }
@@ -113,7 +126,8 @@ router.post("/", async (req, res, next) => {
       data: {
         nopol,
         jenis,
-        sopir,
+        sopir: await resolveSopirText(sopirId, sopir),
+        sopirId: sopirId || null,
         divisi,
         panjang: panjang !== undefined && panjang !== "" ? Number(panjang) : null,
         lebar: lebar !== undefined && lebar !== "" ? Number(lebar) : null,
@@ -135,13 +149,14 @@ router.post("/", async (req, res, next) => {
 
 router.put("/:id", async (req, res, next) => {
   try {
-    const { nopol, jenis, sopir, divisi, panjang, lebar, tinggi, volume } = req.body;
+    const { nopol, jenis, sopir, sopirId, divisi, panjang, lebar, tinggi, volume } = req.body;
     const armada = await prisma.armada.update({
       where: { id: req.params.id },
       data: {
         nopol,
         jenis,
-        sopir,
+        sopir: await resolveSopirText(sopirId, sopir),
+        sopirId: sopirId || null,
         divisi,
         panjang: panjang !== undefined && panjang !== "" ? Number(panjang) : null,
         lebar: lebar !== undefined && lebar !== "" ? Number(lebar) : null,

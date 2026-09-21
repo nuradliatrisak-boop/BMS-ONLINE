@@ -54,6 +54,14 @@ enum AsetTipe {
   ALAT_BERAT
 }
 
+// Tipe sopir, dipakai untuk menentukan aturan komisi:
+// TRONTON     = komisi flat (default 50.000, bisa ditimpa situasional per SJ)
+// COLD_DIESEL = komisi diinput manual tiap kali (kadang diambil per hari)
+enum TipeSopir {
+  TRONTON
+  COLD_DIESEL
+}
+
 model User {
   id        String   @id @default(cuid())
   username  String   @unique
@@ -157,7 +165,10 @@ model Armada {
   id        String   @id @default(cuid())
   nopol     String
   jenis     String
-  sopir     String?
+  sopir     String?  // nama sopir -- disalin otomatis dari Sopir.nama kalau sopirId diisi,
+                      // tetap ada untuk kendaraan lama yang belum dikaitkan ke master Sopir.
+  sopirId   String?  // opsional: kaitan ke master Sopir (menu "Sopir")
+  sopirRef  Sopir?   @relation(fields: [sopirId], references: [id])
   divisi    String
   // Index P-L-T & Volume (sheet "INDEK MOBIL" di Excel) -- ukuran bak kendaraan,
   // dipakai sebagai acuan/patokan volume muatan (m3) per kendaraan.
@@ -171,6 +182,47 @@ model Armada {
   // Kelengkapan dokumen kendaraan (STNK, KIR, foto mobil, dst) dicari lewat
   // model Dokumen dengan asetTipe="MOBIL" & asetId=Armada.id (relasi bebas,
   // TIDAK pakai foreign key Prisma -- lihat catatan di model Dokumen).
+
+  @@index([sopirId])
+}
+
+// Master data Sopir -- menu tersendiri, TERPISAH dari Armada (kendaraan)
+// karena sopir bisa pindah-pindah kendaraan dan komisinya melekat ke
+// ORANGnya, bukan ke platnya. `komisiDefault` cuma acuan/auto-isi:
+//   - Tronton      : biasanya flat 50.000, tapi tetap bisa situasional
+//                    (nilai aktual per pengiriman disimpan di SuratJalan.uangKomisi,
+//                    auto keisi dari sini lalu boleh diubah manual).
+//   - Cold Diesel  : komisinya manual tiap kali (kadang diambil per hari),
+//                    jadi komisiDefault dibiarkan 0 -- staf isi manual di SJ.
+model Sopir {
+  id            String    @id @default(cuid())
+  nama          String
+  tipe          TipeSopir
+  noHp          String?
+  komisiDefault Float     @default(0)
+  aktif         Boolean   @default(true)
+  keterangan    String?
+  createdAt     DateTime  @default(now())
+
+  armada        Armada[]
+  suratJalan    SuratJalan[]
+
+  @@index([tipe])
+}
+
+// Rate "uang makan" alat berat -- kombinasi unit (PC 75, PC 200, dst) +
+// kategori pemakaian (Bucket/Breker/Longarm/Diatas Air/dst) menentukan
+// nominal uang makan operator, dipakai auto-isi saat baris invoice sewa
+// alat berat dibuat (lihat InvoiceItem.uangMakan), tetap bisa ditimpa
+// manual per baris kalau situasinya beda.
+model UangMakanAlat {
+  id           String   @id @default(cuid())
+  unitAlat     String
+  kategoriAlat String
+  nominal      Float    @default(0)
+  createdAt    DateTime @default(now())
+
+  @@unique([unitAlat, kategoriAlat])
 }
 
 // Master data Kapal (Divisi Kapal) -- terpisah dari Armada karena field &
@@ -284,6 +336,18 @@ model InvoiceItem {
   lokasi       String?   // nama lokasi bebas, diketik staf mis. "Cimanggis 2", "Kp. Rambutan"
   lokasiLat    Float?    // hasil geocoding otomatis dari `lokasi` (lihat services/geocode.js)
   lokasiLng    Float?    // null kalau lokasi belum ada/gagal digeocode -- tidak wajib diisi
+  // --- Biaya (opsional), dipotong dari qty*hargaSatuan buat hitung "Net"
+  // INTERNAL (tidak ikut dicetak ke customer -- lihat services/invoiceXlsx.js
+  // & print.js yang sengaja TIDAK menyentuh field ini). Baris armada/material:
+  // belanjaPasir/uangMobil/uangJalan/uangKomisi disalin otomatis dari
+  // SuratJalan terkait saat baris dibuat (boleh ditimpa manual). Baris sewa
+  // alat berat: uangMakan disalin otomatis dari UangMakanAlat berdasarkan
+  // kategoriAlat+unitAlat baris ini (boleh ditimpa manual). ---
+  belanjaPasir Float?
+  uangMobil    Float?
+  uangJalan    Float?
+  uangKomisi   Float?
+  uangMakan    Float?
 
   @@index([kategoriAlat])
   @@index([unitAlat])
@@ -313,6 +377,10 @@ model SuratJalan {
   jenisBarang String?
   noPolisi    String?
   sopir       String?
+  sopirId     String?  // opsional: kaitan ke master Sopir -- kalau diisi, `sopir` (teks)
+                        // otomatis disalin dari Sopir.nama, dan uangKomisi otomatis
+                        // disarankan dari Sopir.komisiDefault (masih bisa ditimpa manual).
+  sopirRef    Sopir?   @relation(fields: [sopirId], references: [id])
   panjang     Float    @default(0)
   lebar       Float    @default(0)
   tinggi      Float    @default(0)
@@ -322,6 +390,15 @@ model SuratJalan {
   statusTTD   StatusTTD @default(BELUM_TTD)
   isDraft     Boolean  @default(false)
   detail      Json?    // daftar barang / muatan (fleksibel, mirror bentuk lama)
+  // --- Biaya operasional pengiriman ini (opsional, per permintaan direktur):
+  // dipotong dari harga jual supaya invoice bisa nampilin nilai "Net" internal
+  // (harga jual dikurangi 4 pos ini) tanpa mengubah harga yang dicetak ke
+  // customer. Semua auto 0, diisi manual staf per SJ -- belanjaPasir & uangMobil
+  // & uangJalan dianggap pos yang beda-beda walau namanya mirip. ---
+  belanjaPasir Float   @default(0)
+  uangMobil    Float   @default(0)
+  uangJalan    Float   @default(0)
+  uangKomisi   Float   @default(0)
   createdAt   DateTime @default(now())
   // Dokumen yang dibuat bareng lewat "Jumlah Surat Jalan" > 1 (customer &
   // tujuan sama, cuma nomor SJ beda-beda) berbagi batchId yang sama. Dipakai

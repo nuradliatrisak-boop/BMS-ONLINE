@@ -85,9 +85,18 @@ function ringkas(inv) {
   const total = hitungTotal(inv.items);
   const dibayar = inv.pembayaran.reduce((s, p) => s + p.nominal, 0);
 
+  // "net" per baris & totalNet invoice -- INTERNAL saja (harga jual dikurangi
+  // belanja pasir/uang mobil/uang jalan/komisi/uang makan). Field ini
+  // sengaja TIDAK dibaca oleh services/invoiceXlsx.js maupun print.js,
+  // supaya yang tercetak/terkirim ke customer tetap harga jual biasa.
+  const items = inv.items.map((it) => ({ ...it, net: netItem(it) }));
+  const totalNet = items.reduce((s, it) => s + it.net, 0);
+
   return {
     ...inv,
+    items,
     total,
+    totalNet,
     dibayar,
     sisaTagihan: total - dibayar,
   };
@@ -106,6 +115,16 @@ async function buildItemData(tx, it, lokasiGeo = null) {
   let qty = it.qty;
   let satuan = it.satuan;
 
+  // Biaya internal (potongan buat hitung Net) -- kalau item ini dikirim
+  // dengan nilainya sendiri (mis. dari form "Update Biaya"), pakai itu.
+  // Kalau tidak dikirim & baris ini punya suratJalanId, DISALIN otomatis
+  // dari 4 kolom biaya di SJ terkait supaya staf tidak perlu isi 2x.
+  let belanjaPasir = it.belanjaPasir;
+  let uangMobil = it.uangMobil;
+  let uangJalan = it.uangJalan;
+  let uangKomisi = it.uangKomisi;
+  let uangMakan = it.uangMakan;
+
   if (it.suratJalanId) {
     const sj = await tx.suratJalan.findUnique({
       where: { id: it.suratJalanId },
@@ -120,6 +139,20 @@ async function buildItemData(tx, it, lokasiGeo = null) {
     keterangan = keterangan || sj.jenisBarang || sj.tujuan;
     qty = qty ?? sj.m3;
     satuan = satuan || "m3";
+
+    if (belanjaPasir === undefined) belanjaPasir = sj.belanjaPasir;
+    if (uangMobil === undefined) uangMobil = sj.uangMobil;
+    if (uangJalan === undefined) uangJalan = sj.uangJalan;
+    if (uangKomisi === undefined) uangKomisi = sj.uangKomisi;
+  }
+
+  // Baris sewa alat berat (kategoriAlat + unitAlat diisi) & uangMakan belum
+  // dikirim manual -> cari otomatis dari master rate UangMakanAlat.
+  if (uangMakan === undefined && it.kategoriAlat && it.unitAlat) {
+    const rate = await tx.uangMakanAlat.findUnique({
+      where: { unitAlat_kategoriAlat: { unitAlat: it.unitAlat, kategoriAlat: it.kategoriAlat } },
+    });
+    if (rate) uangMakan = rate.nominal;
   }
 
   return {
@@ -139,7 +172,32 @@ async function buildItemData(tx, it, lokasiGeo = null) {
     lokasi: it.lokasi || null,
     lokasiLat: lokasiGeo?.lat ?? null,
     lokasiLng: lokasiGeo?.lng ?? null,
+    // Biaya (opsional) -- dipotong dari qty*hargaSatuan buat kolom "Net"
+    // INTERNAL, lihat catatan di schema.prisma model InvoiceItem.
+    belanjaPasir: belanjaPasir !== undefined && belanjaPasir !== null ? Number(belanjaPasir) : null,
+    uangMobil: uangMobil !== undefined && uangMobil !== null ? Number(uangMobil) : null,
+    uangJalan: uangJalan !== undefined && uangJalan !== null ? Number(uangJalan) : null,
+    uangKomisi: uangKomisi !== undefined && uangKomisi !== null ? Number(uangKomisi) : null,
+    uangMakan: uangMakan !== undefined && uangMakan !== null ? Number(uangMakan) : null,
   };
+}
+
+// Total biaya (potongan) 1 baris invoice -- jumlah semua pos yang keisi.
+function totalBiayaItem(it) {
+  return (
+    (it.belanjaPasir || 0) +
+    (it.uangMobil || 0) +
+    (it.uangJalan || 0) +
+    (it.uangKomisi || 0) +
+    (it.uangMakan || 0)
+  );
+}
+
+// Nilai "Net" INTERNAL 1 baris = harga jual baris ini dikurangi total
+// biayanya. Dipakai di halaman edit invoice (internal), TIDAK PERNAH ikut
+// di invoiceXlsx.js / print.js (yang dicetak/dikirim ke customer).
+function netItem(it) {
+  return Number(it.qty) * Number(it.hargaSatuan) - totalBiayaItem(it);
 }
 
 // Geocode field `lokasi` tiap item SEBELUM masuk transaksi DB (panggilan ke
@@ -407,7 +465,17 @@ router.post("/:id/items", async (req, res, next) => {
 // Dipakai tombol "Update Harga": ubah harga satuan / qty satu baris item
 router.put("/:id/items/:itemId", async (req, res, next) => {
   try {
-    const { hargaSatuan, qty, keterangan, lokasi } = req.body;
+    const {
+      hargaSatuan,
+      qty,
+      keterangan,
+      lokasi,
+      belanjaPasir,
+      uangMobil,
+      uangJalan,
+      uangKomisi,
+      uangMakan,
+    } = req.body;
 
     // Kalau lokasi ikut dikirim & berubah, geocode ulang supaya titik di
     // peta ikut pindah. Kalau lokasi dikosongkan, titiknya ikut dihapus.
@@ -424,6 +492,13 @@ router.put("/:id/items/:itemId", async (req, res, next) => {
         ...(qty !== undefined ? { qty: Number(qty) } : {}),
         ...(keterangan !== undefined ? { keterangan } : {}),
         ...lokasiData,
+        // Rincian biaya (internal) -- boleh dikosongkan (null) lagi kalau
+        // memang tidak relevan buat baris ini.
+        ...(belanjaPasir !== undefined ? { belanjaPasir: belanjaPasir === null || belanjaPasir === "" ? null : Number(belanjaPasir) } : {}),
+        ...(uangMobil !== undefined ? { uangMobil: uangMobil === null || uangMobil === "" ? null : Number(uangMobil) } : {}),
+        ...(uangJalan !== undefined ? { uangJalan: uangJalan === null || uangJalan === "" ? null : Number(uangJalan) } : {}),
+        ...(uangKomisi !== undefined ? { uangKomisi: uangKomisi === null || uangKomisi === "" ? null : Number(uangKomisi) } : {}),
+        ...(uangMakan !== undefined ? { uangMakan: uangMakan === null || uangMakan === "" ? null : Number(uangMakan) } : {}),
       },
     });
 

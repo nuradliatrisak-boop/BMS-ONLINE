@@ -5,6 +5,7 @@ import Login from "../views/Login.vue";
 import Dashboard from "../views/Dashboard.vue";
 import Customers from "../views/Customers.vue";
 import Armada from "../views/Armada.vue";
+import Sopir from "../views/Sopir.vue";
 import ArmadaRekap from "../views/ArmadaRekap.vue";
 import AlatBerat from "../views/AlatBerat.vue";
 import Material from "../views/Material.vue";
@@ -27,6 +28,7 @@ const routes = [
   { path: "/", name: "dashboard", component: Dashboard },
   { path: "/customers", name: "customers", component: Customers },
   { path: "/armada", name: "armada", component: Armada },
+  { path: "/sopir", name: "sopir", component: Sopir },
   { path: "/armada-rekap", name: "armada-rekap", component: ArmadaRekap },
   { path: "/alat-berat", name: "alat-berat", component: AlatBerat },
   { path: "/material", name: "material", component: Material },

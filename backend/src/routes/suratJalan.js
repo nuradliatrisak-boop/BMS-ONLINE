@@ -57,8 +57,18 @@ function hitungM3(p, l, t) {
   return Math.round(nilai * 1000) / 1000;
 }
 
+// Kalau sopirId diisi (pilih dari master Sopir), nama sopirnya "dicache"
+// juga ke kolom teks `sopir` -- sama pola dengan routes/armada.js.
+async function resolveSopirText(sopirId, sopirManual) {
+  if (sopirId) {
+    const s = await prisma.sopir.findUnique({ where: { id: sopirId } });
+    return s ? s.nama : sopirManual || null;
+  }
+  return sopirManual || null;
+}
+
 // Field yang dipakai bersama saat create/update
-function buildDataFields(body, { forCreate }) {
+async function buildDataFields(body, { forCreate }) {
   const {
     armadaId,
     customerId,
@@ -67,6 +77,7 @@ function buildDataFields(body, { forCreate }) {
     jenisBarang,
     noPolisi,
     sopir,
+    sopirId,
     panjang,
     lebar,
     tinggi,
@@ -74,6 +85,10 @@ function buildDataFields(body, { forCreate }) {
     jam,
     isDraft,
     detail,
+    belanjaPasir,
+    uangMobil,
+    uangJalan,
+    uangKomisi,
   } = body;
 
   const p = panjang ?? 0;
@@ -87,14 +102,28 @@ function buildDataFields(body, { forCreate }) {
     penerima: penerima || null,
     jenisBarang: jenisBarang || null,
     noPolisi: noPolisi || null,
-    sopir: sopir || null,
+    sopir: await resolveSopirText(sopirId, sopir),
+    sopirId: sopirId || null,
     panjang: Number(p) || 0,
     lebar: Number(l) || 0,
     tinggi: Number(t) || 0,
     m3: hitungM3(p, l, t),
     jam: jam || null,
     detail: detail ?? null,
+    belanjaPasir: belanjaPasir !== undefined ? Number(belanjaPasir) || 0 : undefined,
+    uangMobil: uangMobil !== undefined ? Number(uangMobil) || 0 : undefined,
+    uangJalan: uangJalan !== undefined ? Number(uangJalan) || 0 : undefined,
+    uangKomisi: uangKomisi !== undefined ? Number(uangKomisi) || 0 : undefined,
   };
+
+  // Baris baru + sopir dipilih dari master + komisi tidak diketik manual ->
+  // auto-isi dari komisi default sopir tsb (Tronton biasanya 50rb, Cold
+  // Diesel biasanya 0 karena memang manual tiap kali). Staf tetap bisa
+  // menimpa nilainya sebelum/ setelah disimpan kalau situasinya beda.
+  if (forCreate && sopirId && (uangKomisi === undefined || uangKomisi === "")) {
+    const s = await prisma.sopir.findUnique({ where: { id: sopirId } });
+    if (s) data.uangKomisi = s.komisiDefault;
+  }
 
   if (tanggal) {
     data.tanggal = new Date(tanggal);
@@ -112,6 +141,7 @@ function buildDataFields(body, { forCreate }) {
 const includeRelasi = {
   armada: true,
   customer: true,
+  sopirRef: true,
 };
 
 // Search sederhana: ?search=kata kunci, cocok di nomor SJ, penerima,
@@ -236,7 +266,7 @@ router.post("/", async (req, res, next) => {
               no,
               divisi,
               batchId,
-              ...buildDataFields(req.body, { forCreate: true }),
+              ...(await buildDataFields(req.body, { forCreate: true })),
             },
             include: includeRelasi,
           });
@@ -266,7 +296,7 @@ router.post("/", async (req, res, next) => {
 
 router.put("/:id", async (req, res, next) => {
   try {
-    const data = buildDataFields(req.body, { forCreate: false });
+    const data = await buildDataFields(req.body, { forCreate: false });
 
     const sj = await prisma.suratJalan.update({
       where: {

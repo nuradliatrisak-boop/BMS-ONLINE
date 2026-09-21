@@ -23,6 +23,8 @@ import kapalRoutes from "./routes/kapal.js";
 import alatBeratUnitRoutes from "./routes/alatBeratUnit.js";
 import dokumenRoutes from "./routes/dokumen.js";
 import rekapAlatRoutes from "./routes/rekapAlat.js";
+import sopirRoutes from "./routes/sopir.js";
+import uangMakanAlatRoutes from "./routes/uangMakanAlat.js";
 
 import { requireAuth } from "./middleware/auth.js";
 
@@ -80,6 +82,8 @@ app.use("/api/kapal", requireAuth, kapalRoutes);
 app.use("/api/alat-berat-unit", requireAuth, alatBeratUnitRoutes);
 app.use("/api/dokumen", requireAuth, dokumenRoutes);
 app.use("/api/rekap-alat", requireAuth, rekapAlatRoutes);
+app.use("/api/sopir", requireAuth, sopirRoutes);
+app.use("/api/uang-makan-alat", requireAuth, uangMakanAlatRoutes);
 
 // Penanganan error terpusat
 app.use((err, req, res, next) => {

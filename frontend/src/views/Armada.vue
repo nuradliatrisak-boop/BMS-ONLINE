@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import DokumenAsetPanel from "../components/DokumenAsetPanel.vue";
+import SearchableSelect from "../components/SearchableSelect.vue";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -15,6 +16,7 @@ const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 const JENIS_ARMADA_OPTIONS = ["Tronton", "Cold Diesel", "Excavator", "Lainnya (ketik manual)"];
 
 const list = ref([]);
+const sopirList = ref([]); // master Sopir (aktif) -- dropdown pilih sopir per kendaraan
 const rekap = ref(null); // hasil /armada/rekap/:bulan (pendapatan, sparepart, hasilBersih per nopol)
 const txAll = ref([]); // semua transaksi divisi Armada bulan ini (utk rincian per kendaraan)
 const bulan = ref(new Date().toISOString().slice(0, 10).slice(0, 7));
@@ -51,6 +53,7 @@ const emptyForm = () => ({
   nopol: "",
   jenis: "",
   sopir: "",
+  sopirId: "",
   divisi: DIVISI[0],
   panjang: "",
   lebar: "",
@@ -77,14 +80,16 @@ function pakaiVolumeOtomatis() {
 async function load() {
   loading.value = true;
   try {
-    const [armadaList, rekapData, tx] = await Promise.all([
+    const [armadaList, rekapData, tx, sopirData] = await Promise.all([
       api.get("/armada"),
       api.get(`/armada/rekap/${bulan.value}`),
       api.get(`/divisi-tx?bulan=${bulan.value}`),
+      api.get("/sopir?all=1"),
     ]);
     list.value = armadaList;
     rekap.value = rekapData;
     txAll.value = tx.filter((t) => t.divisi === "Armada");
+    sopirList.value = sopirData;
   } catch (e) {
     toast(e.message || "Gagal memuat data armada");
   } finally {
@@ -123,6 +128,7 @@ function openEdit(a) {
     nopol: a.nopol,
     jenis: a.jenis,
     sopir: a.sopir || "",
+    sopirId: a.sopirId || "",
     divisi: a.divisi,
     panjang: a.panjang ?? "",
     lebar: a.lebar ?? "",
@@ -497,7 +503,21 @@ onMounted(load);
       <div class="row">
         <div class="field">
           <label>Sopir / Operator</label>
-          <input v-model="form.sopir" placeholder="Nama sopir / operator" />
+          <SearchableSelect
+            v-model="form.sopirId"
+            :options="sopirList.map(s => ({ value: s.id, label: s.nama, sub: s.tipe === 'TRONTON' ? 'Tronton' : 'Cold Diesel' }))"
+            placeholder="Pilih dari master Sopir..."
+          />
+          <input
+            v-if="!form.sopirId"
+            v-model="form.sopir"
+            placeholder="Atau ketik manual kalau belum ada di master Sopir"
+            style="margin-top:6px;"
+          />
+          <div class="field-hint" v-if="!form.sopirId && form.sopir">
+            Belum dikaitkan ke master Sopir — komisi &amp; biaya sopir ini tidak akan auto-terisi di Surat Jalan.
+            Tambahkan dulu di menu <router-link to="/sopir">Sopir</router-link> kalau perlu.
+          </div>
         </div>
         <div class="field">
           <label>Divisi</label>

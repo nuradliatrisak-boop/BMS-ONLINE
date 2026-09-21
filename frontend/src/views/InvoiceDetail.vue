@@ -18,6 +18,40 @@ const savingAddItem = ref(false);
 const belumDitagihRows = ref([]);
 const loadingBelumDitagih = ref(false);
 const itemEdits = ref({}); // { [itemId]: { hargaSatuan, qty } }
+const biayaEdits = ref({}); // { [itemId]: { belanjaPasir, uangMobil, uangJalan, uangKomisi, uangMakan } }
+const openBiayaId = ref(null); // id item yang lagi dibuka rincian biayanya
+
+function toggleBiaya(itemId) {
+  openBiayaId.value = openBiayaId.value === itemId ? null : itemId;
+}
+
+async function simpanBiaya(item) {
+  const b = biayaEdits.value[item.id];
+  if (!b) return;
+  try {
+    invoice.value = await api.put(`/invoices/${route.params.id}/items/${item.id}`, {
+      belanjaPasir: b.belanjaPasir === "" ? null : Number(b.belanjaPasir),
+      uangMobil: b.uangMobil === "" ? null : Number(b.uangMobil),
+      uangJalan: b.uangJalan === "" ? null : Number(b.uangJalan),
+      uangKomisi: b.uangKomisi === "" ? null : Number(b.uangKomisi),
+      uangMakan: b.uangMakan === "" ? null : Number(b.uangMakan),
+    });
+    biayaEdits.value = {};
+    for (const it of invoice.value.items) {
+      biayaEdits.value[it.id] = {
+        belanjaPasir: it.belanjaPasir ?? "",
+        uangMobil: it.uangMobil ?? "",
+        uangJalan: it.uangJalan ?? "",
+        uangKomisi: it.uangKomisi ?? "",
+        uangMakan: it.uangMakan ?? "",
+      };
+    }
+    toast("Rincian biaya berhasil disimpan");
+    openBiayaId.value = null;
+  } catch (e) {
+    toast(e?.message || "Gagal menyimpan rincian biaya");
+  }
+}
 const customerPrices = computed(() => invoice.value?.customer?.prices || []);
 function vehicleTypeForSJ(sj) { return `${sj?.armada?.jenis || ""}`.toUpperCase().includes("TRONTON") ? "TRONTON" : "CD"; }
 function suggestedPrice(sj) {
@@ -156,6 +190,16 @@ async function load() {
     for (const it of invoice.value.items) {
       itemEdits.value[it.id] = { hargaSatuan: it.hargaSatuan, qty: it.qty };
     }
+    biayaEdits.value = {};
+    for (const it of invoice.value.items) {
+      biayaEdits.value[it.id] = {
+        belanjaPasir: it.belanjaPasir ?? "",
+        uangMobil: it.uangMobil ?? "",
+        uangJalan: it.uangJalan ?? "",
+        uangKomisi: it.uangKomisi ?? "",
+        uangMakan: it.uangMakan ?? "",
+      };
+    }
   } catch (e) {
     toast(e?.message || "Gagal memuat invoice");
   } finally {
@@ -290,7 +334,7 @@ async function updateItemHarga(item) {
 // --- TAMBAH ITEM MANUAL (khusus sewa alat berat / item non-Surat Jalan) ---
 const showManualItemModal = ref(false);
 const savingManualItem = ref(false);
-const KATEGORI_ALAT_OPSI = ["Bucket", "Breker", "Mobilisasi"];
+const KATEGORI_ALAT_OPSI = ["Bucket", "Breker", "Longarm", "Diatas Air", "Mobilisasi"];
 const manualItem = ref({
   tanggal: new Date().toISOString().slice(0, 10),
   unitAlat: "",
@@ -499,15 +543,17 @@ onMounted(load);
                 <th class="num">Qty</th>
                 <th class="num">Harga</th>
                 <th class="num">Subtotal</th>
+                <th class="num">Net <span class="optional">(internal)</span></th>
                 <th class="action-col">Aksi</th>
               </tr>
             </thead>
 
             <tbody>
-              <tr
+              <template
                 v-for="it in invoice.items"
                 :key="it.id"
               >
+              <tr>
                 <td>
                   {{ it.keterangan }}
                   <div v-if="it.suratJalan" class="item-sj-sub">SJ: {{ it.suratJalan.no }}</div>
@@ -538,11 +584,51 @@ onMounted(load);
                   {{ rupiah(it.qty * it.hargaSatuan) }}
                 </td>
 
+                <td class="num mono">
+                  {{ rupiah(it.net) }}
+                </td>
+
                 <td class="item-actions">
                   <button class="btn btn-sm btn-ghost" @click="updateItemHarga(it)">Update</button>
+                  <button class="btn btn-sm btn-ghost" @click="toggleBiaya(it.id)">Biaya</button>
                   <button class="btn btn-sm btn-danger" @click="hapusItem(it)">Hapus</button>
                 </td>
               </tr>
+              <tr v-if="openBiayaId === it.id" class="biaya-row">
+                <td colspan="6">
+                  <div class="biaya-panel">
+                    <div class="msub" style="margin:0 0 8px;">
+                      Rincian biaya baris ini (opsional, internal) — dipotong dari Subtotal untuk hitung Net. Tidak ikut dicetak ke customer.
+                    </div>
+                    <div class="row row-4">
+                      <div class="field">
+                        <label>Belanja Pasir</label>
+                        <input v-model.number="biayaEdits[it.id].belanjaPasir" type="number" min="0" />
+                      </div>
+                      <div class="field">
+                        <label>Uang Mobil</label>
+                        <input v-model.number="biayaEdits[it.id].uangMobil" type="number" min="0" />
+                      </div>
+                      <div class="field">
+                        <label>Uang Jalan</label>
+                        <input v-model.number="biayaEdits[it.id].uangJalan" type="number" min="0" />
+                      </div>
+                      <div class="field">
+                        <label>Uang Komisi</label>
+                        <input v-model.number="biayaEdits[it.id].uangKomisi" type="number" min="0" />
+                      </div>
+                    </div>
+                    <div class="row" v-if="it.kategoriAlat">
+                      <div class="field">
+                        <label>Uang Makan (Alat Berat)</label>
+                        <input v-model.number="biayaEdits[it.id].uangMakan" type="number" min="0" />
+                      </div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" @click="simpanBiaya(it)">Simpan Biaya</button>
+                  </div>
+                </td>
+              </tr>
+              </template>
             </tbody>
           </table>
 
@@ -557,6 +643,21 @@ onMounted(load);
             <span>Total</span>
             <span class="mono">
               {{ rupiah(invoice.total) }}
+            </span>
+          </div>
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              margin-top:4px;
+              font-weight:600;
+              color: var(--ink-soft, #8a94a3);
+            "
+          >
+            <span>Total Net <span class="optional">(internal, tidak dicetak)</span></span>
+            <span class="mono">
+              {{ rupiah(invoice.totalNet) }}
             </span>
           </div>
 
@@ -1103,6 +1204,8 @@ onMounted(load);
 .item-harga-input { width: 110px; text-align: right; }
 .item-actions { display: flex; gap: 6px; white-space: nowrap; }
 .empty.small { padding: 18px; font-size: 12px; }
+.biaya-row td { padding: 0; border-top: none; }
+.biaya-panel { background: #f7f9fc; border: 1px dashed var(--line); border-radius: 9px; padding: 12px; margin: 4px 0 10px; }
 </style>
 
 <style>

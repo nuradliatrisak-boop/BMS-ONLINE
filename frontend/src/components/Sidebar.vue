@@ -88,6 +88,11 @@ function doLogout() {
         <span>Armada</span>
       </router-link>
 
+      <router-link to="/sopir" @click="closeSidebar">
+        <span class="ic">🧑‍✈️</span>
+        <span>Sopir</span>
+      </router-link>
+
       <router-link to="/armada-rekap" @click="closeSidebar">
         <span class="ic">🧮</span>
         <span>Rekap Armada</span>

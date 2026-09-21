@@ -9,6 +9,7 @@ const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
 const list = ref([]);
 const armadaList = ref([]);
+const sopirList = ref([]); // master Sopir (aktif) -- dropdown + auto-isi komisi default
 const customers = ref([]);
 const stockMasterList = ref([]);
 const loading = ref(true);
@@ -66,6 +67,11 @@ const emptyForm = () => ({
   jenisBarang: "",
   noPolisi: "",
   sopir: "",
+  sopirId: "",
+  belanjaPasir: 0,
+  uangMobil: 0,
+  uangJalan: 0,
+  uangKomisi: 0,
   panjang: 0,
   lebar: 0,
   tinggi: 0,
@@ -142,16 +148,18 @@ async function load() {
   loading.value = true;
   try {
     const q = searchQuery.value.trim();
-    const [suratJalanData, armadaData, customerData, stockData] = await Promise.all([
+    const [suratJalanData, armadaData, customerData, stockData, sopirData] = await Promise.all([
       api.get(`/surat-jalan${q ? `?search=${encodeURIComponent(q)}` : ""}`),
       api.get("/armada"),
       api.get("/customers"),
       api.get("/stock-master"),
+      api.get("/sopir?all=1"),
     ]);
     list.value = suratJalanData;
     armadaList.value = armadaData;
     customers.value = customerData;
     stockMasterList.value = stockData;
+    sopirList.value = sopirData;
   } catch (error) {
     console.error(error);
     toast("Gagal memuat data surat jalan");
@@ -186,6 +194,11 @@ function openEdit(sj) {
     jenisBarang: sj.jenisBarang || "",
     noPolisi: sj.noPolisi || "",
     sopir: sj.sopir || "",
+    sopirId: sj.sopirId || "",
+    belanjaPasir: sj.belanjaPasir || 0,
+    uangMobil: sj.uangMobil || 0,
+    uangJalan: sj.uangJalan || 0,
+    uangKomisi: sj.uangKomisi || 0,
     panjang: sj.panjang || 0,
     lebar: sj.lebar || 0,
     tinggi: sj.tinggi || 0,
@@ -229,7 +242,23 @@ function onArmadaChange() {
   const armada = armadaList.value.find((a) => a.id === form.value.armadaId);
   if (armada) {
     if (!form.value.noPolisi) form.value.noPolisi = armada.nopol;
-    if (!form.value.sopir && armada.sopir) form.value.sopir = armada.sopir;
+    if (!form.value.sopirId && armada.sopirId) {
+      form.value.sopirId = armada.sopirId;
+      onSopirChange();
+    } else if (!form.value.sopir && armada.sopir) {
+      form.value.sopir = armada.sopir;
+    }
+  }
+}
+
+// Kalau sopir dipilih dari master, auto-isi Uang Komisi dari komisi
+// defaultnya (Tronton biasanya 50rb, Cold Diesel biasanya 0 karena manual
+// tiap kali) -- HANYA kalau kolom komisi masih kosong/0, supaya tidak
+// menimpa nilai yang sudah diketik manual (situasional).
+function onSopirChange() {
+  const s = sopirList.value.find((x) => x.id === form.value.sopirId);
+  if (s && !form.value.uangKomisi) {
+    form.value.uangKomisi = s.komisiDefault || 0;
   }
 }
 
@@ -271,6 +300,11 @@ async function submit() {
       jenisBarang: form.value.jenisBarang?.trim() || null,
       noPolisi: form.value.noPolisi?.trim() || null,
       sopir: form.value.sopir?.trim() || null,
+      sopirId: form.value.sopirId || null,
+      belanjaPasir: Number(form.value.belanjaPasir) || 0,
+      uangMobil: Number(form.value.uangMobil) || 0,
+      uangJalan: Number(form.value.uangJalan) || 0,
+      uangKomisi: Number(form.value.uangKomisi) || 0,
       panjang: Number(form.value.panjang) || 0,
       lebar: Number(form.value.lebar) || 0,
       tinggi: Number(form.value.tinggi) || 0,
@@ -662,7 +696,38 @@ onMounted(load);
         </div>
         <div class="field">
           <label>Sopir</label>
-          <input v-model="form.sopir" placeholder="Nama sopir" />
+          <SearchableSelect
+            v-model="form.sopirId"
+            @change="onSopirChange"
+            :options="sopirList.map(s => ({ value: s.id, label: s.nama, sub: s.tipe === 'TRONTON' ? 'Tronton' : 'Cold Diesel' }))"
+            placeholder="Pilih dari master Sopir..."
+          />
+          <input
+            v-if="!form.sopirId"
+            v-model="form.sopir"
+            placeholder="Atau ketik manual"
+            style="margin-top:6px;"
+          />
+        </div>
+      </div>
+
+      <div class="msub" style="margin-top:10px;">Biaya operasional pengiriman ini (opsional, internal) — dipotong dari harga jual untuk hitung Net di Invoice, tidak ikut dicetak ke customer</div>
+      <div class="row row-4">
+        <div class="field">
+          <label>Belanja Pasir</label>
+          <input v-model.number="form.belanjaPasir" type="number" min="0" />
+        </div>
+        <div class="field">
+          <label>Uang Mobil</label>
+          <input v-model.number="form.uangMobil" type="number" min="0" />
+        </div>
+        <div class="field">
+          <label>Uang Jalan</label>
+          <input v-model.number="form.uangJalan" type="number" min="0" />
+        </div>
+        <div class="field">
+          <label>Uang Komisi</label>
+          <input v-model.number="form.uangKomisi" type="number" min="0" />
         </div>
       </div>
 

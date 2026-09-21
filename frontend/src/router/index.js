@@ -22,6 +22,7 @@ import SolarJadwal from "../views/SolarJadwal.vue";
 import Kapal from "../views/Kapal.vue";
 import AlatBeratUnit from "../views/AlatBeratUnit.vue";
 import RekapAlat from "../views/RekapAlat.vue";
+import LaporanNet from "../views/LaporanNet.vue";
 
 const routes = [
   { path: "/login", name: "login", component: Login, meta: { public: true } },
@@ -37,6 +38,7 @@ const routes = [
   { path: "/surat-jalan", name: "surat-jalan", component: SuratJalan },
   { path: "/laporan-divisi", name: "laporan-divisi", component: DivisiLaporan },
   { path: "/rekap-keseluruhan", name: "rekap-keseluruhan", component: RekapKeseluruhan },
+  { path: "/laporan-net", name: "laporan-net", component: LaporanNet, meta: { adminOnly: true } },
   { path: "/rekap-penjualan", name: "rekap-penjualan", component: RekapPenjualan },
   { path: "/users", name: "users", component: Users, meta: { adminOnly: true } },
   { path: "/kalibrasi-cetak", name: "kalibrasi-cetak", component: KalibrasiCetak, meta: { adminOnly: true } },

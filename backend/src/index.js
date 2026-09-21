@@ -25,8 +25,9 @@ import dokumenRoutes from "./routes/dokumen.js";
 import rekapAlatRoutes from "./routes/rekapAlat.js";
 import sopirRoutes from "./routes/sopir.js";
 import uangMakanAlatRoutes from "./routes/uangMakanAlat.js";
+import laporanNetRoutes from "./routes/laporanNet.js";
 
-import { requireAuth } from "./middleware/auth.js";
+import { requireAuth, requireRole } from "./middleware/auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,6 +85,7 @@ app.use("/api/dokumen", requireAuth, dokumenRoutes);
 app.use("/api/rekap-alat", requireAuth, rekapAlatRoutes);
 app.use("/api/sopir", requireAuth, sopirRoutes);
 app.use("/api/uang-makan-alat", requireAuth, uangMakanAlatRoutes);
+app.use("/api/laporan-net", requireAuth, requireRole("ADMIN"), laporanNetRoutes);
 
 // Penanganan error terpusat
 app.use((err, req, res, next) => {

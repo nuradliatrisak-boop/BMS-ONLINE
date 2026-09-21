@@ -298,6 +298,24 @@ router.put("/:id", async (req, res, next) => {
   try {
     const data = await buildDataFields(req.body, { forCreate: false });
 
+    // Komisi yang sudah diserahkan ke sopir tidak boleh berubah diam-diam:
+    // kalau mau dikoreksi, batalkan dulu status "diambil" di halaman Sopir.
+    const lama = await prisma.suratJalan.findUnique({
+      where: { id: req.params.id },
+      select: { komisiDiambil: true, uangKomisi: true, sopirId: true },
+    });
+    if (lama?.komisiDiambil) {
+      const komisiBerubah =
+        data.uangKomisi !== undefined && Number(data.uangKomisi) !== Number(lama.uangKomisi);
+      const sopirBerubah = data.sopirId !== undefined && (data.sopirId || null) !== (lama.sopirId || null);
+      if (komisiBerubah || sopirBerubah) {
+        return res.status(409).json({
+          error:
+            "Komisi surat jalan ini sudah ditandai diambil. Batalkan status diambil di halaman Sopir dulu kalau mau mengubah komisi atau sopirnya.",
+        });
+      }
+    }
+
     const sj = await prisma.suratJalan.update({
       where: {
         id: req.params.id,

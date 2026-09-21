@@ -155,6 +155,15 @@ function doLogout() {
 
       <router-link
         v-if="auth.isAdmin"
+        to="/laporan-net"
+        @click="closeSidebar"
+      >
+        <span class="ic">💰</span>
+        <span>Laporan Net</span>
+      </router-link>
+
+      <router-link
+        v-if="auth.isAdmin"
         to="/users"
         @click="closeSidebar"
       >

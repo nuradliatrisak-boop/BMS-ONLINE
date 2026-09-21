@@ -57,7 +57,7 @@ function onTipeChange() {
 async function load() {
   loading.value = true;
   try {
-    list.value = await api.get("/sopir?all=1");
+    list.value = await api.get("/sopir?all=1&stats=1");
   } catch (e) {
     toast(e?.message || "Gagal memuat data sopir");
   } finally {
@@ -115,6 +115,73 @@ async function remove(id) {
     await load();
   } catch (e) {
     toast(e?.message || "Gagal menghapus sopir");
+  }
+}
+
+// ---------------- Buku komisi per sopir ----------------
+// Komisi "didapat" saat tugas selesai (Surat Jalan TTD lengkap). Halaman ini
+// menampilkan tiap perjalanan + status komisinya (belum / sudah diambil).
+const showBuku = ref(false);
+const bukuLoading = ref(false);
+const buku = ref(null); // { sopir, summary, rows }
+const bukuBulan = ref(""); // "" = semua waktu, atau "YYYY-MM"
+const dipilih = ref([]);
+
+function fmtTgl(d) {
+  if (!d) return "-";
+  return new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+async function loadBuku() {
+  if (!buku.value?.sopir) return;
+  bukuLoading.value = true;
+  try {
+    const q = bukuBulan.value ? `?bulan=${bukuBulan.value}` : "";
+    buku.value = await api.get(`/sopir/${buku.value.sopir.id}/perjalanan${q}`);
+    dipilih.value = [];
+  } catch (e) {
+    toast(e?.message || "Gagal memuat buku komisi");
+  } finally {
+    bukuLoading.value = false;
+  }
+}
+
+async function openBuku(s) {
+  buku.value = { sopir: s, summary: null, rows: [] };
+  bukuBulan.value = "";
+  showBuku.value = true;
+  await loadBuku();
+}
+
+function closeBuku() {
+  showBuku.value = false;
+  load(); // segarkan ringkasan di daftar sopir
+}
+
+// yang bisa dicentang: tugas sudah selesai
+const bisaDicentang = computed(() => (buku.value?.rows || []).filter((r) => r.selesai));
+const semuaDicentang = computed(
+  () => bisaDicentang.value.length > 0 && bisaDicentang.value.every((r) => dipilih.value.includes(r.id))
+);
+function toggleSemua() {
+  dipilih.value = semuaDicentang.value ? [] : bisaDicentang.value.map((r) => r.id);
+}
+const totalDipilih = computed(() =>
+  (buku.value?.rows || []).filter((r) => dipilih.value.includes(r.id)).reduce((t, r) => t + r.uangKomisi, 0)
+);
+
+async function tandai(diambil) {
+  if (!dipilih.value.length) return toast("Centang perjalanan dulu");
+  const msg = diambil
+    ? `Tandai ${dipilih.value.length} perjalanan (total ${rupiah(totalDipilih.value)}) sebagai SUDAH DIAMBIL?`
+    : `Batalkan status diambil untuk ${dipilih.value.length} perjalanan?`;
+  if (!confirm(msg)) return;
+  try {
+    await api.post(`/sopir/${buku.value.sopir.id}/komisi/diambil`, { ids: dipilih.value, diambil });
+    toast(diambil ? "Komisi ditandai sudah diambil" : "Status diambil dibatalkan");
+    await loadBuku();
+  } catch (e) {
+    toast(e?.message || "Gagal memperbarui status komisi");
   }
 }
 
@@ -179,6 +246,8 @@ onMounted(load);
             <th>Tipe</th>
             <th>No HP</th>
             <th class="num">Komisi Default</th>
+            <th class="num">Trip selesai</th>
+            <th class="num">Komisi belum diambil</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -191,8 +260,11 @@ onMounted(load);
             <td class="num mono">
               {{ s.tipe === "COLD_DIESEL" && !s.komisiDefault ? "Manual tiap kali" : rupiah(s.komisiDefault) }}
             </td>
+            <td class="num mono">{{ s.trip || 0 }}</td>
+            <td class="num mono" :style="{ fontWeight: s.komisiBelumDiambil ? 600 : 400 }">{{ rupiah(s.komisiBelumDiambil) }}</td>
             <td>{{ s.aktif ? "Aktif" : "Nonaktif" }}</td>
             <td style="text-align:right; white-space:nowrap;">
+              <button class="btn btn-sm btn-gold" style="margin-right:6px;" @click="openBuku(s)">Buku komisi</button>
               <button class="btn btn-sm btn-ghost" style="margin-right:6px;" @click="openEdit(s)">Edit</button>
               <button class="btn btn-sm btn-danger" @click="remove(s.id)">Hapus</button>
             </td>
@@ -264,6 +336,75 @@ onMounted(load);
           <button class="btn btn-primary" @click="submit">Simpan Sopir</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div v-if="showBuku" class="modal-bg" @click.self="closeBuku">
+    <div class="modal" style="max-width:900px; width:96%;">
+      <button class="modal-close" @click="closeBuku">×</button>
+      <h2>Buku komisi — {{ buku?.sopir?.nama }}</h2>
+      <div class="msub">
+        Komisi dihitung dari tugas yang sudah selesai (Surat Jalan TTD lengkap). Centang perjalanan lalu tandai
+        sudah diambil saat uangnya diserahkan ke sopir.
+      </div>
+
+      <div class="field" style="max-width:220px;">
+        <label>Periode</label>
+        <input v-model="bukuBulan" type="month" @change="loadBuku" />
+        <div class="field-hint">Kosongkan untuk melihat semua waktu.</div>
+      </div>
+
+      <div v-if="bukuLoading" class="empty">Memuat…</div>
+      <template v-else-if="buku?.summary">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:10px 0 14px;">
+          <div class="card" style="margin:0;"><div class="msub">Trip selesai</div><b>{{ buku.summary.tripSelesai }}</b></div>
+          <div class="card" style="margin:0;"><div class="msub">Total komisi</div><b>{{ rupiah(buku.summary.totalKomisi) }}</b></div>
+          <div class="card" style="margin:0;"><div class="msub">Sudah diambil</div><b>{{ rupiah(buku.summary.sudahDiambil) }}</b></div>
+          <div class="card" style="margin:0;"><div class="msub">Belum diambil</div><b>{{ rupiah(buku.summary.belumDiambil) }}</b></div>
+        </div>
+        <div v-if="buku.summary.tripBerjalan" class="msub" style="margin-bottom:8px;">
+          {{ buku.summary.tripBerjalan }} perjalanan masih berjalan / belum TTD lengkap
+          (komisi {{ rupiah(buku.summary.menungguSelesai) }} menunggu selesai).
+        </div>
+
+        <div v-if="!buku.rows.length" class="empty">Belum ada perjalanan pada periode ini.</div>
+        <div v-else style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:34px;"><input type="checkbox" :checked="semuaDicentang" @change="toggleSemua" title="Pilih semua yang sudah selesai" /></th>
+                <th>Tanggal</th>
+                <th>No Surat Jalan</th>
+                <th>Tujuan</th>
+                <th>Barang</th>
+                <th class="num">Komisi</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in buku.rows" :key="r.id" :style="{ opacity: r.selesai ? 1 : 0.6 }">
+                <td><input type="checkbox" :disabled="!r.selesai" :value="r.id" v-model="dipilih" /></td>
+                <td>{{ fmtTgl(r.tanggal) }}</td>
+                <td class="mono">{{ r.no }}</td>
+                <td>{{ r.tujuan || r.penerima || "-" }}</td>
+                <td>{{ r.jenisBarang || "-" }}</td>
+                <td class="num mono">{{ rupiah(r.uangKomisi) }}</td>
+                <td>
+                  <span v-if="!r.selesai" class="tag">Belum selesai</span>
+                  <span v-else-if="r.komisiDiambil" class="tag">Sudah diambil {{ fmtTgl(r.komisiDiambilAt) }}</span>
+                  <span v-else class="tag" style="font-weight:600;">Belum diambil</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-top:12px; flex-wrap:wrap;">
+          <span v-if="dipilih.length" class="msub" style="margin:0;">{{ dipilih.length }} dipilih · {{ rupiah(totalDipilih) }}</span>
+          <button class="btn btn-ghost" :disabled="!dipilih.length" @click="tandai(false)">Batalkan diambil</button>
+          <button class="btn btn-primary" :disabled="!dipilih.length" @click="tandai(true)">Tandai sudah diambil</button>
+        </div>
+      </template>
     </div>
   </div>
 </template>

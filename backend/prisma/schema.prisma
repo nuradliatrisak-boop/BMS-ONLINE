@@ -399,6 +399,10 @@ model SuratJalan {
   uangMobil    Float   @default(0)
   uangJalan    Float   @default(0)
   uangKomisi   Float   @default(0)
+  // Komisi sopir dianggap "didapat" saat tugas selesai (statusTTD = LENGKAP, bukan draft).
+  // komisiDiambil = uang komisinya sudah diserahkan ke sopir.
+  komisiDiambil   Boolean   @default(false)
+  komisiDiambilAt DateTime?
   createdAt   DateTime @default(now())
   // Dokumen yang dibuat bareng lewat "Jumlah Surat Jalan" > 1 (customer &
   // tujuan sama, cuma nomor SJ beda-beda) berbagi batchId yang sama. Dipakai
@@ -410,6 +414,7 @@ model SuratJalan {
 
   @@index([customerId])
   @@index([batchId])
+  @@index([sopirId])
 }
 
 model DivisiTx {

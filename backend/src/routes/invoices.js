@@ -76,6 +76,7 @@ const includeLengkap = {
       suratJalan: {
         include: { armada: true, customer: true },
       },
+      tensiv: true,
     },
     orderBy: { id: "asc" },
   },
@@ -146,17 +147,43 @@ async function buildItemData(tx, it, lokasiGeo = null) {
     if (uangKomisi === undefined) uangKomisi = sj.uangKomisi;
   }
 
+  // Baris sewa alat berat ditarik dari sebuah Tensiv (Daftar Kerja Harian) ->
+  // qty/kategoriAlat/unitAlat/tglPakai disalin otomatis dari rekaman jam
+  // kerjanya, kecuali dikirim manual (hargaSatuan tetap wajib dikirim dari
+  // frontend, sama seperti baris Surat Jalan).
+  let kategoriAlat = it.kategoriAlat;
+  let unitAlat = it.unitAlat;
+  let tglPakai = it.tglPakai;
+
+  if (it.tensivId) {
+    const ts = await tx.tensiv.findUnique({ where: { id: it.tensivId } });
+
+    if (!ts) {
+      throw Object.assign(new Error("Tensiv tidak ditemukan"), {
+        status: 400,
+      });
+    }
+
+    keterangan = keterangan || [ts.unitAlat, ts.kategoriAlat].filter(Boolean).join(" - ");
+    qty = qty ?? ts.totalJamKerja;
+    satuan = satuan || "jam";
+    kategoriAlat = kategoriAlat || ts.kategoriAlat;
+    unitAlat = unitAlat || ts.unitAlat;
+    tglPakai = tglPakai || ts.tanggal;
+  }
+
   // Baris sewa alat berat (kategoriAlat + unitAlat diisi) & uangMakan belum
   // dikirim manual -> cari otomatis dari master rate UangMakanAlat.
-  if (uangMakan === undefined && it.kategoriAlat && it.unitAlat) {
+  if (uangMakan === undefined && kategoriAlat && unitAlat) {
     const rate = await tx.uangMakanAlat.findUnique({
-      where: { unitAlat_kategoriAlat: { unitAlat: it.unitAlat, kategoriAlat: it.kategoriAlat } },
+      where: { unitAlat_kategoriAlat: { unitAlat, kategoriAlat } },
     });
     if (rate) uangMakan = rate.nominal;
   }
 
   return {
     suratJalanId: it.suratJalanId || null,
+    tensivId: it.tensivId || null,
     keterangan,
     qty: Number(qty) || 0,
     satuan: satuan || null,
@@ -164,9 +191,9 @@ async function buildItemData(tx, it, lokasiGeo = null) {
     // Khusus baris SEWA ALAT BERAT (opsional). Kalau diisi, baris ini ikut
     // terhitung di menu "Rekap Sewa Alat" & statistik per kategori alat di
     // Dashboard. Invoice material/armada biasa cukup dibiarkan kosong.
-    kategoriAlat: it.kategoriAlat || null,
-    unitAlat: it.unitAlat || null,
-    tglPakai: it.tglPakai ? new Date(it.tglPakai) : null,
+    kategoriAlat: kategoriAlat || null,
+    unitAlat: unitAlat || null,
+    tglPakai: tglPakai ? new Date(tglPakai) : null,
     // Lokasi sewa (opsional) + koordinat hasil geocoding otomatis, dipakai
     // statistik & peta per lokasi di menu Rekap Sewa Alat / Dashboard.
     lokasi: it.lokasi || null,
@@ -455,7 +482,7 @@ router.post("/:id/items", async (req, res, next) => {
   } catch (e) {
     if (e.code === "P2002") {
       return res.status(409).json({
-        error: "Surat jalan ini sudah dipakai di invoice lain",
+        error: "Surat jalan/Tensiv ini sudah dipakai di invoice lain",
       });
     }
     next(e);

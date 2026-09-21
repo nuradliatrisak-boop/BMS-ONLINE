@@ -88,6 +88,7 @@ model Customer {
   prices    CustomerPrice[]
   rekapPenjualan RekapPenjualan[]
   suratJalan SuratJalan[]
+  tensiv    Tensiv[]
   recipients CustomerRecipient[]
 }
 
@@ -323,6 +324,11 @@ model InvoiceItem {
   invoice      Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   suratJalanId String?  @unique
   suratJalan   SuratJalan? @relation(fields: [suratJalanId], references: [id])
+  // Baris SEWA ALAT BERAT boleh ditarik dari satu rekaman Tensiv (Daftar Kerja
+  // Harian alat, lihat model Tensiv di bawah) -- sama pola dengan suratJalanId
+  // di atas: 1 Tensiv cuma boleh dipakai di 1 baris invoice.
+  tensivId     String?  @unique
+  tensiv       Tensiv?  @relation(fields: [tensivId], references: [id])
   keterangan   String
   qty          Float
   satuan       String?
@@ -415,6 +421,52 @@ model SuratJalan {
   @@index([customerId])
   @@index([batchId])
   @@index([sopirId])
+}
+
+// "Daftar Kerja Harian" alat berat (di lapangan biasa disebut "Tensiv") --
+// rekaman jam kerja sebuah unit alat pada 1 hari, ditandatangani Pengawas &
+// Operator di kertas fisik (form "DAFTAR KERJA HARIAN"). Dibuat terpisah dari
+// Invoice sama seperti SuratJalan: staf isi rekaman ini dulu tiap hari, baru
+// nanti ditarik jadi 1 baris InvoiceItem pas bikin tagihan (lihat tensivId di
+// InvoiceItem & endpoint GET /api/tensiv/belum-ditagih), jadi tidak perlu
+// ngetik ulang dari kertas langsung ke form invoice.
+//
+// waktuKerja & waktuTidakKerja disimpan sebagai array JSON karena satu hari
+// bisa punya lebih dari 1 baris jam (shift normal + lembur, atau lebih dari
+// 1 rentang idle) -- persis bentuk tabel di kertas fisiknya:
+//   waktuKerja:      [{ mulai, sampai, totalJam, keterangan }, ...]
+//   waktuTidakKerja: [{ mulai, sampai, totalJam }, ...]
+// totalJamKerja/totalJamTidakKerja dihitung otomatis di server dari kedua
+// array itu (jumlah kolom "Total Jam"), supaya tidak bisa mismatch.
+model Tensiv {
+  id           String   @id @default(cuid())
+  no           String?  @unique // nomor referensi internal opsional, mis. "TS-2609-001"
+  divisi       String   @default("Alat Berat")
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  unitAlatId   String?  // opsional: kaitan ke master AlatBeratUnit
+  unitAlat     String?  // nama unit dipakai (cache teks, mis. "PC 200", "SANY PC-075")
+  typeAlat     String?  // kolom "Type" di kertas fisik, mis. "75"
+  kategoriAlat String?  // Bucket/Breker/Longarm/Diatas Air/dst -> dipakai cari rate UangMakanAlat
+  pengawas     String?
+  lokasi       String?
+  tanggal      DateTime
+  waktuKerja      Json?  // [{mulai, sampai, totalJam, keterangan}]
+  waktuTidakKerja Json?  // [{mulai, sampai, totalJam}]
+  totalJamKerja      Float @default(0)
+  totalJamTidakKerja Float @default(0)
+  keteranganLokasi String?
+  namaPengawasTTD  String?
+  namaOperatorTTD  String?
+  statusTTD    StatusTTD @default(BELUM_TTD)
+  isDraft      Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  invoiceItems InvoiceItem[]
+
+  @@index([customerId])
+  @@index([unitAlatId])
+  @@index([tanggal])
 }
 
 model DivisiTx {

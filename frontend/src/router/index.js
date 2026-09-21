@@ -12,6 +12,7 @@ import Material from "../views/Material.vue";
 import Invoices from "../views/Invoices.vue";
 import InvoiceDetail from "../views/InvoiceDetail.vue";
 import SuratJalan from "../views/SuratJalan.vue";
+import Tensiv from "../views/Tensiv.vue";
 import DivisiLaporan from "../views/DivisiLaporan.vue";
 import RekapKeseluruhan from "../views/RekapKeseluruhan.vue";
 import Users from "../views/Users.vue";
@@ -36,6 +37,7 @@ const routes = [
   { path: "/invoices", name: "invoices", component: Invoices },
   { path: "/invoices/:id", name: "invoice-detail", component: InvoiceDetail },
   { path: "/surat-jalan", name: "surat-jalan", component: SuratJalan },
+  { path: "/tensiv", name: "tensiv", component: Tensiv },
   { path: "/laporan-divisi", name: "laporan-divisi", component: DivisiLaporan },
   { path: "/rekap-keseluruhan", name: "rekap-keseluruhan", component: RekapKeseluruhan },
   { path: "/laporan-net", name: "laporan-net", component: LaporanNet, meta: { adminOnly: true } },

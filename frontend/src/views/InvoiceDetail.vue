@@ -13,10 +13,14 @@ const loading = ref(true);
 const showModal = ref(false);
 const showEditModal = ref(false);
 const showAddItemModal = ref(false);
+const showAddTensivModal = ref(false);
 const savingEdit = ref(false);
 const savingAddItem = ref(false);
 const belumDitagihRows = ref([]);
+const belumDitagihTensivRows = ref([]);
 const loadingBelumDitagih = ref(false);
+const loadingBelumDitagihTensiv = ref(false);
+const savingAddTensivItem = ref(false);
 const itemEdits = ref({}); // { [itemId]: { hargaSatuan, qty } }
 const biayaEdits = ref({}); // { [itemId]: { belanjaPasir, uangMobil, uangJalan, uangKomisi, uangMakan } }
 const openBiayaId = ref(null); // id item yang lagi dibuka rincian biayanya
@@ -316,6 +320,50 @@ async function submitAddItems() {
   }
 }
 
+// --- TAMBAH ITEM DARI TENSIV (Daftar Kerja Harian alat berat) ---
+async function openAddTensivModal() {
+  showAddTensivModal.value = true;
+  loadingBelumDitagihTensiv.value = true;
+  try {
+    const list = await api.get(
+      `/tensiv/belum-ditagih?customerId=${invoice.value.customerId}`
+    );
+    belumDitagihTensivRows.value = list.map((ts) => ({
+      tensivId: ts.id,
+      ts,
+      checked: false,
+      hargaSatuan: 0,
+    }));
+  } catch (e) {
+    toast(e?.message || "Gagal memuat Tensiv yang belum ditagih");
+  } finally {
+    loadingBelumDitagihTensiv.value = false;
+  }
+}
+
+async function submitAddTensivItems() {
+  const picked = belumDitagihTensivRows.value.filter((r) => r.checked);
+  if (!picked.length) {
+    return toast("Pilih minimal 1 Tensiv");
+  }
+  savingAddTensivItem.value = true;
+  try {
+    for (const r of picked) {
+      await api.post(`/invoices/${route.params.id}/items`, {
+        tensivId: r.tensivId,
+        hargaSatuan: Number(r.hargaSatuan) || 0,
+      });
+    }
+    toast("Item berhasil ditambahkan");
+    showAddTensivModal.value = false;
+    await load();
+  } catch (e) {
+    toast(e?.message || "Gagal menambahkan item");
+  } finally {
+    savingAddTensivItem.value = false;
+  }
+}
+
 async function updateItemHarga(item) {
   const edit = itemEdits.value[item.id];
   if (!edit) return;
@@ -528,6 +576,12 @@ onMounted(load);
               <button class="btn btn-sm btn-ghost" @click="openAddItemModal">
                 + Dari Surat Jalan
               </button>
+              <!-- Tambah dari rekaman Tensiv (Daftar Kerja Harian alat berat)
+                   yang sudah diisi & belum ditagih -- qty jam/kategori/unit
+                   ikut kesalin otomatis, staf tinggal isi harga satuan. -->
+              <button class="btn btn-sm btn-ghost" @click="openAddTensivModal">
+                + Dari Tensiv
+              </button>
               <!-- Tambah baris manual: dipakai untuk sewa alat berat (jam kerja,
                    mobilisasi) atau item lain yang tidak berasal dari Surat Jalan. -->
               <button class="btn btn-sm btn-ghost" @click="openAddManualItemModal">
@@ -557,6 +611,7 @@ onMounted(load);
                 <td>
                   {{ it.keterangan }}
                   <div v-if="it.suratJalan" class="item-sj-sub">SJ: {{ it.suratJalan.no }}</div>
+                  <div v-if="it.tensiv" class="item-sj-sub">Tensiv: {{ it.tensiv.no }}</div>
                   <!-- Penanda baris sewa alat berat: kategori (Bucket/Breker/
                        Mobilisasi) & unit alatnya. Baris inilah yang dijumlah
                        di menu "Rekap Sewa Alat" dan statistik Dashboard. -->
@@ -812,6 +867,53 @@ onMounted(load);
           <button class="btn btn-ghost" :disabled="savingAddItem" @click="showAddItemModal = false">Batal</button>
           <button class="btn btn-primary" :disabled="savingAddItem" @click="submitAddItems">
             {{ savingAddItem ? "Menyimpan..." : "Tambahkan Item Terpilih" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL TAMBAH ITEM DARI TENSIV (Daftar Kerja Harian alat berat) -->
+    <div v-if="showAddTensivModal" class="modal-bg" @click.self="showAddTensivModal = false">
+      <div class="modal" style="max-width:760px">
+        <button class="modal-close" @click="showAddTensivModal = false">×</button>
+        <h2>Tambah Item dari Tensiv</h2>
+        <div class="msub">Rekaman Tensiv (jam kerja alat) customer ini yang belum ditagih di invoice manapun.</div>
+
+        <div v-if="loadingBelumDitagihTensiv" class="empty small">Memuat Tensiv…</div>
+        <div v-else-if="!belumDitagihTensivRows.length" class="empty small">
+          Tidak ada Tensiv yang belum ditagih untuk customer ini.
+        </div>
+        <div v-else class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>No Tensiv</th>
+                <th>Tanggal</th>
+                <th>Unit Alat</th>
+                <th>Kategori</th>
+                <th class="num">Jam Kerja</th>
+                <th class="num">Harga / Jam</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in belumDitagihTensivRows" :key="r.tensivId">
+                <td><input type="checkbox" v-model="r.checked" /></td>
+                <td class="mono">{{ r.ts.no }}</td>
+                <td>{{ r.ts.tanggal ? new Date(r.ts.tanggal).toLocaleDateString("id-ID") : "-" }}</td>
+                <td>{{ r.ts.unitAlat || "-" }}</td>
+                <td>{{ r.ts.kategoriAlat || "-" }}</td>
+                <td class="num mono">{{ r.ts.totalJamKerja }}</td>
+                <td class="num"><input v-model.number="r.hargaSatuan" type="number" min="0" class="item-harga-input" /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" :disabled="savingAddTensivItem" @click="showAddTensivModal = false">Batal</button>
+          <button class="btn btn-primary" :disabled="savingAddTensivItem" @click="submitAddTensivItems">
+            {{ savingAddTensivItem ? "Menyimpan..." : "Tambahkan Item Terpilih" }}
           </button>
         </div>
       </div>

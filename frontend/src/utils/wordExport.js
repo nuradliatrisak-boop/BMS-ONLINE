@@ -63,7 +63,7 @@ export function exportSolarStokWord({ bulanLabel, items, totalMasuk, totalKeluar
     ? masuk
         .map(
           (t, i) =>
-            `<tr><td>${i + 1}</td><td>${esc(t.no)}</td><td>${fmtDateID(t.tanggal)}</td><td>${esc(t.nama)}</td><td class="num">${t.liter}</td><td class="num">${t.literReal ?? "-"}</td><td class="num">${selisihLabel(t)}</td><td>${cekLabel(t)}</td><td>${esc(t.keterangan || "-")}</td></tr>`
+            `<tr><td>${i + 1}</td><td>${esc(t.no)}</td><td>${fmtDateID(t.tanggal)}</td><td>${esc(t.nama)}</td><td class="num">${t.liter}</td><td class="num">${t.literCatatan ?? "-"}</td><td class="num">${selisihLabel(t)}</td><td>${cekLabel(t)}</td><td>${esc(t.keterangan || "-")}</td></tr>`
         )
         .join("")
     : `<tr><td colspan="9" style="text-align:center;color:#777">Belum ada data.</td></tr>`;
@@ -84,9 +84,9 @@ export function exportSolarStokWord({ bulanLabel, items, totalMasuk, totalKeluar
 
     <div class="sec-title">Solar Masuk</div>
     <table>
-      <tr><th>No</th><th>Nomor</th><th>Tanggal</th><th>Nama Sopir</th><th>Dicatat (L)</th><th>Real (L)</th><th>Selisih</th><th>Status</th><th>Keterangan</th></tr>
+      <tr><th>No</th><th>Nomor</th><th>Tanggal</th><th>Nama Sopir</th><th>Real (L)</th><th>Buku (L)</th><th>Selisih</th><th>Status</th><th>Keterangan</th></tr>
       ${rowsMasuk}
-      <tr><td colspan="4"><b>Total Masuk ke Stok (real kalau sudah dicek)</b></td><td class="num"><b>${totalMasuk}</b></td><td colspan="4"></td></tr>
+      <tr><td colspan="4"><b>Total Masuk ke Stok (real)</b></td><td class="num"><b>${totalMasuk}</b></td><td colspan="4"></td></tr>
     </table>
 
     <div class="sec-title">Solar Keluar</div>

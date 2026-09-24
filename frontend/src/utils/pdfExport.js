@@ -311,11 +311,11 @@ export async function exportSolarStokPdf({ bulanLabel, items, totalMasuk, totalK
   autoTable(doc, {
     startY: y + 2,
     margin: { left: margin, right: margin },
-    head: [["No", "Tanggal", "Nama Sopir", "Dicatat (L)", "Real (L)", "Selisih", "Status", "Keterangan"]],
+    head: [["No", "Tanggal", "Nama Sopir", "Real (L)", "Buku (L)", "Selisih", "Status", "Keterangan"]],
     body: masuk.length
-      ? masuk.map((t) => [t.no, fmtDateID(t.tanggal), t.nama, t.liter, t.literReal ?? "-", selisihLabel(t), cekLabel(t), t.keterangan || "-"])
+      ? masuk.map((t) => [t.no, fmtDateID(t.tanggal), t.nama, t.liter, t.literCatatan ?? "-", selisihLabel(t), cekLabel(t), t.keterangan || "-"])
       : [[{ content: "Belum ada data.", colSpan: 8, styles: { halign: "center", textColor: 130 } }]],
-    foot: [[{ content: "Total Masuk ke Stok (real kalau sudah dicek)", colSpan: 3, styles: { fontStyle: "bold" } }, { content: String(totalMasuk), styles: { fontStyle: "bold" } }, "", "", "", ""]],
+    foot: [[{ content: "Total Masuk ke Stok (real)", colSpan: 3, styles: { fontStyle: "bold" } }, { content: String(totalMasuk), styles: { fontStyle: "bold" } }, "", "", "", ""]],
     theme: "grid",
     styles: { fontSize: 8.5, cellPadding: 1.6 },
     headStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },

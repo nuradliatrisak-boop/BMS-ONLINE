@@ -362,8 +362,8 @@ watch([divisi, bulan], load);
 // ------------------------------------------------------------
 const solarData = ref({
   items: [],
-  totalMasuk: 0, // liter yang benar-benar masuk (real kalau sudah dicek)
-  totalMasukDicatat: 0, // total menurut catatan buku sopir
+  totalMasuk: 0, // stok real yang masuk
+  totalCatatan: 0, // total menurut buku catatan sopir (baris yang catatannya sudah diisi)
   totalKeluar: 0,
   totalKurang: 0,
   totalLebih: 0,
@@ -375,9 +375,9 @@ const solarData = ref({
 const solarUtang = ref([]); // rekap saldo utang per sopir (semua waktu)
 const namaMasuk = ref([]); // daftar nama untuk dropdown
 const namaKeluar = ref([]);
-const cekInput = ref({}); // { [id]: string } liter real kalau beda dari catatan
-const belumDicekList = ref([]); // semua catatan lama yang belum dicek (semua tanggal)
-const cekMassal = ref({}); // { [id]: string } liter real yang diketik di panel Cek
+const cekInput = ref({}); // { [id]: string } angka catatan buku yang diketik per baris
+const belumDicekList = ref([]); // semua solar masuk yang catatan bukunya belum diisi (semua tanggal)
+const cekMassal = ref({}); // { [id]: string } catatan buku yang diketik di panel Cek
 const cekMassalSaving = ref(false);
 const solarLoading = ref(false);
 const showSolarModal = ref(false);
@@ -390,6 +390,7 @@ const emptySolarForm = (tipe) => ({
   tanggal: new Date().toISOString().slice(0, 10),
   nama: "",
   liter: "",
+  literCatatan: "", // catatan buku sopir (khusus MASUK, opsional)
   lokasi: "",
   keterangan: "",
 });
@@ -516,15 +517,16 @@ async function loadBelumDicek() {
 const cekMassalTerisi = computed(() =>
   belumDicekList.value.filter((t) => cekMassal.value[t.id] !== undefined && cekMassal.value[t.id] !== "")
 );
-const selisihMassal = (t) => Number(cekMassal.value[t.id]) - t.liter;
+// selisih = real - catatan buku (minus = kurang)
+const selisihMassal = (t) => t.liter - Number(cekMassal.value[t.id]);
 
 async function simpanCekMassal() {
-  const items = cekMassalTerisi.value.map((t) => ({ id: t.id, literReal: Number(cekMassal.value[t.id]) }));
-  if (!items.length) return toast("Isi dulu liter real minimal satu baris");
+  const items = cekMassalTerisi.value.map((t) => ({ id: t.id, literCatatan: Number(cekMassal.value[t.id]) }));
+  if (!items.length) return toast("Isi dulu catatan buku minimal satu baris");
   cekMassalSaving.value = true;
   try {
-    const r = await api.post("/solar-tx/cek-massal", { items });
-    toast(`${r.disimpan} catatan dicek${r.dilewati.length ? `, ${r.dilewati.length} dilewati` : ""}`);
+    const r = await api.post("/solar-tx/catatan-massal", { items });
+    toast(`${r.disimpan} catatan buku disimpan${r.dilewati.length ? `, ${r.dilewati.length} dilewati` : ""}`);
     for (const t of cekMassalTerisi.value) delete cekMassal.value[t.id];
     await loadSolar();
   } catch (e) {
@@ -554,42 +556,42 @@ async function loadSolarNama() {
 
 const solarNamaOptions = computed(() => (solarForm.value.tipe === "MASUK" ? namaMasuk.value : namaKeluar.value));
 
-// --- Cek keesokan hari: catatan buku sopir (tanggal H) dicocokkan dengan
-// catatan real yang masuk, baru bisa dilakukan mulai H+1. Selisih, status,
-// dan saldo utang per sopir dihitung otomatis di backend. ---
+// --- Cek keesokan hari: angka real yang masuk (sudah tercatat) dibandingkan
+// dengan catatan di buku sopir untuk tanggal itu. Selisih, status, dan saldo
+// utang per sopir dihitung otomatis di backend. ---
 async function cekSesuai(t) {
   try {
-    await api.post(`/solar-tx/${t.id}/cek`, {});
-    toast(`${t.nama} — sesuai (${t.liter} L)`);
+    await api.post(`/solar-tx/${t.id}/catatan`, {});
+    toast(`${t.nama} — catatan buku sama dengan real (${t.liter} L)`);
     await loadSolar();
   } catch (e) {
-    toast(e.message || "Gagal mencatat cek");
+    toast(e.message || "Gagal menyimpan catatan buku");
   }
 }
 
 async function cekBeda(t) {
   const nilai = cekInput.value[t.id];
   if (nilai === undefined || nilai === "" || Number.isNaN(Number(nilai))) {
-    return toast("Isi dulu jumlah liter real yang masuk");
+    return toast("Isi dulu angka di buku catatan");
   }
   try {
-    await api.post(`/solar-tx/${t.id}/cek`, { literReal: Number(nilai) });
-    toast(`${t.nama} — real ${nilai} L dicatat`);
+    await api.post(`/solar-tx/${t.id}/catatan`, { literCatatan: Number(nilai) });
+    toast(`${t.nama} — catatan buku ${nilai} L disimpan`);
     delete cekInput.value[t.id];
     await loadSolar();
   } catch (e) {
-    toast(e.message || "Gagal mencatat cek");
+    toast(e.message || "Gagal menyimpan catatan buku");
   }
 }
 
 async function batalCek(t) {
-  if (!confirm(`Batalkan hasil cek untuk ${t.nama} (${new Date(t.tanggal).toLocaleDateString("id-ID")})?`)) return;
+  if (!confirm(`Hapus catatan buku untuk ${t.nama} (${new Date(t.tanggal).toLocaleDateString("id-ID")})?`)) return;
   try {
-    await api.post(`/solar-tx/${t.id}/batal-cek`, {});
-    toast("Hasil cek dibatalkan");
+    await api.post(`/solar-tx/${t.id}/hapus-catatan`, {});
+    toast("Catatan buku dihapus");
     await loadSolar();
   } catch (e) {
-    toast(e.message || "Gagal membatalkan cek");
+    toast(e.message || "Gagal menghapus catatan buku");
   }
 }
 
@@ -620,6 +622,7 @@ function openSolarEditModal(t) {
     tanggal: new Date(t.tanggal).toISOString().slice(0, 10),
     nama: t.nama,
     liter: t.liter,
+    literCatatan: t.literCatatan ?? "",
     lokasi: t.lokasi || "",
     keterangan: t.keterangan || "",
   };
@@ -651,6 +654,7 @@ async function submitSolar() {
   fd.append("tanggal", solarForm.value.tanggal);
   fd.append("nama", solarForm.value.nama);
   fd.append("liter", String(literNum));
+  if (solarForm.value.tipe === "MASUK") fd.append("literCatatan", String(solarForm.value.literCatatan ?? ""));
   if (solarForm.value.tipe === "KELUAR") fd.append("lokasi", solarForm.value.lokasi);
   if (solarForm.value.keterangan) fd.append("keterangan", solarForm.value.keterangan);
   const file = solarFileInput.value?.files?.[0];
@@ -969,8 +973,9 @@ onMounted(async () => {
           <span class="tag">{{ belumDicekList.length }} belum dicek</span>
         </div>
         <div class="msub" style="margin-bottom: 10px">
-          Catatan buku sopir (kiri) dan liter real (kanan) berdampingan. Isi liter real, selisih langsung
-          kelihatan. Semua tanggal yang belum dicek tampil di sini, urut dari yang paling lama.
+          Angka real yang sudah tercatat (kiri) dan catatan buku sopir (kanan) berdampingan. Isi angka di buku
+          catatan, selisih langsung kelihatan. Semua tanggal yang catatan bukunya belum diisi tampil di sini,
+          urut dari yang paling lama.
         </div>
         <div class="table-wrap">
           <table>
@@ -978,8 +983,8 @@ onMounted(async () => {
               <tr>
                 <th>Tanggal</th>
                 <th>Nama Sopir</th>
-                <th class="num">Buku Catatan (L)</th>
-                <th>Real yang Masuk (L)</th>
+                <th class="num">Real yang Masuk (L)</th>
+                <th>Catatan Buku Sopir (L)</th>
                 <th>Selisih</th>
                 <th>Keterangan</th>
               </tr>
@@ -991,8 +996,8 @@ onMounted(async () => {
                 <td class="num mono"><b>{{ t.liter }}</b></td>
                 <td>
                   <div style="display: flex; gap: 6px; align-items: center">
-                    <input v-model="cekMassal[t.id]" type="number" step="0.1" min="0" placeholder="Real (L)" style="width: 110px" />
-                    <button class="btn btn-sm btn-ghost" title="Samakan dengan buku catatan" @click="cekMassal[t.id] = String(t.liter)">
+                    <input v-model="cekMassal[t.id]" type="number" step="0.1" min="0" placeholder="Buku (L)" style="width: 110px" />
+                    <button class="btn btn-sm btn-ghost" title="Samakan dengan angka real" @click="cekMassal[t.id] = String(t.liter)">
                       = Sesuai
                     </button>
                   </div>
@@ -1014,7 +1019,7 @@ onMounted(async () => {
           <button class="btn btn-primary" :disabled="cekMassalSaving || !cekMassalTerisi.length" @click="simpanCekMassal">
             {{ cekMassalSaving ? "Menyimpan..." : `Simpan yang sudah diisi (${cekMassalTerisi.length})` }}
           </button>
-          <span class="msub">Baris yang dikosongkan tidak disimpan. Status kurang/lebih dan saldo utang dihitung otomatis setelah disimpan.</span>
+          <span class="msub">Baris yang dikosongkan tidak disimpan. Angka real tidak berubah. Status kurang/lebih dan saldo utang dihitung otomatis setelah disimpan.</span>
         </div>
       </div>
 
@@ -1029,8 +1034,8 @@ onMounted(async () => {
                 <th>No</th>
                 <th>Tanggal</th>
                 <th>Nama Sopir</th>
-                <th class="num">Dicatat Sopir (L)</th>
-                <th>Cek Besoknya (Real)</th>
+                <th class="num">Real yang Masuk (L)</th>
+                <th>Catatan Buku Sopir</th>
                 <th>Status / Selisih</th>
                 <th>Keterangan</th>
                 <th>Bukti</th>
@@ -1048,30 +1053,27 @@ onMounted(async () => {
                 <td>{{ t.nama }}</td>
                 <td class="num mono">{{ t.liter }}</td>
 
-                <!-- Cek Besoknya -->
+                <!-- Catatan buku sopir (dicek besoknya) -->
                 <td>
                   <template v-if="t.statusCek === 'MENUNGGU'">
                     <div class="msub" style="font-size: 12px">Bisa dicek mulai {{ tglBesok(t.tanggal) }}</div>
                   </template>
                   <template v-else-if="t.statusCek === 'BELUM_DICEK'">
                     <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center">
-                      <button class="btn btn-sm btn-primary" @click="cekSesuai(t)">✓ Sesuai ({{ t.liter }} L)</button>
+                      <button class="btn btn-sm btn-primary" @click="cekSesuai(t)">✓ Sama ({{ t.liter }} L)</button>
                       <input
                         v-model="cekInput[t.id]"
                         type="number"
                         step="0.1"
                         min="0"
-                        placeholder="Kalau beda, isi L"
+                        placeholder="Angka di buku"
                         style="width: 120px"
                       />
                       <button class="btn btn-sm btn-ghost" @click="cekBeda(t)">Simpan</button>
                     </div>
                   </template>
                   <template v-else>
-                    <div class="mono">{{ t.literReal }} L</div>
-                    <div v-if="t.tanggalCek" class="msub" style="font-size: 11px">
-                      dicek {{ new Date(t.tanggalCek).toLocaleDateString("id-ID") }}
-                    </div>
+                    <div class="mono">{{ t.literCatatan }} L</div>
                   </template>
                 </td>
 
@@ -1079,11 +1081,11 @@ onMounted(async () => {
                 <td>
                   <span :class="cekBadge(t.statusCek)">{{ cekLabel(t.statusCek) }}</span>
                   <div v-if="t.statusCek === 'KURANG'" class="msub" style="font-size: 12px; color: #b91c1c">
-                    Kurang {{ Math.abs(t.selisih) }} L dari yang dicatat.
+                    Real kurang {{ Math.abs(t.selisih) }} L dari catatan buku.
                     Total utang {{ t.nama }}: {{ t.saldoSesudah }} L
                   </div>
                   <div v-else-if="t.statusCek === 'LEBIH'" class="msub" style="font-size: 12px">
-                    Lebih {{ t.selisih }} L.
+                    Real lebih {{ t.selisih }} L dari catatan buku.
                     <template v-if="t.menutupUtang > 0">
                       Menutup utang sebelumnya {{ t.menutupUtang }} L<template v-if="t.saldoSesudah > 0">, sisa utang {{ t.saldoSesudah }} L</template><template v-else> (utang lunas)</template>.
                     </template>
@@ -1102,10 +1104,10 @@ onMounted(async () => {
                 </td>
                 <td style="white-space: nowrap">
                   <button
-                    v-if="t.literReal != null"
+                    v-if="t.literCatatan != null"
                     class="btn btn-ghost btn-sm"
                     @click="batalCek(t)"
-                  >Batal Cek</button>
+                  >Hapus Catatan</button>
                   <button class="btn btn-ghost btn-sm" @click="openSolarEditModal(t)">Edit</button>
                   <button class="btn btn-ghost btn-sm" @click="removeSolar(t)">Hapus</button>
                 </td>
@@ -1114,16 +1116,16 @@ onMounted(async () => {
             <tfoot>
               <tr>
                 <td colspan="3"><b>Total</b></td>
-                <td class="num mono"><b>{{ solarData.totalMasukDicatat }}</b></td>
-                <td class="mono"><b>{{ solarData.totalMasuk }} L</b> <span class="msub">masuk ke stok</span></td>
+                <td class="num mono"><b>{{ solarData.totalMasuk }}</b></td>
+                <td class="mono"><b>{{ solarData.totalCatatan }} L</b> <span class="msub">menurut buku (yang sudah diisi)</span></td>
                 <td colspan="4"></td>
               </tr>
             </tfoot>
           </table>
         </div>
         <div class="desc" style="margin-top: 8px">
-          Catatan sopir dicek dengan catatan real yang masuk <b>keesokan harinya</b>, bukan di hari yang sama.
-          Stok memakai angka real kalau sudah dicek.
+          Catatan buku sopir dicocokkan dengan angka real <b>keesokan harinya</b>, bukan di hari yang sama.
+          Stok selalu memakai angka real.
         </div>
       </div>
 
@@ -1133,7 +1135,7 @@ onMounted(async () => {
           Dihitung otomatis dari semua catatan yang sudah dicek (semua waktu). Kelebihan setor di hari lain
           otomatis menutup kekurangan sebelumnya.
         </div>
-        <div v-if="!solarUtang.length" class="empty" style="padding: 10px 0">Belum ada catatan yang dicek.</div>
+        <div v-if="!solarUtang.length" class="empty" style="padding: 10px 0">Belum ada catatan buku yang dicocokkan.</div>
         <div v-else class="table-wrap">
           <table>
             <thead>
@@ -1426,10 +1428,14 @@ onMounted(async () => {
 
       <div class="row">
         <div class="field">
-          <label>{{ solarForm.tipe === "MASUK" ? "Jumlah Liter (sesuai buku catatan sopir)" : "Jumlah Liter" }}</label>
+          <label>{{ solarForm.tipe === "MASUK" ? "Jumlah Liter Real yang Masuk" : "Jumlah Liter" }}</label>
           <input v-model.number="solarForm.liter" type="number" min="0" />
-          <div v-if="solarForm.tipe === 'MASUK'" class="desc" style="margin-top: 4px">
-            Dicek dengan catatan real yang masuk besok.
+        </div>
+        <div class="field" v-if="solarForm.tipe === 'MASUK'">
+          <label>Catatan Buku Sopir (L, opsional)</label>
+          <input v-model="solarForm.literCatatan" type="number" min="0" step="0.1" placeholder="Angka di buku" />
+          <div class="desc" style="margin-top: 4px">
+            Kalau dikosongkan, bisa diisi belakangan lewat panel Cek Solar Masuk.
           </div>
         </div>
         <div class="field" v-if="solarForm.tipe === 'KELUAR'">

@@ -284,6 +284,11 @@ export async function exportAlatBeratPdf({ bulanLabel, unit, total, orientation 
 // ------------------------------------------------------------
 // Stok Solar (BBM) - halaman Laporan Divisi tab "Stok Solar"
 // ------------------------------------------------------------
+// Label status cek keesokan hari (Solar Masuk) untuk laporan.
+const CEK_LABEL = { SESUAI: "Sesuai", KURANG: "Kurang", LEBIH: "Lebih", BELUM_DICEK: "Belum dicek", MENUNGGU: "Dicek besok" };
+const cekLabel = (t) => CEK_LABEL[t.statusCek] || "-";
+const selisihLabel = (t) => (t.selisih == null ? "-" : t.selisih > 0 ? `+${t.selisih}` : String(t.selisih));
+
 export async function exportSolarStokPdf({ bulanLabel, items, totalMasuk, totalKeluar, saldoSaatIni }) {
   const [kopImg, logoImg] = await Promise.all([loadImageDataUrl(KOP_SURAT_URL), loadImageDataUrl(LOGO_WATERMARK_URL)]);
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -306,16 +311,16 @@ export async function exportSolarStokPdf({ bulanLabel, items, totalMasuk, totalK
   autoTable(doc, {
     startY: y + 2,
     margin: { left: margin, right: margin },
-    head: [["No", "Tanggal", "Nama Sopir", "Liter", "Keterangan"]],
+    head: [["No", "Tanggal", "Nama Sopir", "Dicatat (L)", "Real (L)", "Selisih", "Status", "Keterangan"]],
     body: masuk.length
-      ? masuk.map((t) => [t.no, fmtDateID(t.tanggal), t.nama, t.liter, t.keterangan || "-"])
-      : [[{ content: "Belum ada data.", colSpan: 5, styles: { halign: "center", textColor: 130 } }]],
-    foot: [[{ content: "Total Masuk", colSpan: 3, styles: { fontStyle: "bold" } }, { content: String(totalMasuk), styles: { fontStyle: "bold" } }, ""]],
+      ? masuk.map((t) => [t.no, fmtDateID(t.tanggal), t.nama, t.liter, t.literReal ?? "-", selisihLabel(t), cekLabel(t), t.keterangan || "-"])
+      : [[{ content: "Belum ada data.", colSpan: 8, styles: { halign: "center", textColor: 130 } }]],
+    foot: [[{ content: "Total Masuk ke Stok (real kalau sudah dicek)", colSpan: 3, styles: { fontStyle: "bold" } }, { content: String(totalMasuk), styles: { fontStyle: "bold" } }, "", "", "", ""]],
     theme: "grid",
     styles: { fontSize: 8.5, cellPadding: 1.6 },
     headStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },
     footStyles: { fillColor: [250, 250, 250], textColor: 20 },
-    columnStyles: { 3: { halign: "right" } },
+    columnStyles: { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
   });
   y = doc.lastAutoTable.finalY + 8;
 

@@ -19,7 +19,6 @@ import Users from "../views/Users.vue";
 import RekapPenjualan from "../views/RekapPenjualan.vue";
 import KalibrasiCetak from "../views/KalibrasiCetak.vue";
 import Settings from "../views/Settings.vue";
-import SolarJadwal from "../views/SolarJadwal.vue";
 import Kapal from "../views/Kapal.vue";
 import AlatBeratUnit from "../views/AlatBeratUnit.vue";
 import RekapAlat from "../views/RekapAlat.vue";
@@ -45,7 +44,8 @@ const routes = [
   { path: "/users", name: "users", component: Users, meta: { adminOnly: true } },
   { path: "/kalibrasi-cetak", name: "kalibrasi-cetak", component: KalibrasiCetak, meta: { adminOnly: true } },
   { path: "/pengaturan", name: "pengaturan", component: Settings, meta: { adminOnly: true } },
-  { path: "/solar-jadwal", name: "solar-jadwal", component: SolarJadwal },
+  // Menu lama "Jadwal Setor Solar" sudah digabung ke Laporan Divisi > Stok Solar
+  { path: "/solar-jadwal", redirect: "/laporan-divisi?tab=solar" },
   { path: "/kapal", name: "kapal", component: Kapal },
   { path: "/alat-berat-unit", name: "alat-berat-unit", component: AlatBeratUnit },
   { path: "/rekap-alat", name: "rekap-alat", component: RekapAlat },

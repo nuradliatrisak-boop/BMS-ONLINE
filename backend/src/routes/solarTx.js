@@ -44,6 +44,96 @@ function toNum(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// ------------------------------------------------------------
+// Nama: dianggap SAMA walau beda huruf besar/kecil ("aceng" == "Aceng").
+// Disimpan dalam 1 ejaan baku supaya laporan/rekap per nama tidak terpecah.
+// ------------------------------------------------------------
+function rapikanSpasi(n) {
+  return String(n || "").trim().replace(/\s+/g, " ");
+}
+
+function namaKey(n) {
+  return rapikanSpasi(n).toLowerCase();
+}
+
+function titleCase(n) {
+  return rapikanSpasi(n)
+    .toLowerCase()
+    .replace(/(^|[\s.\-'])(\p{L})/gu, (_m, a, b) => a + b.toUpperCase());
+}
+
+// Kalau nama itu sudah pernah tercatat (mis. "Aceng"), pakai ejaan yang
+// sudah ada supaya seragam. Kalau belum pernah ada -> Huruf Awal Kapital.
+async function bakukanNama(nama) {
+  const bersih = rapikanSpasi(nama);
+  if (!bersih) return bersih;
+  const key = namaKey(bersih);
+  const rows = await prisma.solarTx.findMany({ select: { nama: true }, distinct: ["nama"] });
+  const cocok = rows.map((r) => r.nama).filter((n) => namaKey(n) === key);
+  const tc = titleCase(bersih);
+  if (cocok.includes(tc)) return tc;
+  const berkapital = cocok.find((n) => /^\p{Lu}/u.test(n));
+  return berkapital || tc;
+}
+
+// ------------------------------------------------------------
+// Cek keesokan hari (Solar Masuk).
+// Sopir mencatat di buku berapa liter yang disetor pada tanggal H
+// (kolom `liter`). Besoknya (H+1) ada yang memberi catatan REAL yang
+// benar-benar masuk (kolom `literReal`). Selisihnya dihitung otomatis:
+//   selisih = literReal - liter   (minus = KURANG, plus = LEBIH)
+// Saldo per sopir dijumlah berurutan dari yang paling lama, jadi
+// kelebihan setor otomatis menutup kekurangan sebelumnya.
+// ------------------------------------------------------------
+const TZ = "Asia/Jakarta";
+function hariIni() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: TZ }); // YYYY-MM-DD
+}
+function tglStr(d) {
+  return new Date(d).toISOString().slice(0, 10);
+}
+const r2 = (x) => Math.round(x * 100) / 100;
+
+function hitungCek(list) {
+  const today = hariIni();
+  const asc = list
+    .filter((t) => t.tipe === "MASUK")
+    .sort(
+      (a, b) =>
+        new Date(a.tanggal) - new Date(b.tanggal) || new Date(a.createdAt) - new Date(b.createdAt)
+    );
+  const saldo = new Map(); // key nama -> utang berjalan (+ = masih kurang setor)
+  const out = new Map();
+  for (const t of asc) {
+    const jatuhTempo = tglStr(t.tanggal) < today; // baru boleh dicek mulai besoknya
+    if (t.literReal == null) {
+      out.set(t.id, { statusCek: jatuhTempo ? "BELUM_DICEK" : "MENUNGGU", bisaDicek: jatuhTempo });
+      continue;
+    }
+    const key = namaKey(t.nama);
+    const sebelum = saldo.get(key) || 0;
+    const selisih = r2(t.literReal - t.liter);
+    const sesudah = r2(sebelum - selisih);
+    saldo.set(key, sesudah);
+    const lebih = Math.max(selisih, 0);
+    const menutupUtang = r2(Math.min(lebih, Math.max(sebelum, 0)));
+    out.set(t.id, {
+      statusCek: selisih === 0 ? "SESUAI" : selisih < 0 ? "KURANG" : "LEBIH",
+      bisaDicek: jatuhTempo,
+      selisih,
+      saldoSebelum: sebelum,
+      saldoSesudah: sesudah,
+      menutupUtang,
+      lebihMurni: r2(lebih - menutupUtang),
+    });
+  }
+  return out;
+}
+
+// Liter yang benar-benar masuk ke stok: hasil cek (real) kalau sudah dicek,
+// kalau belum ya angka catatan sopir.
+const literEfektif = (t) => (t.tipe === "MASUK" && t.literReal != null ? t.literReal : t.liter);
+
 function serialize(tx) {
   return {
     ...tx,
@@ -58,6 +148,7 @@ router.get("/", async (req, res, next) => {
   try {
     const { bulan, dari, sampai } = req.query;
     const list = await prisma.solarTx.findMany({ orderBy: [{ tanggal: "desc" }, { createdAt: "desc" }] });
+    const cek = hitungCek(list); // dihitung dari SELURUH data (saldo per sopir berjalan)
 
     let filtered = list;
     if (bulan) {
@@ -71,21 +162,140 @@ router.get("/", async (req, res, next) => {
       });
     }
 
-    const totalMasuk = filtered.filter((t) => t.tipe === "MASUK").reduce((s, t) => s + t.liter, 0);
+    const items = filtered.map((t) => ({ ...serialize(t), ...(cek.get(t.id) || {}) }));
+
+    const masukF = filtered.filter((t) => t.tipe === "MASUK");
+    // Total masuk = liter yang benar-benar masuk (real kalau sudah dicek).
+    const totalMasuk = masukF.reduce((s, t) => s + literEfektif(t), 0);
+    const totalMasukDicatat = masukF.reduce((s, t) => s + t.liter, 0);
     const totalKeluar = filtered.filter((t) => t.tipe === "KELUAR").reduce((s, t) => s + t.liter, 0);
+    const totalKurang = r2(masukF.reduce((s, t) => s + Math.max(-(cek.get(t.id)?.selisih || 0), 0), 0));
+    const totalLebih = r2(masukF.reduce((s, t) => s + Math.max(cek.get(t.id)?.selisih || 0, 0), 0));
+    const belumDicek = masukF.filter((t) => cek.get(t.id)?.statusCek === "BELUM_DICEK").length;
 
     // Saldo berjalan dihitung dari SELURUH data (tidak dibatasi filter bulan),
     // supaya "sisa stok saat ini" selalu akurat walau sedang lihat bulan lama.
-    const totalMasukSemua = list.filter((t) => t.tipe === "MASUK").reduce((s, t) => s + t.liter, 0);
+    const totalMasukSemua = list.filter((t) => t.tipe === "MASUK").reduce((s, t) => s + literEfektif(t), 0);
     const totalKeluarSemua = list.filter((t) => t.tipe === "KELUAR").reduce((s, t) => s + t.liter, 0);
+    const belumDicekSemua = list.filter((t) => cek.get(t.id)?.statusCek === "BELUM_DICEK").length;
 
     res.json({
-      items: filtered.map(serialize),
+      items,
       totalMasuk,
+      totalMasukDicatat,
       totalKeluar,
+      totalKurang,
+      totalLebih,
+      belumDicek,
+      belumDicekSemua,
       saldoBulan: totalMasuk - totalKeluar,
       saldoSaatIni: totalMasukSemua - totalKeluarSemua,
     });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET /api/solar-tx/nama?tipe=MASUK|KELUAR -> daftar nama unik (untuk dropdown),
+// nama yang sama beda huruf besar/kecil digabung jadi satu.
+router.get("/nama", async (req, res, next) => {
+  try {
+    const tipe = String(req.query.tipe || "").toUpperCase();
+    const where = ["MASUK", "KELUAR"].includes(tipe) ? { tipe } : {};
+    const rows = await prisma.solarTx.findMany({ where, select: { nama: true }, distinct: ["nama"] });
+    const map = new Map();
+    for (const { nama } of rows) {
+      const k = namaKey(nama);
+      if (!k) continue;
+      const cur = map.get(k);
+      // ejaan berawalan kapital diutamakan
+      if (!cur || (!/^\p{Lu}/u.test(cur) && /^\p{Lu}/u.test(nama))) map.set(k, rapikanSpasi(nama));
+    }
+    res.json([...map.values()].sort((a, b) => a.localeCompare(b, "id")));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET /api/solar-tx/belum-dicek -> SEMUA solar masuk yang sudah waktunya dicek
+// tapi belum dicek (semua tanggal, tidak dibatasi filter periode), urut dari
+// yang paling lama. Dipakai panel "Cek Solar Masuk" supaya catatan buku dan
+// kolom real tampil berdampingan.
+router.get("/belum-dicek", async (req, res, next) => {
+  try {
+    const today = hariIni();
+    const list = await prisma.solarTx.findMany({
+      where: { tipe: "MASUK", literReal: null },
+      orderBy: [{ tanggal: "asc" }, { createdAt: "asc" }],
+    });
+    res.json(
+      list
+        .filter((t) => tglStr(t.tanggal) < today)
+        .map((t) => ({ id: t.id, no: t.no, tanggal: t.tanggal, nama: t.nama, liter: t.liter, keterangan: t.keterangan }))
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/solar-tx/cek-massal  body: { items: [{ id, literReal }] }
+// Simpan banyak hasil cek sekaligus. Baris yang belum waktunya dicek atau
+// angkanya tidak valid dilewati dan dilaporkan di `dilewati`.
+router.post("/cek-massal", async (req, res, next) => {
+  try {
+    const items = Array.isArray(req.body?.items) ? req.body.items : [];
+    if (!items.length) return res.status(400).json({ error: "Tidak ada data untuk disimpan" });
+    const today = hariIni();
+    const rows = await prisma.solarTx.findMany({ where: { id: { in: items.map((i) => String(i.id)) } } });
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const ops = [];
+    const dilewati = [];
+    for (const it of items) {
+      const cur = byId.get(String(it.id));
+      const real = Number(it.literReal);
+      if (!cur || cur.tipe !== "MASUK") { dilewati.push({ id: it.id, alasan: "Data tidak ditemukan" }); continue; }
+      if (tglStr(cur.tanggal) >= today) { dilewati.push({ id: it.id, alasan: "Belum waktunya dicek" }); continue; }
+      if (it.literReal === "" || it.literReal == null || !Number.isFinite(real) || real < 0) {
+        dilewati.push({ id: it.id, alasan: "Liter real tidak valid" });
+        continue;
+      }
+      ops.push(prisma.solarTx.update({ where: { id: cur.id }, data: { literReal: real, tanggalCek: new Date() } }));
+    }
+    if (ops.length) await prisma.$transaction(ops);
+    res.json({ disimpan: ops.length, dilewati });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET /api/solar-tx/utang -> rekap per sopir dari SEMUA solar masuk yang sudah
+// dicek. saldo > 0 = masih kurang setor (utang), saldo <= 0 = lunas/lebih.
+router.get("/utang", async (req, res, next) => {
+  try {
+    const list = await prisma.solarTx.findMany({
+      where: { tipe: "MASUK" },
+      orderBy: [{ tanggal: "asc" }, { createdAt: "asc" }],
+    });
+    const cek = hitungCek(list);
+    const map = new Map();
+    for (const t of list) {
+      const key = namaKey(t.nama);
+      const r = map.get(key) || { nama: rapikanSpasi(t.nama), totalDicatat: 0, totalReal: 0, saldo: 0, jumlahCek: 0, belumDicek: 0 };
+      r.nama = rapikanSpasi(t.nama); // ejaan terbaru
+      if (t.literReal != null) {
+        r.totalDicatat += t.liter;
+        r.totalReal += t.literReal;
+        r.jumlahCek += 1;
+      } else if (cek.get(t.id)?.statusCek === "BELUM_DICEK") {
+        r.belumDicek += 1;
+      }
+      map.set(key, r);
+    }
+    const rekap = [...map.values()]
+      .map((r) => ({ ...r, totalDicatat: r2(r.totalDicatat), totalReal: r2(r.totalReal), saldo: r2(r.totalDicatat - r.totalReal) }))
+      .filter((r) => r.jumlahCek > 0 || r.belumDicek > 0)
+      .sort((a, b) => b.saldo - a.saldo || a.nama.localeCompare(b.nama, "id"));
+    res.json(rekap);
   } catch (e) {
     next(e);
   }
@@ -147,6 +357,7 @@ router.post("/", uploadBukti.single("bukti"), async (req, res, next) => {
     }
 
     const tipeUp = String(tipe).toUpperCase();
+    const namaFinal = await bakukanNama(nama);
     const no = await generateNoSolar(tipeUp, tanggal);
     const lokasiFinal = tipeUp === "KELUAR" ? lokasi || null : null;
     // Geocode otomatis dari teks lokasi (opsional) -> titik langsung muncul
@@ -159,7 +370,7 @@ router.post("/", uploadBukti.single("bukti"), async (req, res, next) => {
         no,
         tipe: tipeUp,
         tanggal: new Date(tanggal),
-        nama: String(nama).trim(),
+        nama: namaFinal,
         liter: literNum,
         lokasi: lokasiFinal,
         lokasiLat: geo.lat,
@@ -223,7 +434,7 @@ router.put("/:id", uploadBukti.single("bukti"), async (req, res, next) => {
       where: { id: req.params.id },
       data: {
         tanggal: new Date(tanggal),
-        nama: String(nama).trim(),
+        nama: await bakukanNama(nama),
         liter: literNum,
         lokasi: lokasiFinal,
         lokasiLat: geo.lat,
@@ -232,6 +443,55 @@ router.put("/:id", uploadBukti.single("bukti"), async (req, res, next) => {
         buktiFile,
         buktiNama,
       },
+    });
+    res.json(serialize(tx));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/solar-tx/:id/cek  -> cek keesokan hari (hanya Solar Masuk).
+// Body: { literReal?, catatan? }. Tanpa literReal = dianggap SESUAI (sama
+// dengan yang dicatat sopir). Baru boleh dicek mulai HARI BERIKUTNYA dari
+// tanggal catatan, bukan di hari yang sama.
+router.post("/:id/cek", async (req, res, next) => {
+  try {
+    const current = await prisma.solarTx.findUnique({ where: { id: req.params.id } });
+    if (!current) return res.status(404).json({ error: "Data tidak ditemukan" });
+    if (current.tipe !== "MASUK") {
+      return res.status(400).json({ error: "Cek keesokan hari hanya untuk Solar Masuk" });
+    }
+    if (tglStr(current.tanggal) >= hariIni()) {
+      return res.status(400).json({
+        error: "Solar masuk baru bisa dicek mulai besok (hari berikutnya dari tanggal pencatatan)",
+      });
+    }
+    const { literReal, catatan } = req.body || {};
+    let real = current.liter;
+    if (literReal !== undefined && literReal !== null && literReal !== "") {
+      real = Number(literReal);
+      if (!Number.isFinite(real) || real < 0) {
+        return res.status(400).json({ error: "Liter real harus berupa angka 0 atau lebih" });
+      }
+    }
+    const tx = await prisma.solarTx.update({
+      where: { id: req.params.id },
+      data: { literReal: real, tanggalCek: new Date(), catatanCek: catatan ? String(catatan).trim() : null },
+    });
+    res.json(serialize(tx));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/solar-tx/:id/batal-cek -> kembalikan ke status "belum dicek"
+router.post("/:id/batal-cek", async (req, res, next) => {
+  try {
+    const current = await prisma.solarTx.findUnique({ where: { id: req.params.id } });
+    if (!current) return res.status(404).json({ error: "Data tidak ditemukan" });
+    const tx = await prisma.solarTx.update({
+      where: { id: req.params.id },
+      data: { literReal: null, tanggalCek: null, catatanCek: null },
     });
     res.json(serialize(tx));
   } catch (e) {

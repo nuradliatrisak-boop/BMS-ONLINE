@@ -113,11 +113,6 @@ function doLogout() {
         <span>Kapal</span>
       </router-link>
 
-      <router-link to="/solar-jadwal" @click="closeSidebar">
-        <span class="ic">⛽</span>
-        <span>Jadwal Setor Solar</span>
-      </router-link>
-
       <router-link to="/material" @click="closeSidebar">
         <span class="ic">📦</span>
         <span>Material</span>

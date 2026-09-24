@@ -385,6 +385,11 @@ export function exportAlatBeratExcel({
 // ------------------------------------------------------------
 // Stok Solar (BBM) - Alat Berat
 // ------------------------------------------------------------
+// Label status cek keesokan hari (Solar Masuk) untuk laporan.
+const CEK_LABEL = { SESUAI: "Sesuai", KURANG: "Kurang", LEBIH: "Lebih", BELUM_DICEK: "Belum dicek", MENUNGGU: "Dicek besok" };
+const cekLabel = (t) => CEK_LABEL[t.statusCek] || "-";
+const selisihLabel = (t) => (t.selisih == null ? "-" : t.selisih > 0 ? `+${t.selisih}` : String(t.selisih));
+
 export function exportSolarStokExcel({
   bulanLabel,
   items,
@@ -412,7 +417,10 @@ export function exportSolarStokExcel({
       "No",
       "Tanggal",
       "Nama Sopir",
-      "Liter",
+      "Liter Dicatat Sopir",
+      "Liter Real (Cek Besok)",
+      "Selisih (Real - Catatan)",
+      "Status",
       "Keterangan",
     ],
 
@@ -422,6 +430,9 @@ export function exportSolarStokExcel({
           fmtDateID(t.tanggal),
           t.nama,
           t.liter,
+          t.literReal ?? "-",
+          selisihLabel(t),
+          cekLabel(t),
           t.keterangan || "-",
         ])
       : [
@@ -431,14 +442,20 @@ export function exportSolarStokExcel({
             "",
             "",
             "",
+            "",
+            "",
+            "",
           ],
         ]),
 
     [
       "",
       "",
-      "Total Masuk",
+      "Total Masuk ke Stok (real kalau sudah dicek)",
       totalMasuk,
+      "",
+      "",
+      "",
       "",
     ],
 

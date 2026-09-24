@@ -284,20 +284,21 @@ router.get("/reminder", async (req, res, next) => {
       }
     }
 
-    // --- Jadwal Setor Solar hari ini yang belum direalisasi ---
-    const awalHari = new Date(`${todayStr}T00:00:00`);
-    const akhirHari = new Date(`${todayStr}T23:59:59.999`);
-    const jadwalHariIni = await prisma.solarJadwalSetor.count({
-      where: { tanggal: { gte: awalHari, lte: akhirHari }, status: "BELUM" },
+    // --- Solar Masuk yang belum dicek (dicek keesokan harinya) ---
+    // Catatan sopir tanggal H baru bisa dicocokkan dengan catatan real mulai
+    // H+1, jadi yang dihitung hanya yang tanggalnya sebelum hari ini (WIB).
+    const hariIniWib = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+    const solarBelumDicek = await prisma.solarTx.count({
+      where: { tipe: "MASUK", literReal: null, tanggal: { lt: new Date(`${hariIniWib}T00:00:00.000Z`) } },
     });
-    if (jadwalHariIni > 0) {
+    if (solarBelumDicek > 0) {
       reminder.push({
-        jenis: "jadwal_setor_solar",
-        tingkat: "info",
-        judul: "Jadwal Setor Solar hari ini",
-        detail: `${jadwalHariIni} sopir belum realisasi setor hari ini`,
+        jenis: "solar_belum_dicek",
+        tingkat: "peringatan",
+        judul: "Solar Masuk belum dicek",
+        detail: `${solarBelumDicek} catatan solar masuk belum dicocokkan dengan catatan real`,
         tanggal: todayStr,
-        link: "/laporan-divisi",
+        link: "/laporan-divisi?tab=solar",
       });
     }
 

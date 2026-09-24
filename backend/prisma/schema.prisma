@@ -515,6 +515,14 @@ model SolarTx {
   divisi     String    @default("Alat Berat")
   createdAt  DateTime  @default(now())
 
+  // Cek keesokan hari -- khusus MASUK. `liter` = yang dicatat sopir di buku
+  // pada tanggal tsb; `literReal` = catatan real yang masuk, diisi HARI
+  // BERIKUTNYA. Selisih (real - liter) dihitung otomatis di solarTx.js.
+  // null = belum dicek.
+  literReal  Float?
+  tanggalCek DateTime?
+  catatanCek String?
+
   jadwalSetor SolarJadwalSetor?
 
   @@index([tipe, tanggal])

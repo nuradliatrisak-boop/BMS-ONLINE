@@ -1151,6 +1151,7 @@ onMounted(async () => {
               <th>Kelompok</th>
               <th>Kategori</th>
               <th>Rincian</th>
+              <th>Catatan</th>
               <th class="num">Nominal</th>
               <th>Aksi</th>
             </tr>
@@ -1165,6 +1166,7 @@ onMounted(async () => {
                 <span v-else-if="t.qty && t.hargaSatuan">{{ t.qty }} x {{ rupiah(t.hargaSatuan) }}</span>
                 <span v-else>-</span>
               </td>
+              <td style="max-width: 360px; white-space: normal">{{ t.keterangan || "-" }}</td>
               <td class="num mono">{{ rupiah(t.nominal) }}</td>
               <td style="white-space: nowrap">
                 <span v-if="isAutoMirror(t)" class="tag" title="Otomatis mengikuti input Pendapatan di Armada/Alat Berat, edit/hapus dari sana.">

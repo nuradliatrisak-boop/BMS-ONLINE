@@ -94,10 +94,11 @@ router.post("/", async (req, res, next) => {
       hargaSatuan !== undefined && hargaSatuan !== null && hargaSatuan !== "";
     const nominalFinal = pakaiQty ? Number(qty) * Number(hargaSatuan) : Number(nominal);
 
-    if (!nominalFinal || nominalFinal <= 0) {
+    // Nominal negatif diperbolehkan (mis. koreksi selisih bukti transfer), tapi tidak boleh 0/kosong.
+    if (!Number.isFinite(nominalFinal) || nominalFinal === 0) {
       return res
         .status(400)
-        .json({ error: "Nominal (atau Qty x Harga Satuan) wajib diisi dan lebih dari 0" });
+        .json({ error: "Nominal (atau Qty x Harga Satuan) wajib diisi dan tidak boleh 0" });
     }
 
     const tx = await prisma.divisiTx.create({
@@ -153,8 +154,8 @@ router.put("/:id", async (req, res, next) => {
     const pakaiQty = qty !== undefined && qty !== null && qty !== "" &&
       hargaSatuan !== undefined && hargaSatuan !== null && hargaSatuan !== "";
     const nominalFinal = pakaiQty ? Number(qty) * Number(hargaSatuan) : Number(nominal);
-    if (!Number.isFinite(nominalFinal) || nominalFinal <= 0) {
-      return res.status(400).json({ error: "Nominal (atau Qty x Harga Satuan) wajib diisi dan lebih dari 0" });
+    if (!Number.isFinite(nominalFinal) || nominalFinal === 0) {
+      return res.status(400).json({ error: "Nominal (atau Qty x Harga Satuan) wajib diisi dan tidak boleh 0" });
     }
 
     const tx = await prisma.divisiTx.update({

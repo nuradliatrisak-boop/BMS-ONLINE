@@ -408,7 +408,7 @@ export function exportSolarStokExcel({
   const aoa = [
     ["PT. BINTANG MUARA SEJATI"],
     ["REKAP STOK SOLAR (BBM) - ALAT BERAT"],
-    [`Bulan ${bulanLabel}`],
+    [`Periode: ${bulanLabel}`],
     [],
 
     ["SOLAR MASUK"],

@@ -64,16 +64,58 @@ function titleCase(n) {
 
 // Kalau nama itu sudah pernah tercatat (mis. "Aceng"), pakai ejaan yang
 // sudah ada supaya seragam. Kalau belum pernah ada -> Huruf Awal Kapital.
+//
+// Nama SINGKAT otomatis diarahkan ke nama LENGKAP yang sudah ada: kalau
+// ditulis "Warto" padahal yang tercatat "Wartono" (orangnya sama), hasil
+// simpan tetap "Wartono". Syarat supaya aman (tidak salah gabung orang):
+//   - nama yang diketik minimal 4 huruf,
+//   - dia harus awalan dari TEPAT SATU nama lengkap yang sudah ada.
+// Kalau ada 2+ kemungkinan (mis. "Ahmad" -> "Ahmadi" & "Ahmad Fauzi"), tidak
+// ditebak: disimpan apa adanya dan bisa digabung manual lewat "Rapikan Nama".
+const MIN_AWALAN = 4;
+
+function pilihEjaan(daftar) {
+  // ejaan berawalan kapital diutamakan
+  return daftar.find((n) => /^\p{Lu}/u.test(n)) || daftar[0];
+}
+
 async function bakukanNama(nama) {
   const bersih = rapikanSpasi(nama);
   if (!bersih) return bersih;
   const key = namaKey(bersih);
   const rows = await prisma.solarTx.findMany({ select: { nama: true }, distinct: ["nama"] });
-  const cocok = rows.map((r) => r.nama).filter((n) => namaKey(n) === key);
+  const semua = rows.map((r) => rapikanSpasi(r.nama)).filter(Boolean);
   const tc = titleCase(bersih);
-  if (cocok.includes(tc)) return tc;
-  const berkapital = cocok.find((n) => /^\p{Lu}/u.test(n));
-  return berkapital || tc;
+
+  const cocok = semua.filter((n) => namaKey(n) === key);
+  if (cocok.length) return cocok.includes(tc) ? tc : pilihEjaan(cocok);
+
+  if (key.length >= MIN_AWALAN) {
+    const lengkap = new Map(); // key -> ejaan
+    for (const n of semua) {
+      const k = namaKey(n);
+      if (k !== key && k.startsWith(key)) lengkap.set(k, [...(lengkap.get(k) || []), n]);
+    }
+    if (lengkap.size === 1) return pilihEjaan([...lengkap.values()][0]);
+  }
+  return tc;
+}
+
+// Lokasi/wilayah: sama seperti nama, beda huruf besar/kecil dianggap satu
+// ("cimanggis" == "Cimanggis"), pakai ejaan yang paling sering dipakai.
+async function bakukanLokasi(lokasi) {
+  const bersih = rapikanSpasi(lokasi);
+  if (!bersih) return null;
+  const key = namaKey(bersih);
+  const rows = await prisma.solarTx.groupBy({
+    by: ["lokasi"],
+    where: { lokasi: { not: null } },
+    _count: { _all: true },
+  });
+  const cocok = rows
+    .filter((r) => namaKey(r.lokasi) === key)
+    .sort((a, b) => b._count._all - a._count._all);
+  return cocok.length ? rapikanSpasi(cocok[0].lokasi) : bersih;
 }
 
 // ------------------------------------------------------------
@@ -210,6 +252,136 @@ router.get("/nama", async (req, res, next) => {
       if (!cur || (!/^\p{Lu}/u.test(cur) && /^\p{Lu}/u.test(nama))) map.set(k, rapikanSpasi(nama));
     }
     res.json([...map.values()].sort((a, b) => a.localeCompare(b, "id")));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET /api/solar-tx/lokasi -> bahan dropdown "Wilayah Tujuan" (Solar Keluar).
+//  - lokasi        : semua wilayah yang pernah dipakai, paling sering di atas
+//  - polaNama      : { "<nama operator huruf kecil>": "<wilayah yang biasa dia tuju>" }
+//                    dihitung dari 10 catatan keluar TERAKHIR operator itu
+//                    (yang paling sering muncul; kalau seri, yang terbaru).
+//  - defaultLokasi : wilayah paling sering di 30 catatan keluar terakhir
+//                    secara umum, dipakai untuk operator yang belum punya pola.
+// Jadi isian otomatis mengikuti kebiasaan di data, bukan nilai tetap.
+router.get("/lokasi", async (req, res, next) => {
+  try {
+    const rows = await prisma.solarTx.findMany({
+      where: { tipe: "KELUAR", lokasi: { not: null } },
+      select: { nama: true, lokasi: true, tanggal: true },
+      orderBy: [{ tanggal: "desc" }, { createdAt: "desc" }],
+    });
+
+    // ejaan baku tiap lokasi = yang paling sering dipakai
+    const ejaan = new Map(); // key -> Map(ejaan -> jumlah)
+    for (const r of rows) {
+      const k = namaKey(r.lokasi);
+      if (!k) continue;
+      const m = ejaan.get(k) || new Map();
+      m.set(rapikanSpasi(r.lokasi), (m.get(rapikanSpasi(r.lokasi)) || 0) + 1);
+      ejaan.set(k, m);
+    }
+    const baku = new Map();
+    for (const [k, m] of ejaan) baku.set(k, [...m.entries()].sort((a, b) => b[1] - a[1])[0][0]);
+
+    const stat = new Map(); // key -> { lokasi, jumlah, terakhir }
+    for (const r of rows) {
+      const k = namaKey(r.lokasi);
+      if (!k) continue;
+      const cur = stat.get(k) || { lokasi: baku.get(k), jumlah: 0, terakhir: r.tanggal };
+      cur.jumlah += 1;
+      stat.set(k, cur);
+    }
+
+    const modus = (daftar) => {
+      const c = new Map();
+      daftar.forEach((lok, i) => {
+        const k = namaKey(lok);
+        const cur = c.get(k) || { n: 0, first: i };
+        cur.n += 1;
+        c.set(k, cur);
+      });
+      const best = [...c.entries()].sort((a, b) => b[1].n - a[1].n || a[1].first - b[1].first)[0];
+      return best ? baku.get(best[0]) : null;
+    };
+
+    const perNama = new Map();
+    for (const r of rows) {
+      const k = namaKey(r.nama);
+      const arr = perNama.get(k) || [];
+      if (arr.length < 10) arr.push(r.lokasi);
+      perNama.set(k, arr);
+    }
+    const polaNama = {};
+    for (const [k, arr] of perNama) polaNama[k] = modus(arr);
+
+    res.json({
+      lokasi: [...stat.values()].sort((a, b) => b.jumlah - a.jumlah || a.lokasi.localeCompare(b.lokasi, "id")),
+      polaNama,
+      defaultLokasi: modus(rows.slice(0, 30).map((r) => r.lokasi)),
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET /api/solar-tx/nama-mirip -> kelompok nama yang kemungkinan orang yang
+// sama karena yang satu adalah awalan dari yang lain (mis. "Warto" & "Wartono").
+// Dipakai layar "Rapikan Nama". Tidak mengubah data apa pun.
+router.get("/nama-mirip", async (req, res, next) => {
+  try {
+    const rows = await prisma.solarTx.groupBy({ by: ["nama", "tipe"], _count: { _all: true } });
+    const byKey = new Map(); // key -> { key, varian: Map(ejaan -> jumlah), jumlah }
+    for (const r of rows) {
+      const k = namaKey(r.nama);
+      if (!k) continue;
+      const cur = byKey.get(k) || { key: k, varian: new Map(), jumlah: 0 };
+      const e = rapikanSpasi(r.nama);
+      cur.varian.set(e, (cur.varian.get(e) || 0) + r._count._all);
+      cur.jumlah += r._count._all;
+      byKey.set(k, cur);
+    }
+    const keys = [...byKey.keys()].sort((a, b) => a.length - b.length || a.localeCompare(b));
+    const dipakai = new Set();
+    const grup = [];
+    for (const k of keys) {
+      if (dipakai.has(k) || k.length < MIN_AWALAN) continue;
+      const anggota = keys.filter((x) => x === k || x.startsWith(k));
+      if (anggota.length < 2) continue;
+      anggota.forEach((x) => dipakai.add(x));
+      const nama = anggota.map((x) => {
+        const v = byKey.get(x);
+        const ejaan = pilihEjaan([...v.varian.keys()].sort((a, b) => v.varian.get(b) - v.varian.get(a)));
+        return { nama: ejaan, jumlah: v.jumlah, semuaEjaan: [...v.varian.keys()] };
+      });
+      // saran nama baku = yang paling panjang (nama lengkap)
+      const saran = [...nama].sort((a, b) => b.nama.length - a.nama.length)[0].nama;
+      grup.push({ saran, nama });
+    }
+    res.json(grup);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/solar-tx/gabung-nama  body: { dari: ["Warto", ...], ke: "Wartono" }
+// Ganti semua penulisan di `dari` menjadi `ke` (Solar Masuk/Keluar + Jadwal
+// Setor). Beda huruf besar/kecil ikut terganti.
+router.post("/gabung-nama", async (req, res, next) => {
+  try {
+    const dari = Array.isArray(req.body?.dari) ? req.body.dari.map(rapikanSpasi).filter(Boolean) : [];
+    const ke = titleCase(req.body?.ke);
+    if (!dari.length || !ke) return res.status(400).json({ error: "Nama asal dan nama tujuan wajib diisi" });
+    const keys = new Set(dari.map(namaKey));
+    const semua = await prisma.solarTx.findMany({ select: { nama: true }, distinct: ["nama"] });
+    const jadwal = await prisma.solarJadwalSetor.findMany({ select: { nama: true }, distinct: ["nama"] });
+    const target = (list) => list.map((r) => r.nama).filter((n) => keys.has(namaKey(n)) && n !== ke);
+    const [a, b] = await prisma.$transaction([
+      prisma.solarTx.updateMany({ where: { nama: { in: target(semua) } }, data: { nama: ke } }),
+      prisma.solarJadwalSetor.updateMany({ where: { nama: { in: target(jadwal) } }, data: { nama: ke } }),
+    ]);
+    res.json({ diubah: a.count + b.count, ke });
   } catch (e) {
     next(e);
   }
@@ -362,7 +534,7 @@ router.post("/", uploadBukti.single("bukti"), async (req, res, next) => {
       }
     }
     const no = await generateNoSolar(tipeUp, tanggal);
-    const lokasiFinal = tipeUp === "KELUAR" ? lokasi || null : null;
+    const lokasiFinal = tipeUp === "KELUAR" ? await bakukanLokasi(lokasi) : null;
     // Geocode otomatis dari teks lokasi (opsional) -> titik langsung muncul
     // di Peta Solar tanpa staf perlu menandai manual. Gagal geocode tidak
     // menggagalkan penyimpanan transaksinya.
@@ -438,7 +610,7 @@ router.put("/:id", uploadBukti.single("bukti"), async (req, res, next) => {
       buktiNama = null;
     }
 
-    const lokasiFinal = current.tipe === "KELUAR" ? lokasi || null : null;
+    const lokasiFinal = current.tipe === "KELUAR" ? await bakukanLokasi(lokasi) : null;
     // Geocode ulang hanya kalau teks lokasinya berubah, supaya tidak
     // memanggil layanan geocoding setiap kali baris ini diedit (mis. cuma
     // ganti keterangan/bukti).

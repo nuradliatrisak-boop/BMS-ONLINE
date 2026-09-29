@@ -36,7 +36,12 @@ const filtered = computed(() => {
 const adaPersis = computed(() => props.options.some((o) => key(o) === key(props.modelValue)));
 const namaBaru = computed(() => (key(props.modelValue) && !adaPersis.value ? titleCase(props.modelValue) : ""));
 
-function pick(nama) {
+// Nama yang dipilih lewat "+ Tambah nama baru" sengaja dibuat baru, jangan
+// diarahkan lagi ke nama lengkap saat blur.
+let sengajaBaru = "";
+
+function pick(nama, baru = false) {
+  sengajaBaru = baru ? nama : "";
   emit("update:modelValue", nama);
   open.value = false;
   highlighted.value = -1;
@@ -46,7 +51,14 @@ function seragamkan() {
   const v = rapikan(props.modelValue);
   if (!v) return emit("update:modelValue", "");
   const cocok = props.options.find((o) => key(o) === key(v));
-  emit("update:modelValue", cocok ?? titleCase(v));
+  if (cocok) return emit("update:modelValue", cocok);
+  // "Warto" -> "Wartono": potongan nama (min. 4 huruf) yang cocok dengan
+  // TEPAT SATU nama lengkap otomatis dipakai sebagai nama lengkapnya.
+  if (key(v).length >= 4 && titleCase(v) !== sengajaBaru) {
+    const lengkap = props.options.filter((o) => key(o).startsWith(key(v)));
+    if (lengkap.length === 1) return emit("update:modelValue", lengkap[0]);
+  }
+  emit("update:modelValue", titleCase(v));
 }
 
 function onBlur() {
@@ -69,7 +81,7 @@ function onKeydown(e) {
   } else if (e.key === "Enter" && open.value && highlighted.value >= 0) {
     e.preventDefault();
     const idx = highlighted.value;
-    pick(idx < filtered.value.length ? filtered.value[idx] : namaBaru.value);
+    pick(idx < filtered.value.length ? filtered.value[idx] : namaBaru.value, idx >= filtered.value.length);
   } else if (e.key === "Escape") {
     open.value = false;
   }
@@ -103,7 +115,7 @@ function onKeydown(e) {
         v-if="namaBaru"
         class="nc-option nc-new"
         :class="{ active: highlighted === filtered.length }"
-        @mousedown.prevent="pick(namaBaru)"
+        @mousedown.prevent="pick(namaBaru, true)"
         @mouseenter="highlighted = filtered.length"
       >+ Tambah nama baru: <b>{{ namaBaru }}</b></div>
     </div>

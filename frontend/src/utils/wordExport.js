@@ -80,7 +80,7 @@ export function exportSolarStokWord({ bulanLabel, items, totalMasuk, totalKeluar
   const html = `
     <h1>PT. BINTANG MUARA SEJATI</h1>
     <h2>REKAP STOK SOLAR (BBM) &mdash; ALAT BERAT</h2>
-    <div class="period">Bulan ${esc(bulanLabel)}</div>
+    <div class="period">Periode: ${esc(bulanLabel)}</div>
 
     <div class="sec-title">Solar Masuk</div>
     <table>

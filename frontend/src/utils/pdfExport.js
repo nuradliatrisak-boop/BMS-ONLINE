@@ -299,7 +299,7 @@ export async function exportSolarStokPdf({ bulanLabel, items, totalMasuk, totalK
     logoImg,
     margin,
     title: "REKAP STOK SOLAR (BBM) \u2014 ALAT BERAT",
-    periodLabel: `Bulan ${bulanLabel}`,
+    periodLabel: `Periode: ${bulanLabel}`,
   });
 
   const masuk = items.filter((t) => t.tipe === "MASUK");

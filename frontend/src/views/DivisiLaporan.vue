@@ -11,6 +11,14 @@ import InvoiceDrilldownModal from "../components/InvoiceDrilldownModal.vue";
 import RincianTransaksiModal from "../components/RincianTransaksiModal.vue";
 import PetaTitik from "../components/PetaTitik.vue";
 import NamaCombo from "../components/NamaCombo.vue";
+import LainnyaModal from "../components/LainnyaModal.vue";
+import SolarChart from "../components/SolarChart.vue";
+import RingkasList from "../components/RingkasList.vue";
+import SolarMasukTable from "../components/SolarMasukTable.vue";
+import SolarKeluarTable from "../components/SolarKeluarTable.vue";
+import WilayahSelect from "../components/WilayahSelect.vue";
+import RapikanNamaModal from "../components/RapikanNamaModal.vue";
+import { fmtL, fmtTgl, isoLokal } from "../utils/solarUtil.js";
 
 const route = useRoute();
 const tab = ref(route.query.tab === "solar" ? "solar" : "laba-rugi"); // "laba-rugi" | "solar"
@@ -375,7 +383,6 @@ const solarData = ref({
 const solarUtang = ref([]); // rekap saldo utang per sopir (semua waktu)
 const namaMasuk = ref([]); // daftar nama untuk dropdown
 const namaKeluar = ref([]);
-const cekInput = ref({}); // { [id]: string } angka catatan buku yang diketik per baris
 const belumDicekList = ref([]); // semua solar masuk yang catatan bukunya belum diisi (semua tanggal)
 const cekMassal = ref({}); // { [id]: string } catatan buku yang diketik di panel Cek
 const cekMassalSaving = ref(false);
@@ -401,28 +408,60 @@ const solarHapusBukti = ref(false);
 const solarMasukList = computed(() => solarData.value.items.filter((t) => t.tipe === "MASUK"));
 const solarKeluarList = computed(() => solarData.value.items.filter((t) => t.tipe === "KELUAR"));
 
-// --- Filter waktu tab Solar: "Per Bulan" (pakai `bulan` di atas), "Rentang
-// Tanggal" (dari - sampai bebas), atau "Semua Waktu" (tanpa filter tanggal
-// sama sekali). Independen dari tab Laba Rugi yang selalu per bulan. ---
-const solarPeriodeMode = ref("bulan"); // "bulan" | "rentang" | "semua"
-const solarDari = ref(new Date().toISOString().slice(0, 10));
-const solarSampai = ref(new Date().toISOString().slice(0, 10));
+// --- Filter waktu tab Solar: "Per Bulan", "Per Minggu" (Senin-Minggu),
+// "Rentang Tanggal" (dari - sampai bebas), atau "Semua Waktu" (keseluruhan).
+// Independen dari tab Laba Rugi yang selalu per bulan. ---
+const solarPeriodeMode = ref("bulan"); // "bulan" | "minggu" | "rentang" | "semua"
+const hariIniStr = isoLokal(new Date());
+const solarDari = ref(hariIniStr);
+const solarSampai = ref(hariIniStr);
+const solarMingguTgl = ref(hariIniStr); // tanggal mana saja di dalam minggu yang dilihat
+
+const tglLokal = (str) => new Date(str + "T00:00:00");
+const fmtDMY = (str) => tglLokal(str).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+
+const mingguRange = computed(() => {
+  const d = tglLokal(solarMingguTgl.value || hariIniStr);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // mundur ke Senin
+  const e = new Date(d);
+  e.setDate(e.getDate() + 6);
+  return { dari: isoLokal(d), sampai: isoLokal(e) };
+});
+function geserMinggu(n) {
+  const d = tglLokal(solarMingguTgl.value || hariIniStr);
+  d.setDate(d.getDate() + 7 * n);
+  solarMingguTgl.value = isoLokal(d);
+}
+function geserBulan(n) {
+  const [y, m] = bulan.value.split("-").map(Number);
+  bulan.value = isoLokal(new Date(y, m - 1 + n, 1)).slice(0, 7);
+}
+function presetRentang(hari) {
+  const s = new Date();
+  const d = new Date();
+  d.setDate(d.getDate() - (hari - 1));
+  solarDari.value = isoLokal(d);
+  solarSampai.value = isoLokal(s);
+}
+function presetTahunIni() {
+  solarDari.value = `${new Date().getFullYear()}-01-01`;
+  solarSampai.value = hariIniStr;
+}
 
 const solarPeriodeLabel = computed(() => {
-  if (solarPeriodeMode.value === "semua") return "Semua Waktu";
-  if (solarPeriodeMode.value === "rentang") {
+  const m = solarPeriodeMode.value;
+  if (m === "semua") return "Semua Waktu";
+  if (m === "minggu") return `${fmtDMY(mingguRange.value.dari)} – ${fmtDMY(mingguRange.value.sampai)}`;
+  if (m === "rentang") {
     if (!solarDari.value && !solarSampai.value) return "Semua Waktu";
-    const d = solarDari.value ? new Date(solarDari.value).toLocaleDateString("id-ID") : "awal";
-    const s = solarSampai.value ? new Date(solarSampai.value).toLocaleDateString("id-ID") : "sekarang";
-    return `${d} s/d ${s}`;
+    const d = solarDari.value ? fmtDMY(solarDari.value) : "awal";
+    const s = solarSampai.value ? fmtDMY(solarSampai.value) : "sekarang";
+    return `${d} – ${s}`;
   }
   return bulanLabel.value;
 });
 
 // --- Rekap Solar Keluar per Wilayah/Lokasi ---
-// "Lokasi" diisi bebas di form (mis. "Cimanggis 2", "Kp. Rambutan"), jadi
-// daftar wilayah untuk filter & rekap diambil dari data yang sudah ada,
-// bukan daftar tetap.
 const solarWilayah = ref(""); // "" = semua wilayah
 
 const solarWilayahOptions = computed(() => {
@@ -443,9 +482,7 @@ const totalKeluarFiltered = computed(() =>
   solarKeluarListFiltered.value.reduce((s, t) => s + t.liter, 0)
 );
 
-// --- Titik peta Solar Keluar, dikelompokkan per lokasi (dari data periode
-// yang sedang ditampilkan). Lokasi yang belum ketemu koordinatnya (belum
-// sempat/gagal digeocode) dikumpulkan terpisah supaya kelihatan perlu dicek.
+// --- Titik peta Solar Keluar, dikelompokkan per lokasi ---
 const titikSolarPeta = computed(() => {
   const map = new Map();
   for (const t of solarKeluarList.value) {
@@ -466,9 +503,8 @@ const solarTanpaKoordinat = computed(() => {
   return [...seen];
 });
 
-// Rekap per wilayah selalu dihitung dari SELURUH data bulan itu (tidak ikut
-// filter di atas), supaya tetap bisa lihat perbandingan semua wilayah
-// sekaligus meski sedang memfilter tabel ke satu wilayah tertentu.
+// Rekap per wilayah selalu dihitung dari SELURUH data periode (tidak ikut
+// filter tabel), supaya tetap bisa membandingkan semua wilayah.
 const rekapPerWilayah = computed(() => {
   const map = new Map();
   for (const t of solarKeluarList.value) {
@@ -481,6 +517,206 @@ const rekapPerWilayah = computed(() => {
   return [...map.values()].sort((a, b) => b.liter - a.liter);
 });
 
+// ---------- Ringkasan & grafik ----------
+const r1 = (x) => Math.round(x * 10) / 10;
+const kunciTgl = (t) => String(t.tanggal).slice(0, 10);
+
+const keluarPerHari = computed(() => {
+  const m = new Map();
+  for (const t of solarKeluarList.value) m.set(kunciTgl(t), (m.get(kunciTgl(t)) || 0) + t.liter);
+  return m;
+});
+const rataKeluarHari = computed(() =>
+  keluarPerHari.value.size ? r1(solarData.value.totalKeluar / keluarPerHari.value.size) : 0
+);
+const hariPuncak = computed(() => {
+  let best = null;
+  for (const [k, v] of keluarPerHari.value) if (!best || v > best.v) best = { k, v };
+  return best;
+});
+
+const periodeRange = computed(() => {
+  const m = solarPeriodeMode.value;
+  if (m === "bulan" && bulan.value) {
+    const [y, mo] = bulan.value.split("-").map(Number);
+    return { start: isoLokal(new Date(y, mo - 1, 1)), end: isoLokal(new Date(y, mo, 0)) };
+  }
+  if (m === "minggu") return { start: mingguRange.value.dari, end: mingguRange.value.sampai };
+  if (m === "rentang" && solarDari.value && solarSampai.value && solarDari.value <= solarSampai.value)
+    return { start: solarDari.value, end: solarSampai.value };
+  return null; // "semua": ikut rentang data
+});
+
+const rangeEfektif = computed(() => {
+  let r = periodeRange.value;
+  if (!r) {
+    const items = solarData.value.items;
+    if (!items.length) return null;
+    const ds = items.map(kunciTgl).sort();
+    r = { start: ds[0], end: ds[ds.length - 1] };
+  }
+  const span = Math.round((new Date(r.end + "T00:00:00Z") - new Date(r.start + "T00:00:00Z")) / 864e5) + 1;
+  return { ...r, unit: span <= 45 ? "hari" : span <= 200 ? "minggu" : "bulan" };
+});
+const solarBarUnit = computed(() => (rangeEfektif.value ? `per ${rangeEfektif.value.unit}` : ""));
+
+const solarBars = computed(() => {
+  const r = rangeEfektif.value;
+  if (!r) return [];
+  const items = solarData.value.items;
+  const unit = r.unit;
+  const s = new Date(r.start + "T00:00:00Z");
+  const e = new Date(r.end + "T00:00:00Z");
+  const keyOf = (ds) => {
+    if (unit === "hari") return ds;
+    if (unit === "bulan") return ds.slice(0, 7);
+    const d = new Date(ds + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+    return d.toISOString().slice(0, 10);
+  };
+  const map = new Map();
+  for (const d = new Date(s); d <= e; d.setUTCDate(d.getUTCDate() + 1)) {
+    const k = keyOf(d.toISOString().slice(0, 10));
+    if (!map.has(k)) map.set(k, { key: k, masuk: 0, keluar: 0 });
+  }
+  for (const t of items) {
+    const b = map.get(keyOf(kunciTgl(t)));
+    if (!b) continue;
+    if (t.tipe === "MASUK") b.masuk += t.liter;
+    else b.keluar += t.liter;
+  }
+  const HARI = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+  return [...map.values()].map((b) => {
+    const [yy, mm, dd] = b.key.split("-");
+    let label, tip;
+    if (unit === "hari") {
+      const d = new Date(b.key + "T00:00:00Z");
+      label = String(Number(dd));
+      tip = `${HARI[d.getUTCDay()]}, ${Number(dd)} ${BULAN_NAMA[Number(mm) - 1]} ${yy}`;
+    } else if (unit === "minggu") {
+      const akhir = new Date(b.key + "T00:00:00Z");
+      akhir.setUTCDate(akhir.getUTCDate() + 6);
+      label = `${Number(dd)}/${Number(mm)}`;
+      tip = `Minggu ${Number(dd)} ${BULAN_NAMA[Number(mm) - 1]} – ${akhir.getUTCDate()} ${BULAN_NAMA[akhir.getUTCMonth()]} ${akhir.getUTCFullYear()}`;
+    } else {
+      label = `${BULAN_NAMA[Number(mm) - 1].slice(0, 3)} ${yy.slice(2)}`;
+      tip = `${BULAN_NAMA[Number(mm) - 1]} ${yy}`;
+    }
+    return { label, tip, masuk: r1(b.masuk), keluar: r1(b.keluar) };
+  });
+});
+
+const operatorRows = computed(() => {
+  const m = new Map();
+  for (const t of solarKeluarList.value) {
+    const k = t.nama.trim().toLowerCase();
+    const cur = m.get(k) || { label: t.nama, value: 0, n: 0, lok: new Map() };
+    cur.value += t.liter;
+    cur.n += 1;
+    if (t.lokasi) cur.lok.set(t.lokasi, (cur.lok.get(t.lokasi) || 0) + t.liter);
+    m.set(k, cur);
+  }
+  return [...m.values()]
+    .sort((a, b) => b.value - a.value)
+    .map((r) => {
+      const top = [...r.lok.entries()].sort((a, b) => b[1] - a[1])[0];
+      return { label: r.label, value: r1(r.value), sub: `${r.n} pengambilan${top ? ` • terbanyak ke ${top[0]}` : ""}` };
+    });
+});
+const wilayahRows = computed(() =>
+  rekapPerWilayah.value.map((w) => ({ label: w.lokasi, value: r1(w.liter), sub: `${w.jumlah} transaksi` }))
+);
+const sopirRows = computed(() => {
+  const m = new Map();
+  for (const t of solarMasukList.value) {
+    const k = t.nama.trim().toLowerCase();
+    const cur = m.get(k) || { label: t.nama, value: 0, n: 0, kurang: 0 };
+    cur.value += t.liter;
+    cur.n += 1;
+    if (t.selisih < 0) cur.kurang += -t.selisih;
+    m.set(k, cur);
+  }
+  return [...m.values()]
+    .sort((a, b) => b.value - a.value)
+    .map((r) => ({
+      label: r.label,
+      value: r1(r.value),
+      sub: `${r.n} setoran${r.kurang > 0 ? ` • kurang setor ${fmtL(r.kurang)} L` : ""}`,
+    }));
+});
+
+// ---------- Daftar ringkas + "Lainnya" ----------
+const PREVIEW = 8;
+const showSemua = ref(""); // "" | "MASUK" | "KELUAR" | "UTANG"
+const cariSemua = ref("");
+const statusSemua = ref("");
+const cekExpand = ref(false);
+const showRapikan = ref(false);
+
+function bukaSemua(jenis) {
+  cariSemua.value = "";
+  statusSemua.value = "";
+  showSemua.value = jenis;
+}
+const cocokCari = (t, ...fields) => {
+  const q = cariSemua.value.trim().toLowerCase();
+  return !q || fields.some((f) => String(t[f] ?? "").toLowerCase().includes(q));
+};
+const masukPreview = computed(() => solarMasukList.value.slice(0, PREVIEW));
+const keluarPreview = computed(() => solarKeluarListFiltered.value.slice(0, PREVIEW));
+const masukModal = computed(() =>
+  solarMasukList.value.filter(
+    (t) => cocokCari(t, "nama", "keterangan", "no") && (!statusSemua.value || t.statusCek === statusSemua.value)
+  )
+);
+const keluarModal = computed(() =>
+  solarKeluarListFiltered.value.filter((t) => cocokCari(t, "nama", "lokasi", "keterangan", "no"))
+);
+const utangPreview = computed(() => solarUtang.value.slice(0, 6));
+const utangModal = computed(() => {
+  const q = cariSemua.value.trim().toLowerCase();
+  return q ? solarUtang.value.filter((r) => r.nama.toLowerCase().includes(q)) : solarUtang.value;
+});
+const belumDicekTampil = computed(() => (cekExpand.value ? belumDicekList.value : belumDicekList.value.slice(0, 6)));
+
+function pilihWilayah(label) {
+  if (label === "(Tanpa lokasi)") return (solarWilayah.value = "");
+  solarWilayah.value = solarWilayah.value === label ? "" : label;
+}
+
+// ---------- Wilayah tujuan: dropdown + isian otomatis dari kebiasaan ----------
+const lokasiOpsi = ref([]); // [{ lokasi, jumlah }]
+const polaNama = ref({}); // { "wartono": "Cimanggis" }
+const lokasiDefault = ref("");
+const lokasiManual = ref(false); // true = staf sudah memilih sendiri, jangan ditimpa otomatis
+const namaKeyF = (n) => String(n || "").trim().replace(/\s+/g, " ").toLowerCase();
+
+async function loadSolarLokasi() {
+  try {
+    const r = await api.get("/solar-tx/lokasi");
+    lokasiOpsi.value = r.lokasi;
+    polaNama.value = r.polaNama;
+    lokasiDefault.value = r.defaultLokasi || "";
+  } catch (e) {
+    console.error(e);
+  }
+}
+const lokasiOtomatisInfo = computed(() => {
+  if (solarForm.value.tipe !== "KELUAR" || editingSolarId.value || lokasiManual.value) return "";
+  const pola = polaNama.value[namaKeyF(solarForm.value.nama)];
+  if (pola && solarForm.value.lokasi === pola) return `Diisi otomatis: biasanya ${solarForm.value.nama} ke ${pola}. Bisa diganti.`;
+  if (solarForm.value.lokasi && solarForm.value.lokasi === lokasiDefault.value) return "Diisi otomatis dari wilayah yang paling sering dipakai. Bisa diganti.";
+  return "";
+});
+function isiLokasiOtomatis() {
+  if (solarForm.value.tipe !== "KELUAR" || editingSolarId.value || lokasiManual.value) return;
+  solarForm.value.lokasi = polaNama.value[namaKeyF(solarForm.value.nama)] || lokasiDefault.value || "";
+}
+function ubahLokasi(v) {
+  lokasiManual.value = true;
+  solarForm.value.lokasi = v;
+}
+
 async function loadSolar() {
   const mode = solarPeriodeMode.value;
   if (mode === "bulan" && !bulan.value) return;
@@ -488,6 +724,9 @@ async function loadSolar() {
   const params = new URLSearchParams();
   if (mode === "bulan") {
     params.set("bulan", bulan.value);
+  } else if (mode === "minggu") {
+    params.set("dari", mingguRange.value.dari);
+    params.set("sampai", mingguRange.value.sampai);
   } else if (mode === "rentang") {
     if (solarDari.value) params.set("dari", solarDari.value);
     if (solarSampai.value) params.set("sampai", solarSampai.value);
@@ -500,6 +739,7 @@ async function loadSolar() {
     solarData.value = await api.get(`/solar-tx${qs ? `?${qs}` : ""}`);
     loadSolarUtang();
     loadSolarNama();
+    loadSolarLokasi();
     loadBelumDicek();
   } finally {
     solarLoading.value = false;
@@ -569,15 +809,13 @@ async function cekSesuai(t) {
   }
 }
 
-async function cekBeda(t) {
-  const nilai = cekInput.value[t.id];
+async function cekBeda(t, nilai) {
   if (nilai === undefined || nilai === "" || Number.isNaN(Number(nilai))) {
     return toast("Isi dulu angka di buku catatan");
   }
   try {
     await api.post(`/solar-tx/${t.id}/catatan`, { literCatatan: Number(nilai) });
     toast(`${t.nama} — catatan buku ${nilai} L disimpan`);
-    delete cekInput.value[t.id];
     await loadSolar();
   } catch (e) {
     toast(e.message || "Gagal menyimpan catatan buku");
@@ -595,20 +833,11 @@ async function batalCek(t) {
   }
 }
 
-function tglBesok(tanggal) {
-  const d = new Date(tanggal);
-  d.setUTCDate(d.getUTCDate() + 1);
-  return d.toLocaleDateString("id-ID", { timeZone: "UTC" });
-}
-
-const cekBadge = (st) =>
-  ({ SESUAI: "badge b-lunas", KURANG: "badge b-belum", LEBIH: "badge b-sebagian" }[st] || "badge b-belumttd");
-const cekLabel = (st) =>
-  ({ SESUAI: "Sesuai", KURANG: "Kurang", LEBIH: "Lebih", BELUM_DICEK: "Belum dicek", MENUNGGU: "Dicek besok" }[st] || st);
-
 function openSolarModal(tipe) {
   editingSolarId.value = null;
   solarForm.value = emptySolarForm(tipe);
+  lokasiManual.value = false;
+  if (tipe === "KELUAR") solarForm.value.lokasi = lokasiDefault.value || "";
   solarExistingBukti.value = null;
   solarHapusBukti.value = false;
   if (solarFileInput.value) solarFileInput.value.value = "";
@@ -646,7 +875,7 @@ async function submitSolar() {
     return toast("Jumlah liter wajib diisi dan lebih dari 0");
   }
   if (solarForm.value.tipe === "KELUAR" && !solarForm.value.lokasi) {
-    return toast("Lokasi/unit tujuan wajib diisi untuk Solar Keluar");
+    return toast("Wilayah tujuan wajib diisi untuk Solar Keluar");
   }
 
   const fd = new FormData();
@@ -731,6 +960,10 @@ watch(tab, (t) => {
 watch(bulan, () => {
   if (tab.value === "solar" && solarPeriodeMode.value === "bulan") loadSolar();
 });
+watch(() => solarForm.value.nama, isiLokasiOtomatis);
+watch(solarMingguTgl, () => {
+  if (tab.value === "solar" && solarPeriodeMode.value === "minggu") loadSolar();
+});
 watch(solarPeriodeMode, () => {
   if (tab.value === "solar") loadSolar();
 });
@@ -761,6 +994,7 @@ onMounted(async () => {
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center" v-else>
       <span v-if="solarWilayah" class="tag" style="margin-right: 4px">Filter: {{ solarWilayah }}</span>
+      <button class="btn btn-ghost" title="Gabungkan nama yang sama tapi ditulis beda (mis. Warto & Wartono)" @click="showRapikan = true">Rapikan Nama</button>
       <button class="btn btn-ghost" @click="exportSolarExcel">⬇ Excel</button>
       <button class="btn btn-ghost" :disabled="exportingSolarPdf" @click="exportSolarPdf">
         {{ exportingSolarPdf ? "Membuat PDF..." : "⬇ PDF" }}
@@ -800,13 +1034,27 @@ onMounted(async () => {
         <label>Filter Waktu</label>
         <select v-model="solarPeriodeMode">
           <option value="bulan">Per Bulan</option>
+          <option value="minggu">Per Minggu</option>
           <option value="rentang">Rentang Tanggal</option>
-          <option value="semua">Semua Waktu</option>
+          <option value="semua">Keseluruhan</option>
         </select>
       </div>
-      <div class="field" style="max-width: 200px" v-if="solarPeriodeMode === 'bulan'">
+      <div class="field" style="max-width: 280px" v-if="solarPeriodeMode === 'bulan'">
         <label>Bulan</label>
-        <input v-model="bulan" type="month" />
+        <div class="sol-nav">
+          <button class="btn btn-ghost btn-sm" title="Bulan sebelumnya" @click="geserBulan(-1)">‹</button>
+          <input v-model="bulan" type="month" />
+          <button class="btn btn-ghost btn-sm" title="Bulan berikutnya" @click="geserBulan(1)">›</button>
+        </div>
+      </div>
+      <div class="field" style="max-width: 400px" v-if="solarPeriodeMode === 'minggu'">
+        <label>Minggu (Senin – Minggu) &mdash; pilih tanggal mana saja</label>
+        <div class="sol-nav">
+          <button class="btn btn-ghost btn-sm" title="Minggu sebelumnya" @click="geserMinggu(-1)">‹</button>
+          <input v-model="solarMingguTgl" type="date" />
+          <button class="btn btn-ghost btn-sm" title="Minggu berikutnya" @click="geserMinggu(1)">›</button>
+        </div>
+        <div class="desc" style="margin-top: 4px">{{ solarPeriodeLabel }}</div>
       </div>
       <template v-if="solarPeriodeMode === 'rentang'">
         <div class="field" style="max-width: 180px">
@@ -816,6 +1064,15 @@ onMounted(async () => {
         <div class="field" style="max-width: 180px">
           <label>Sampai Tanggal</label>
           <input v-model="solarSampai" type="date" />
+        </div>
+        <div class="field" style="max-width: 320px">
+          <label>Pintasan</label>
+          <div class="sol-chips">
+            <button class="btn btn-ghost btn-sm" @click="presetRentang(7)">7 hari</button>
+            <button class="btn btn-ghost btn-sm" @click="presetRentang(30)">30 hari</button>
+            <button class="btn btn-ghost btn-sm" @click="presetRentang(90)">90 hari</button>
+            <button class="btn btn-ghost btn-sm" @click="presetTahunIni">Tahun ini</button>
+          </div>
         </div>
       </template>
     </div>
@@ -931,42 +1188,92 @@ onMounted(async () => {
     </template>
 
     <template v-else>
-      <div class="card" style="margin-bottom: 20px">
-        <div class="row" style="max-width: 640px">
-          <div class="field">
-            <label>Total Solar Masuk ({{ solarPeriodeLabel }})</label>
-            <input :value="`${solarData.totalMasuk} Liter`" disabled class="mono" />
-          </div>
-          <div class="field">
-            <label>Total Solar Keluar ({{ solarPeriodeLabel }})</label>
-            <input :value="`${solarData.totalKeluar} Liter`" disabled class="mono" />
-          </div>
-          <div class="field">
-            <label>Sisa Stok Saat Ini</label>
-            <input :value="`${solarData.saldoSaatIni} Liter`" disabled class="mono" style="font-weight: 700" />
-          </div>
+      <!-- ===== RINGKASAN PERIODE ===== -->
+      <div class="sol-periode">
+        <div>
+          <div class="msub">Periode</div>
+          <div class="sol-periode-label">{{ solarPeriodeLabel }}</div>
         </div>
-        <div class="row" style="max-width: 640px; margin-top: 12px">
-          <div class="field">
-            <label>Kurang Setor ({{ solarPeriodeLabel }})</label>
-            <input
-              :value="`${solarData.totalKurang} Liter`"
-              disabled
-              class="mono"
-              :style="solarData.totalKurang > 0 ? 'color: #b91c1c; font-weight: 700' : ''"
-            />
-          </div>
-          <div class="field">
-            <label>Lebih Setor ({{ solarPeriodeLabel }})</label>
-            <input :value="`${solarData.totalLebih} Liter`" disabled class="mono" />
-          </div>
-          <div class="field">
-            <label>Belum Dicek</label>
-            <input :value="`${solarData.belumDicek} catatan`" disabled class="mono" />
-          </div>
+        <div class="msub" v-if="!solarLoading">
+          {{ solarMasukList.length }} setoran masuk • {{ solarKeluarList.length }} pengambilan keluar
+        </div>
+        <div class="msub" v-else>Memuat…</div>
+      </div>
+
+      <div class="sol-kpis">
+        <div class="sol-kpi" style="--c: #159447">
+          <div class="sol-kpi-lbl">Solar Masuk</div>
+          <div class="sol-kpi-val">{{ fmtL(solarData.totalMasuk) }} <small>L</small></div>
+          <div class="sol-kpi-sub">{{ solarMasukList.length }} setoran</div>
+        </div>
+        <div class="sol-kpi" style="--c: #e08a12">
+          <div class="sol-kpi-lbl">Solar Keluar</div>
+          <div class="sol-kpi-val">{{ fmtL(solarData.totalKeluar) }} <small>L</small></div>
+          <div class="sol-kpi-sub">{{ solarKeluarList.length }} pengambilan • rata-rata {{ fmtL(rataKeluarHari) }} L/hari aktif</div>
+        </div>
+        <div class="sol-kpi" :style="{ '--c': solarData.saldoBulan >= 0 ? '#2459a6' : '#c91c22' }">
+          <div class="sol-kpi-lbl">Selisih Periode (Masuk − Keluar)</div>
+          <div class="sol-kpi-val">{{ solarData.saldoBulan > 0 ? "+" : "" }}{{ fmtL(solarData.saldoBulan) }} <small>L</small></div>
+          <div class="sol-kpi-sub">{{ solarData.saldoBulan >= 0 ? "Stok bertambah" : "Stok berkurang" }} di periode ini</div>
+        </div>
+        <div class="sol-kpi sol-kpi-utama" style="--c: #173f7a">
+          <div class="sol-kpi-lbl">Sisa Stok Saat Ini</div>
+          <div class="sol-kpi-val">{{ fmtL(solarData.saldoSaatIni) }} <small>L</small></div>
+          <div class="sol-kpi-sub">Semua waktu, tidak terpengaruh filter</div>
+        </div>
+        <div class="sol-kpi" :style="{ '--c': solarData.totalKurang > 0 ? '#c91c22' : '#159447' }">
+          <div class="sol-kpi-lbl">Kurang Setor</div>
+          <div class="sol-kpi-val" :style="solarData.totalKurang > 0 ? 'color: #b91c1c' : ''">{{ fmtL(solarData.totalKurang) }} <small>L</small></div>
+          <div class="sol-kpi-sub">Lebih setor {{ fmtL(solarData.totalLebih) }} L</div>
+        </div>
+        <div class="sol-kpi" :style="{ '--c': solarData.belumDicek > 0 ? '#c47b12' : '#159447' }">
+          <div class="sol-kpi-lbl">Belum Dicek</div>
+          <div class="sol-kpi-val">{{ solarData.belumDicek }} <small>catatan</small></div>
+          <div class="sol-kpi-sub">{{ solarData.belumDicekSemua }} di semua waktu</div>
         </div>
       </div>
 
+      <!-- ===== GRAFIK ===== -->
+      <div class="card" style="margin-bottom: 20px">
+        <div class="section-title">
+          Grafik Masuk vs Keluar
+          <span class="tag" v-if="solarBars.length">{{ solarBarUnit }}</span>
+        </div>
+        <SolarChart :bars="solarBars" />
+        <div v-if="hariPuncak" class="msub" style="margin-top: 6px">
+          Pengambilan terbanyak: <b>{{ fmtL(hariPuncak.v) }} L</b> pada {{ fmtTgl(hariPuncak.k) }}.
+        </div>
+      </div>
+
+      <!-- ===== PERINGKAT ===== -->
+      <div class="card" style="margin-bottom: 20px">
+        <div class="sol-rank">
+          <RingkasList
+            title="Wilayah Tujuan Terbanyak"
+            :rows="wilayahRows"
+            :aktif="solarWilayah"
+            klikable
+            warna="#e08a12"
+            kosong="Belum ada solar keluar pada periode ini."
+            @pilih="pilihWilayah"
+          />
+          <RingkasList
+            title="Operator Pengambil Terbanyak"
+            :rows="operatorRows"
+            warna="#e08a12"
+            kosong="Belum ada solar keluar pada periode ini."
+          />
+          <RingkasList
+            title="Sopir Penyetor Terbanyak"
+            :rows="sopirRows"
+            warna="#159447"
+            kosong="Belum ada solar masuk pada periode ini."
+          />
+        </div>
+        <div class="desc" style="margin-top: 10px">Klik salah satu wilayah untuk memfilter daftar Solar Keluar di bawah.</div>
+      </div>
+
+      <!-- ===== CEK SOLAR MASUK ===== -->
       <div v-if="belumDicekList.length" class="card" style="margin-bottom: 20px; border-color: #f3b4b4">
         <div class="section-title">
           Cek Solar Masuk
@@ -974,8 +1281,7 @@ onMounted(async () => {
         </div>
         <div class="msub" style="margin-bottom: 10px">
           Angka real yang sudah tercatat (kiri) dan catatan buku sopir (kanan) berdampingan. Isi angka di buku
-          catatan, selisih langsung kelihatan. Semua tanggal yang catatan bukunya belum diisi tampil di sini,
-          urut dari yang paling lama.
+          catatan, selisih langsung kelihatan. Urut dari yang paling lama.
         </div>
         <div class="table-wrap">
           <table>
@@ -990,10 +1296,10 @@ onMounted(async () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="t in belumDicekList" :key="t.id">
-                <td>{{ new Date(t.tanggal).toLocaleDateString("id-ID") }}</td>
+              <tr v-for="t in belumDicekTampil" :key="t.id">
+                <td>{{ fmtTgl(t.tanggal) }}</td>
                 <td>{{ t.nama }}</td>
-                <td class="num mono"><b>{{ t.liter }}</b></td>
+                <td class="num mono"><b>{{ fmtL(t.liter) }}</b></td>
                 <td>
                   <div style="display: flex; gap: 6px; align-items: center">
                     <input v-model="cekMassal[t.id]" type="number" step="0.1" min="0" placeholder="Buku (L)" style="width: 110px" />
@@ -1015,120 +1321,48 @@ onMounted(async () => {
             </tbody>
           </table>
         </div>
-        <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center">
+        <button
+          v-if="belumDicekList.length > 6"
+          class="btn btn-ghost btn-sm"
+          style="margin-top: 8px"
+          @click="cekExpand = !cekExpand"
+        >{{ cekExpand ? "Sembunyikan" : `Lainnya (${belumDicekList.length - 6}) ›` }}</button>
+        <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
           <button class="btn btn-primary" :disabled="cekMassalSaving || !cekMassalTerisi.length" @click="simpanCekMassal">
             {{ cekMassalSaving ? "Menyimpan..." : `Simpan yang sudah diisi (${cekMassalTerisi.length})` }}
           </button>
-          <span class="msub">Baris yang dikosongkan tidak disimpan. Angka real tidak berubah. Status kurang/lebih dan saldo utang dihitung otomatis setelah disimpan.</span>
+          <span class="msub">Baris yang dikosongkan tidak disimpan. Angka real tidak berubah.</span>
         </div>
       </div>
 
+      <!-- ===== SOLAR MASUK ===== -->
       <div class="card" style="margin-bottom: 20px">
-        <div class="section-title">Solar Masuk &mdash; {{ solarPeriodeLabel }}</div>
+        <div class="section-title">
+          Solar Masuk &mdash; {{ solarPeriodeLabel }}
+          <span class="tag">{{ solarMasukList.length }} catatan</span>
+        </div>
         <div v-if="solarLoading" class="empty">Memuat...</div>
         <div v-else-if="!solarMasukList.length" class="empty">Belum ada catatan solar masuk pada periode ini.</div>
-        <div v-else class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Tanggal</th>
-                <th>Nama Sopir</th>
-                <th class="num">Real yang Masuk (L)</th>
-                <th>Catatan Buku Sopir</th>
-                <th>Status / Selisih</th>
-                <th>Keterangan</th>
-                <th>Bukti</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="t in solarMasukList"
-                :key="t.id"
-                :style="t.statusCek === 'KURANG' ? 'background: var(--red-soft)' : ''"
-              >
-                <td class="mono">{{ t.no }}</td>
-                <td>{{ new Date(t.tanggal).toLocaleDateString("id-ID") }}</td>
-                <td>{{ t.nama }}</td>
-                <td class="num mono">{{ t.liter }}</td>
-
-                <!-- Catatan buku sopir (dicek besoknya) -->
-                <td>
-                  <template v-if="t.statusCek === 'MENUNGGU'">
-                    <div class="msub" style="font-size: 12px">Bisa dicek mulai {{ tglBesok(t.tanggal) }}</div>
-                  </template>
-                  <template v-else-if="t.statusCek === 'BELUM_DICEK'">
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center">
-                      <button class="btn btn-sm btn-primary" @click="cekSesuai(t)">✓ Sama ({{ t.liter }} L)</button>
-                      <input
-                        v-model="cekInput[t.id]"
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        placeholder="Angka di buku"
-                        style="width: 120px"
-                      />
-                      <button class="btn btn-sm btn-ghost" @click="cekBeda(t)">Simpan</button>
-                    </div>
-                  </template>
-                  <template v-else>
-                    <div class="mono">{{ t.literCatatan }} L</div>
-                  </template>
-                </td>
-
-                <!-- Status / Selisih -->
-                <td>
-                  <span :class="cekBadge(t.statusCek)">{{ cekLabel(t.statusCek) }}</span>
-                  <div v-if="t.statusCek === 'KURANG'" class="msub" style="font-size: 12px; color: #b91c1c">
-                    Real kurang {{ Math.abs(t.selisih) }} L dari catatan buku.
-                    Total utang {{ t.nama }}: {{ t.saldoSesudah }} L
-                  </div>
-                  <div v-else-if="t.statusCek === 'LEBIH'" class="msub" style="font-size: 12px">
-                    Real lebih {{ t.selisih }} L dari catatan buku.
-                    <template v-if="t.menutupUtang > 0">
-                      Menutup utang sebelumnya {{ t.menutupUtang }} L<template v-if="t.saldoSesudah > 0">, sisa utang {{ t.saldoSesudah }} L</template><template v-else> (utang lunas)</template>.
-                    </template>
-                    <template v-if="t.lebihMurni > 0">
-                      <template v-if="t.menutupUtang > 0">Sisanya {{ t.lebihMurni }} L</template>
-                      <template v-else>Tidak ada utang sebelumnya</template>
-                      lebih setor murni.
-                    </template>
-                  </div>
-                </td>
-
-                <td>{{ t.keterangan || "-" }}</td>
-                <td>
-                  <a v-if="t.buktiUrl" :href="api.fileUrl(t.buktiUrl)" target="_blank" rel="noopener">Lihat</a>
-                  <span v-else>-</span>
-                </td>
-                <td style="white-space: nowrap">
-                  <button
-                    v-if="t.literCatatan != null"
-                    class="btn btn-ghost btn-sm"
-                    @click="batalCek(t)"
-                  >Hapus Catatan</button>
-                  <button class="btn btn-ghost btn-sm" @click="openSolarEditModal(t)">Edit</button>
-                  <button class="btn btn-ghost btn-sm" @click="removeSolar(t)">Hapus</button>
-                </td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="3"><b>Total</b></td>
-                <td class="num mono"><b>{{ solarData.totalMasuk }}</b></td>
-                <td class="mono"><b>{{ solarData.totalCatatan }} L</b> <span class="msub">menurut buku (yang sudah diisi)</span></td>
-                <td colspan="4"></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-        <div class="desc" style="margin-top: 8px">
-          Catatan buku sopir dicocokkan dengan angka real <b>keesokan harinya</b>, bukan di hari yang sama.
-          Stok selalu memakai angka real.
-        </div>
+        <template v-else>
+          <SolarMasukTable
+            :items="masukPreview"
+            @sesuai="cekSesuai"
+            @beda="cekBeda"
+            @batal="batalCek"
+            @edit="openSolarEditModal"
+            @hapus="removeSolar"
+          />
+          <button v-if="solarMasukList.length > PREVIEW" class="btn btn-ghost" style="margin-top: 10px" @click="bukaSemua('MASUK')">
+            Lainnya ({{ solarMasukList.length - PREVIEW }}) &rsaquo; lihat semua
+          </button>
+          <div class="desc" style="margin-top: 8px">
+            Menampilkan {{ Math.min(PREVIEW, solarMasukList.length) }} catatan terbaru. Catatan buku sopir dicocokkan dengan angka real
+            <b>keesokan harinya</b>. Stok selalu memakai angka real.
+          </div>
+        </template>
       </div>
 
+      <!-- ===== UTANG PER SOPIR ===== -->
       <div class="card" style="margin-bottom: 20px">
         <div class="section-title">Rekap Utang Solar per Sopir</div>
         <div class="msub" style="margin-bottom: 10px">
@@ -1136,34 +1370,40 @@ onMounted(async () => {
           otomatis menutup kekurangan sebelumnya.
         </div>
         <div v-if="!solarUtang.length" class="empty" style="padding: 10px 0">Belum ada catatan buku yang dicocokkan.</div>
-        <div v-else class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Nama Sopir</th>
-                <th class="num">Total Dicatat (L)</th>
-                <th class="num">Total Real (L)</th>
-                <th class="num">Saldo Utang (L)</th>
-                <th class="num">Belum Dicek</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="r in solarUtang" :key="r.nama">
-                <td>{{ r.nama }}</td>
-                <td class="num mono">{{ r.totalDicatat }}</td>
-                <td class="num mono">{{ r.totalReal }}</td>
-                <td class="num mono" :style="{ color: r.saldo > 0 ? '#b91c1c' : '#15803d', fontWeight: 600 }">
-                  <template v-if="r.saldo > 0">{{ r.saldo }}</template>
-                  <template v-else-if="r.saldo < 0">0 <span style="font-size: 11px; font-weight: 400">(lebih {{ Math.abs(r.saldo) }})</span></template>
-                  <template v-else>0 <span style="font-size: 11px; font-weight: 400">(lunas)</span></template>
-                </td>
-                <td class="num mono">{{ r.belumDicek || "-" }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <template v-else>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nama Sopir</th>
+                  <th class="num">Total Dicatat (L)</th>
+                  <th class="num">Total Real (L)</th>
+                  <th class="num">Saldo Utang (L)</th>
+                  <th class="num">Belum Dicek</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in utangPreview" :key="r.nama">
+                  <td>{{ r.nama }}</td>
+                  <td class="num mono">{{ fmtL(r.totalDicatat) }}</td>
+                  <td class="num mono">{{ fmtL(r.totalReal) }}</td>
+                  <td class="num mono" :style="{ color: r.saldo > 0 ? '#b91c1c' : '#15803d', fontWeight: 600 }">
+                    <template v-if="r.saldo > 0">{{ fmtL(r.saldo) }}</template>
+                    <template v-else-if="r.saldo < 0">0 <span style="font-size: 11px; font-weight: 400">(lebih {{ fmtL(Math.abs(r.saldo)) }})</span></template>
+                    <template v-else>0 <span style="font-size: 11px; font-weight: 400">(lunas)</span></template>
+                  </td>
+                  <td class="num mono">{{ r.belumDicek || "-" }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button v-if="solarUtang.length > 6" class="btn btn-ghost btn-sm" style="margin-top: 8px" @click="bukaSemua('UTANG')">
+            Lainnya ({{ solarUtang.length - 6 }}) &rsaquo;
+          </button>
+        </template>
       </div>
 
+      <!-- ===== PETA ===== -->
       <div class="card" style="margin-bottom: 20px">
         <div class="section-title">Peta Lokasi Solar Keluar</div>
         <PetaTitik :points="titikSolarPeta" :height="260" empty-text="Belum ada titik lokasi solar keluar pada periode ini." />
@@ -1173,47 +1413,13 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div class="card" style="margin-bottom: 20px">
-        <div class="section-title">Rekap Solar Keluar per Wilayah &mdash; {{ solarPeriodeLabel }}</div>
-        <div v-if="solarLoading" class="empty">Memuat...</div>
-        <div v-else-if="!rekapPerWilayah.length" class="empty">Belum ada catatan solar keluar pada periode ini.</div>
-        <div v-else class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Wilayah / Lokasi</th>
-                <th class="num">Jumlah Transaksi</th>
-                <th class="num">Total Liter</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="w in rekapPerWilayah"
-                :key="w.lokasi"
-                style="cursor: pointer"
-                :class="{ mono: false }"
-                @click="solarWilayah = w.lokasi === '(Tanpa lokasi)' ? '' : (solarWilayah === w.lokasi ? '' : w.lokasi)"
-              >
-                <td>{{ w.lokasi }}</td>
-                <td class="num mono">{{ w.jumlah }}</td>
-                <td class="num mono">{{ w.liter }}</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr>
-                <td><b>Total</b></td>
-                <td class="num mono"><b>{{ solarKeluarList.length }}</b></td>
-                <td class="num mono"><b>{{ solarData.totalKeluar }}</b></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-        <div class="desc" style="margin-top: 8px">Klik salah satu wilayah untuk memfilter tabel di bawah.</div>
-      </div>
-
+      <!-- ===== SOLAR KELUAR ===== -->
       <div class="card" style="margin-bottom: 20px">
         <div class="topbar" style="padding: 0; margin-bottom: 14px; align-items: center">
-          <div class="section-title" style="margin-bottom: 0">Solar Keluar &mdash; {{ solarPeriodeLabel }}</div>
+          <div class="section-title" style="margin-bottom: 0">
+            Solar Keluar &mdash; {{ solarPeriodeLabel }}
+            <span class="tag">{{ solarKeluarListFiltered.length }} catatan</span>
+          </div>
           <div class="field" style="max-width: 260px; width: 100%">
             <select v-model="solarWilayah">
               <option value="">Semua Wilayah</option>
@@ -1225,48 +1431,83 @@ onMounted(async () => {
         <div v-else-if="!solarKeluarListFiltered.length" class="empty">
           {{ solarWilayah ? `Belum ada catatan solar keluar untuk wilayah "${solarWilayah}" pada periode ini.` : "Belum ada catatan solar keluar pada periode ini." }}
         </div>
-        <div v-else class="table-wrap">
+        <template v-else>
+          <SolarKeluarTable :items="keluarPreview" @edit="openSolarEditModal" @hapus="removeSolar" />
+          <button v-if="solarKeluarListFiltered.length > PREVIEW" class="btn btn-ghost" style="margin-top: 10px" @click="bukaSemua('KELUAR')">
+            Lainnya ({{ solarKeluarListFiltered.length - PREVIEW }}) &rsaquo; lihat semua
+          </button>
+          <div class="desc" style="margin-top: 8px">Menampilkan {{ Math.min(PREVIEW, solarKeluarListFiltered.length) }} catatan terbaru.</div>
+        </template>
+      </div>
+
+      <!-- ===== MODAL "LAINNYA" ===== -->
+      <LainnyaModal
+        v-if="showSemua === 'MASUK'"
+        :title="`Semua Solar Masuk — ${solarPeriodeLabel}`"
+        @close="showSemua = ''"
+      >
+        <div class="sol-modal-filter">
+          <input v-model="cariSemua" placeholder="Cari nama sopir / keterangan / nomor…" />
+          <select v-model="statusSemua">
+            <option value="">Semua status</option>
+            <option value="KURANG">Kurang</option>
+            <option value="LEBIH">Lebih</option>
+            <option value="SESUAI">Sesuai</option>
+            <option value="BELUM_DICEK">Belum dicek</option>
+            <option value="MENUNGGU">Dicek besok</option>
+          </select>
+        </div>
+        <div v-if="!masukModal.length" class="empty">Tidak ada yang cocok.</div>
+        <SolarMasukTable v-else :items="masukModal" @sesuai="cekSesuai" @beda="cekBeda" @batal="batalCek" @edit="openSolarEditModal" @hapus="removeSolar" />
+      </LainnyaModal>
+
+      <LainnyaModal
+        v-if="showSemua === 'KELUAR'"
+        :title="`Semua Solar Keluar — ${solarPeriodeLabel}${solarWilayah ? ' • ' + solarWilayah : ''}`"
+        @close="showSemua = ''"
+      >
+        <div class="sol-modal-filter">
+          <input v-model="cariSemua" placeholder="Cari operator / wilayah / keterangan / nomor…" />
+          <select v-model="solarWilayah">
+            <option value="">Semua Wilayah</option>
+            <option v-for="w in solarWilayahOptions" :key="w" :value="w">{{ w }}</option>
+          </select>
+        </div>
+        <div v-if="!keluarModal.length" class="empty">Tidak ada yang cocok.</div>
+        <SolarKeluarTable v-else :items="keluarModal" @edit="openSolarEditModal" @hapus="removeSolar" />
+      </LainnyaModal>
+
+      <LainnyaModal v-if="showSemua === 'UTANG'" title="Rekap Utang Solar — Semua Sopir" lebar="820px" @close="showSemua = ''">
+        <div class="sol-modal-filter"><input v-model="cariSemua" placeholder="Cari nama sopir…" /></div>
+        <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>No</th>
-                <th>Tanggal</th>
-                <th>Nama Operator</th>
-                <th class="num">Liter</th>
-                <th>Lokasi</th>
-                <th>Keterangan</th>
-                <th>Bukti</th>
-                <th>Aksi</th>
+                <th>Nama Sopir</th>
+                <th class="num">Total Dicatat (L)</th>
+                <th class="num">Total Real (L)</th>
+                <th class="num">Saldo Utang (L)</th>
+                <th class="num">Belum Dicek</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="t in solarKeluarListFiltered" :key="t.id">
-                <td class="mono">{{ t.no }}</td>
-                <td>{{ new Date(t.tanggal).toLocaleDateString("id-ID") }}</td>
-                <td>{{ t.nama }}</td>
-                <td class="num mono">{{ t.liter }}</td>
-                <td>{{ t.lokasi || "-" }}</td>
-                <td>{{ t.keterangan || "-" }}</td>
-                <td>
-                  <a v-if="t.buktiUrl" :href="api.fileUrl(t.buktiUrl)" target="_blank" rel="noopener">Lihat</a>
-                  <span v-else>-</span>
+              <tr v-for="r in utangModal" :key="r.nama">
+                <td>{{ r.nama }}</td>
+                <td class="num mono">{{ fmtL(r.totalDicatat) }}</td>
+                <td class="num mono">{{ fmtL(r.totalReal) }}</td>
+                <td class="num mono" :style="{ color: r.saldo > 0 ? '#b91c1c' : '#15803d', fontWeight: 600 }">
+                  <template v-if="r.saldo > 0">{{ fmtL(r.saldo) }}</template>
+                  <template v-else-if="r.saldo < 0">0 <span style="font-size: 11px; font-weight: 400">(lebih {{ fmtL(Math.abs(r.saldo)) }})</span></template>
+                  <template v-else>0 <span style="font-size: 11px; font-weight: 400">(lunas)</span></template>
                 </td>
-                <td style="white-space: nowrap">
-                  <button class="btn btn-ghost btn-sm" @click="openSolarEditModal(t)">Edit</button>
-                  <button class="btn btn-ghost btn-sm" @click="removeSolar(t)">Hapus</button>
-                </td>
+                <td class="num mono">{{ r.belumDicek || "-" }}</td>
               </tr>
             </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="3"><b>Total {{ solarWilayah ? "Keluar (wilayah ini)" : "Keluar" }}</b></td>
-                <td class="num mono"><b>{{ totalKeluarFiltered }}</b></td>
-                <td colspan="4"></td>
-              </tr>
-            </tfoot>
           </table>
         </div>
-      </div>
+      </LainnyaModal>
+
+      <RapikanNamaModal v-if="showRapikan" @close="showRapikan = false" @selesai="loadSolar" />
     </template>
   </div>
 
@@ -1439,8 +1680,9 @@ onMounted(async () => {
           </div>
         </div>
         <div class="field" v-if="solarForm.tipe === 'KELUAR'">
-          <label>Lokasi / Unit Tujuan</label>
-          <input v-model="solarForm.lokasi" placeholder="Mis. Cimanggis / Kp. Rambutan" />
+          <label>Wilayah Tujuan</label>
+          <WilayahSelect :model-value="solarForm.lokasi" :options="lokasiOpsi" @update:model-value="ubahLokasi" />
+          <div v-if="lokasiOtomatisInfo" class="desc" style="margin-top: 4px">{{ lokasiOtomatisInfo }}</div>
         </div>
       </div>
 
@@ -1486,6 +1728,88 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.sol-periode {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.sol-periode-label {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.sol-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.sol-kpi {
+  background: var(--card, #fff);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--c, #2459a6);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.sol-kpi-utama {
+  background: var(--bms-blue-soft, #eaf1fb);
+}
+.sol-kpi-lbl {
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.sol-kpi-val {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 2px 0;
+  font-variant-numeric: tabular-nums;
+}
+.sol-kpi-val small {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.sol-kpi-sub {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.sol-rank {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+.sol-nav {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.sol-nav input {
+  flex: 1;
+  min-width: 0;
+}
+.sol-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.sol-modal-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.sol-modal-filter input {
+  flex: 1;
+  min-width: 200px;
+}
+.sol-modal-filter select {
+  max-width: 220px;
+}
 .tab-btn {
   background: none;
   border: none;

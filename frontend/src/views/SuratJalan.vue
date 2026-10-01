@@ -200,7 +200,7 @@ async function load() {
       api.get("/armada"),
       api.get("/customers"),
       api.get("/stock-master"),
-      api.get("/sopir?all=1"),
+      api.get("/sopir?all=1&terakhir=1"),
       api.get("/settings").catch(() => ({})),
     ]);
     const dasar = Number(settingData?.uangJalanDasar);
@@ -220,6 +220,7 @@ async function load() {
 
 function openModal() {
   editingId.value = null;
+  autoKendaraan.value = { nopol: "", armadaId: "" };
   komisiManual.value = false;
   form.value = emptyForm();
   customerSearch.value = "";
@@ -228,6 +229,7 @@ function openModal() {
 
 function openEdit(sj) {
   editingId.value = sj.id;
+  autoKendaraan.value = { nopol: "", armadaId: "" }; // data tersimpan tidak boleh ditimpa otomatis
   komisiManual.value = true; // tahan perhitungan otomatis selama form diisi ulang
   customerSearch.value = sj.customer ? `${sj.customer.kode} — ${sj.customer.nama}` : "";
   // Hitung berapa SJ lain yang satu batch (dibuat bareng lewat "Jumlah
@@ -293,12 +295,80 @@ function statusClass(sj) {
   return "b-belumttd";
 }
 
+// --- Auto-isi No. Polisi dari Sopir -------------------------------------
+// Nilai yang terakhir diisi OTOMATIS dicatat di sini. Selama kolom No. Polisi
+// masih kosong atau masih sama dengan nilai otomatis itu, ganti sopir/armada
+// boleh menggantinya lagi. Begitu staf mengetik/mengubahnya sendiri, nilainya
+// tidak pernah ditimpa lagi.
+const autoKendaraan = ref({ nopol: "", armadaId: "" });
+const normNopol = (s) => (s || "").toString().toUpperCase().replace(/\s+/g, "");
+
+// Kendaraan untuk sopir tertentu, urutan sumber data:
+// 1) kendaraan yang di menu Armada memakai sopir ini (kalau lebih dari satu,
+//    pilih yang terakhir dipakai di Surat Jalan),
+// 2) kendaraan di Surat Jalan terakhir sopir ini.
+function kendaraanUntukSopir(sopirId) {
+  const s = sopirList.value.find((x) => x.id === sopirId);
+  if (!s) return null;
+  const dipegang = armadaList.value.filter((a) => a.sopirId === sopirId);
+  let armada = null;
+  if (dipegang.length === 1) armada = dipegang[0];
+  else if (dipegang.length > 1) armada = dipegang.find((a) => a.id === s.armadaIdTerakhir) || dipegang[0];
+  else if (s.armadaIdTerakhir) armada = armadaList.value.find((a) => a.id === s.armadaIdTerakhir) || null;
+  if (armada) return { armadaId: armada.id, nopol: armada.nopol };
+  if (s.nopolTerakhir) {
+    const cocok = armadaList.value.find((a) => normNopol(a.nopol) === normNopol(s.nopolTerakhir));
+    return { armadaId: cocok?.id || "", nopol: cocok?.nopol || s.nopolTerakhir };
+  }
+  return null;
+}
+
+function isiKendaraanDariSopir() {
+  const k = kendaraanUntukSopir(form.value.sopirId);
+  if (!k) return;
+  const noPol = (form.value.noPolisi || "").trim();
+  const bolehTimpa = !noPol || noPol === autoKendaraan.value.nopol;
+  if (!bolehTimpa) return; // sudah diketik / diubah manual -> jangan ditimpa
+  form.value.noPolisi = k.nopol;
+  // armada ikut dikaitkan hanya kalau kosong atau juga hasil otomatis
+  if (k.armadaId && (!form.value.armadaId || form.value.armadaId === autoKendaraan.value.armadaId)) {
+    form.value.armadaId = k.armadaId;
+  }
+  autoKendaraan.value = { nopol: k.nopol, armadaId: k.armadaId || "" };
+}
+
+// Kalau staf mengubah No. Polisi sendiri sehingga tidak lagi sama dengan armada
+// yang terisi otomatis, kaitan armada otomatis itu dilepas (atau dipindah ke
+// armada yang nopolnya cocok) -- supaya nopol yang diketik yang dianggap benar
+// di Rekap Armada, bukan armada lama yang terisi otomatis.
+watch(
+  () => form.value.noPolisi,
+  (v) => {
+    const aid = form.value.armadaId;
+    if (!aid || aid !== autoKendaraan.value.armadaId) return;
+    const a = armadaList.value.find((x) => x.id === aid);
+    if (!a || normNopol(a.nopol) === normNopol(v)) return;
+    const cocok = armadaList.value.find((x) => normNopol(x.nopol) === normNopol(v));
+    form.value.armadaId = cocok ? cocok.id : "";
+  }
+);
+
+// Dipanggil HANYA saat user memilih sopir di dropdown.
+function onSopirDipilih() {
+  isiKendaraanDariSopir();
+  onSopirChange();
+}
+
 // Kalau Armada dipilih, ambil otomatis No. Polisi & Sopir dari master
 // Armada (masih boleh diubah manual kalau perlu).
 function onArmadaChange() {
   const armada = armadaList.value.find((a) => a.id === form.value.armadaId);
   if (armada) {
-    if (!form.value.noPolisi) form.value.noPolisi = armada.nopol;
+    const noPol = (form.value.noPolisi || "").trim();
+    if (!noPol || noPol === autoKendaraan.value.nopol) {
+      form.value.noPolisi = armada.nopol;
+      autoKendaraan.value = { nopol: armada.nopol, armadaId: armada.id };
+    }
     if (!form.value.sopirId && armada.sopirId) {
       form.value.sopirId = armada.sopirId;
       onSopirChange();
@@ -752,12 +822,13 @@ onMounted(load);
         <div class="field">
           <label>No. Polisi</label>
           <input v-model="form.noPolisi" placeholder="Contoh: B 9012 XYZ" />
+          <div class="field-hint">Terisi otomatis saat sopir dipilih (dari data sebelumnya), tetap bisa diubah.</div>
         </div>
         <div class="field">
           <label>Sopir</label>
           <SearchableSelect
             v-model="form.sopirId"
-            @change="onSopirChange"
+            @change="onSopirDipilih"
             :options="sopirList.map(s => ({ value: s.id, label: s.nama, sub: s.tipe === 'TRONTON' ? 'Tronton' : 'Cold Diesel' }))"
             placeholder="Pilih dari master Sopir..."
           />

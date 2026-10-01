@@ -10,13 +10,41 @@ const router = Router();
 // Komisi baru "didapat" sopir setelah tugasnya selesai.
 const SELESAI = { isDraft: false, statusTTD: "LENGKAP" };
 
+// Kendaraan yang terakhir dipakai tiap sopir (dari Surat Jalan terbaru yang
+// punya armada/nopol). Dipakai form Surat Jalan untuk auto-isi No. Polisi
+// begitu sopir dipilih -- hanya saran, tetap bisa diedit di form.
+async function kendaraanTerakhirMap() {
+  const rows = await prisma.suratJalan.findMany({
+    where: {
+      sopirId: { not: null },
+      isDraft: false,
+      OR: [{ noPolisi: { not: null } }, { armadaId: { not: null } }],
+    },
+    orderBy: [{ tanggal: "desc" }, { createdAt: "desc" }],
+    distinct: ["sopirId"],
+    select: { sopirId: true, armadaId: true, noPolisi: true },
+  });
+  const map = new Map();
+  for (const r of rows) if (!map.has(r.sopirId)) map.set(r.sopirId, r); // yang pertama = terbaru
+  return map;
+}
+
 router.get("/", async (req, res, next) => {
   try {
-    const { all, stats } = req.query;
-    const sopir = await prisma.sopir.findMany({
+    const { all, stats, terakhir } = req.query;
+    const sopirRows = await prisma.sopir.findMany({
       where: all ? {} : { aktif: true },
       orderBy: { nama: "asc" },
     });
+    // ?terakhir=1 -> tiap sopir dilengkapi armadaIdTerakhir & nopolTerakhir
+    const tMap = terakhir ? await kendaraanTerakhirMap() : null;
+    const sopir = tMap
+      ? sopirRows.map((s) => ({
+          ...s,
+          armadaIdTerakhir: tMap.get(s.id)?.armadaId || null,
+          nopolTerakhir: tMap.get(s.id)?.noPolisi || null,
+        }))
+      : sopirRows;
     if (!stats) return res.json(sopir);
 
     // Ringkasan komisi per sopir (dipakai di daftar menu Sopir)

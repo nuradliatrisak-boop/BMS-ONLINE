@@ -155,8 +155,11 @@
 
                         <input
                             id="sopir"
+                            list="daftarSopir"
+                            autocomplete="off"
                             placeholder="Kosong jika belum tahu"
                         >
+                        <datalist id="daftarSopir"></datalist>
                     </td>
 
                 </tr>
@@ -533,6 +536,164 @@
            User tetap bisa mengganti manual.
         ========================================================= */
 
+        /*
+           Auto-isi No Polisi dari data sebelumnya.
+
+           autoNopol = nilai yang terakhir diisi OTOMATIS. Selama kolom
+           No Polisi masih kosong / masih sama dengan nilai otomatis itu,
+           boleh diganti otomatis lagi. Kalau sudah diketik / diubah
+           manual, tidak akan ditimpa.
+        */
+
+        var sopirs = [];
+        var armadaAll = [];
+        var autoNopol = '';
+
+
+        function normNopol(s){
+
+            return String(s || '')
+                .toUpperCase()
+                .replace(/\s+/g, '');
+
+        }
+
+
+        function normNama(s){
+
+            return String(s || '')
+                .toLowerCase()
+                .replace(/\s+/g, ' ')
+                .replace(/^ /, '')
+                .replace(/ $/, '');
+
+        }
+
+
+        function boleTimpaNopol(){
+
+            var v = $('noPolisi').value
+                .replace(/^\s+|\s+$/g, '');
+
+            return !v || v === autoNopol;
+
+        }
+
+
+        function cariSopir(nama){
+
+            var n = normNama(nama);
+
+            if(!n) return null;
+
+            for(var i = 0; i < sopirs.length; i++){
+
+                if(normNama(sopirs[i].nama) === n){
+
+                    return sopirs[i];
+
+                }
+
+            }
+
+            return null;
+
+        }
+
+
+        /*
+           Sumber data (urut):
+           1) kendaraan di menu Armada yang memakai sopir ini
+              (kalau lebih dari satu, pilih yang terakhir dipakai),
+           2) nopol di Surat Jalan terakhir sopir ini.
+        */
+
+        function nopolUntukSopir(s){
+
+            var dipegang = [];
+
+            for(var i = 0; i < armadaAll.length; i++){
+
+                if(armadaAll[i].sopirId === s.id){
+
+                    dipegang.push(armadaAll[i]);
+
+                }
+
+            }
+
+            if(dipegang.length === 1){
+
+                return dipegang[0].nopol;
+
+            }
+
+            if(dipegang.length > 1){
+
+                for(var j = 0; j < dipegang.length; j++){
+
+                    if(
+                        dipegang[j].id === s.armadaIdTerakhir ||
+                        normNopol(dipegang[j].nopol) ===
+                        normNopol(s.nopolTerakhir)
+                    ){
+
+                        return dipegang[j].nopol;
+
+                    }
+
+                }
+
+                return dipegang[0].nopol;
+
+            }
+
+            if(s.armadaIdTerakhir){
+
+                for(var k = 0; k < armadaAll.length; k++){
+
+                    if(armadaAll[k].id === s.armadaIdTerakhir){
+
+                        return armadaAll[k].nopol;
+
+                    }
+
+                }
+
+            }
+
+            return s.nopolTerakhir || '';
+
+        }
+
+
+        function isiNopolDariSopir(){
+
+            var s = cariSopir($('sopir').value);
+
+            if(!s || !boleTimpaNopol()) return;
+
+            var np = nopolUntukSopir(s);
+
+            if(!np) return;
+
+            $('noPolisi').value = np;
+
+            autoNopol = np;
+
+        }
+
+
+        /*
+           Pilih dari daftar (datalist) memicu "input",
+           ketik manual lalu pindah kolom memicu "change".
+        */
+
+        $('sopir').addEventListener('input', isiNopolDariSopir);
+
+        $('sopir').addEventListener('change', isiNopolDariSopir);
+
+
         $('armadaId').onchange = function(){
 
             var o =
@@ -542,11 +703,14 @@
             if(
                 o &&
                 o.getAttribute('data-nopol') &&
-                !$('noPolisi').value
+                boleTimpaNopol()
             ){
 
                 $('noPolisi').value =
                     o.getAttribute('data-nopol');
+
+                autoNopol =
+                    $('noPolisi').value;
 
             }
 
@@ -1197,7 +1361,15 @@
 
             api.get('/stock-master'),
 
-            api.get('/armada')
+            api.get('/armada'),
+
+            /*
+                Data sopir untuk saran auto-isi No Polisi.
+                Kalau gagal dimuat, form tetap jalan seperti biasa.
+            */
+
+            api.get('/sopir?terakhir=1')
+                .catch(function(){ return []; })
 
         ])
 
@@ -1213,6 +1385,20 @@
 
             var armadas =
                 r[2] || [];
+
+            armadaAll = armadas;
+
+            sopirs = r[3] || [];
+
+            for(var s = 0; s < sopirs.length; s++){
+
+                var so = document.createElement('option');
+
+                so.value = sopirs[s].nama;
+
+                $('daftarSopir').appendChild(so);
+
+            }
 
 
             /* =====================================================

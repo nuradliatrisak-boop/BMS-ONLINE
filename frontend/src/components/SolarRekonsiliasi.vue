@@ -150,7 +150,7 @@ function bukaTutup(nama) {
   terbuka.value = s;
 }
 const kalimatRincian = (x) => {
-  if (x.status === "TIDAK_SETOR") return `tidak setor (buku ${fmtL(x.bukuLiter)} L)`;
+  if (x.status === "TIDAK_SETOR") return `${x.masihBisaSetor ? "belum setor sampai sekarang" : "tidak setor"} (buku ${fmtL(x.bukuLiter)} L)`;
   if (x.status === "TIDAK_DI_BUKU") return `setor ${fmtL(x.realLiter)} L, tidak ada di buku`;
   if (x.status === "KURANG") return `buku ${fmtL(x.bukuLiter)} L, setor ${fmtL(x.realLiter)} L (kurang ${fmtL(-x.selisih)} L)`;
   return `buku ${fmtL(x.bukuLiter)} L, setor ${fmtL(x.realLiter)} L (lebih ${fmtL(x.selisih)} L)`;
@@ -312,7 +312,7 @@ async function hapusBuku(r) {
 
 // Kalimat selisih yang langsung bisa dipahami
 function ket(r) {
-  if (r.status === "TIDAK_SETOR") return `Kurang ${fmtL(r.bukuLiter)} L (tidak setor)`;
+  if (r.status === "TIDAK_SETOR") return r.masihBisaSetor ? `Belum setor sampai sekarang (${fmtL(r.bukuLiter)} L)` : `Kurang ${fmtL(r.bukuLiter)} L (tidak setor)`;
   if (r.status === "TIDAK_DI_BUKU") return `Setor ${fmtL(r.realLiter)} L, belum di buku`;
   if (r.status === "KURANG") return `Kurang ${fmtL(Math.abs(r.selisih))} L`;
   if (r.status === "LEBIH") return `Lebih ${fmtL(r.selisih)} L`;

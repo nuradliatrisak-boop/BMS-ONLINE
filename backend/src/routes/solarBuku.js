@@ -23,8 +23,9 @@ const router = Router();
 //   LEBIH         keduanya ada, real lebih banyak dari buku
 //   TIDAK_SETOR   ada di buku, TIDAK ada setoran real
 //   TIDAK_DI_BUKU ada setoran real, TIDAK ada di buku
-//   MENUNGGU      ada di buku, real belum ada, tapi tanggalnya hari ini
-//                 (belum bisa dibilang tidak setor)
+//   MENUNGGU      ada di buku, real belum ada, tapi tanggal setorannya
+//                 belum tiba (besok dst). Kalau tanggal setorannya HARI INI
+//                 tetap TIDAK_SETOR (dengan masihBisaSetor = true).
 //
 // Tanggal yang bukunya belum diisi sama sekali TIDAK dianggap
 // "tidak di buku" -- kalau tidak, semua setoran sebelum buku mulai
@@ -172,7 +173,10 @@ router.get("/rekonsiliasi", async (req, res, next) => {
             tanggal: tgl,
             tanggalBuku: b.tglBuku,
             nama: b.nama,
-            status: tgl >= today ? "MENUNGGU" : "TIDAK_SETOR",
+            // Hari setoran = hari ini tetap dihitung TIDAK_SETOR (staf memang mengecek
+            // di hari itu); hanya tanggal yang belum tiba yang "menunggu".
+            status: tgl > today ? "MENUNGGU" : "TIDAK_SETOR",
+            masihBisaSetor: tgl === today,
             bukuLiter: r2(b.liter),
             realLiter: 0,
             selisih: r2(-b.liter),
@@ -250,7 +254,7 @@ router.get("/rekonsiliasi", async (req, res, next) => {
         s.sesuai++;
         continue;
       }
-      s.rincian.push({ tanggal: r.tanggal, tanggalBuku: r.tanggalBuku, status: r.status, bukuLiter: r.bukuLiter, realLiter: r.realLiter, selisih: r.selisih });
+      s.rincian.push({ tanggal: r.tanggal, tanggalBuku: r.tanggalBuku, masihBisaSetor: !!r.masihBisaSetor, status: r.status, bukuLiter: r.bukuLiter, realLiter: r.realLiter, selisih: r.selisih });
       if (r.status === "TIDAK_SETOR") {
         ringkasan.tidakSetor++;
         ringkasan.literTidakSetor += r.bukuLiter;

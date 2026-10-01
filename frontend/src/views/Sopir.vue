@@ -279,6 +279,7 @@ onMounted(load);
         <span class="tag">{{ filteredList.length }} Sopir</span>
       </div>
 
+      <div class="table-wrap">
       <table>
         <thead>
           <tr>
@@ -305,7 +306,7 @@ onMounted(load);
             <td class="num mono" :style="{ fontWeight: s.komisiBelumDiambil ? 600 : 400 }">{{ rupiah(s.komisiBelumDiambil) }}</td>
             <td>{{ s.aktif ? "Aktif" : "Nonaktif" }}</td>
             <td style="white-space:nowrap;">
-              <button class="btn btn-sm btn-ghost" style="margin-right:4px;" :disabled="mengekspor" title="Cetak buku komisi sopir ini (semua waktu)" @click="aksiCetak('print', s)">🖨 Print</button>
+              <button class="btn btn-sm btn-ghost" style="margin-right:4px;" :disabled="mengekspor" title="Cetak buku komisi sopir ini (semua waktu)" @click="aksiCetak('print', s)">🖨</button>
               <button class="btn btn-sm btn-ghost" style="margin-right:4px;" :disabled="mengekspor" title="Download Excel (semua waktu)" @click="aksiCetak('excel', s)">Excel</button>
               <button class="btn btn-sm btn-ghost" :disabled="mengekspor" title="Download PDF (semua waktu)" @click="aksiCetak('pdf', s)">PDF</button>
             </td>
@@ -317,6 +318,7 @@ onMounted(load);
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <div class="msub" style="margin-top:14px;">

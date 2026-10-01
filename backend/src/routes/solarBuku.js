@@ -7,6 +7,10 @@ const router = Router();
 // ------------------------------------------------------------
 // BUKU CATATAN SOLAR vs SETORAN REAL
 //
+// ATURAN TANGGAL: buku yang ditulis tanggal T dicek dengan setoran real
+// tanggal T+1 (besoknya). Jadi buku tgl 1 dibandingkan dengan Solar Masuk
+// tgl 2. Kolom `tanggal` di hasil = tanggal SETORAN (T+1), `tanggalBuku` = T.
+//
 // Buku  = apa yang tertulis di buku ("si A seharusnya setor X liter").
 //         Disimpan di tabel SolarBuku (diinput staf), ditambah angka
 //         `literCatatan` lama yang sudah ada di baris SolarTx MASUK
@@ -33,6 +37,11 @@ const hariIni = () => new Date().toLocaleDateString("en-CA", { timeZone: TZ });
 const tglStr = (d) => new Date(d).toISOString().slice(0, 10);
 const r2 = (x) => Math.round(x * 100) / 100;
 const TGL_RE = /^\d{4}-\d{2}-\d{2}$/;
+const addHari = (str, n) => {
+  const d = new Date(`${str}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
 
 function bacaRentang(q) {
   const today = hariIni();
@@ -59,7 +68,13 @@ router.get("/rekonsiliasi", async (req, res, next) => {
 
     const [buku, real] = await Promise.all([
       prisma.solarBuku.findMany({
-        where: { tanggal: { gte: rg.gte, lte: rg.lte } },
+        // buku tgl T -> setoran tgl T+1, jadi ambil buku sehari lebih awal
+        where: {
+          tanggal: {
+            gte: new Date(`${addHari(rg.dari, -1)}T00:00:00.000Z`),
+            lte: new Date(`${addHari(rg.sampai, -1)}T23:59:59.999Z`),
+          },
+        },
         orderBy: [{ tanggal: "asc" }, { createdAt: "asc" }],
       }),
       prisma.solarTx.findMany({
@@ -76,9 +91,10 @@ router.get("/rekonsiliasi", async (req, res, next) => {
     };
 
     for (const b of buku) {
-      const m = slot(tglStr(b.tanggal)).buku;
+      const tglB = tglStr(b.tanggal);
+      const m = slot(addHari(tglB, 1)).buku; // dicek dengan setoran besoknya
       const k = namaKey(b.nama);
-      const cur = m.get(k) || { nama: rapikanSpasi(b.nama), liter: 0, ids: [], ket: [], sumber: "BUKU" };
+      const cur = m.get(k) || { nama: rapikanSpasi(b.nama), liter: 0, ids: [], ket: [], sumber: "BUKU", tglBuku: tglB };
       cur.liter += b.liter;
       cur.ids.push(b.id);
       if (b.keterangan) cur.ket.push(b.keterangan);
@@ -105,7 +121,7 @@ router.get("/rekonsiliasi", async (req, res, next) => {
       const efektif = new Map(bm);
       for (const [k, r] of rm) {
         if (r.catatan != null && !efektif.has(k)) {
-          efektif.set(k, { nama: r.nama, liter: r.catatan, ids: [], ket: [], sumber: "CATATAN_REAL" });
+          efektif.set(k, { nama: r.nama, liter: r.catatan, ids: [], ket: [], sumber: "CATATAN_REAL", tglBuku: null });
         }
       }
       const bukuDiisi = efektif.size > 0;
@@ -139,6 +155,7 @@ router.get("/rekonsiliasi", async (req, res, next) => {
           const selisih = r2(r.liter - b.liter);
           rows.push({
             tanggal: tgl,
+            tanggalBuku: b.tglBuku,
             nama: r.nama,
             status: selisih === 0 ? "SESUAI" : selisih < 0 ? "KURANG" : "LEBIH",
             bukuLiter: r2(b.liter),
@@ -153,6 +170,7 @@ router.get("/rekonsiliasi", async (req, res, next) => {
         } else {
           rows.push({
             tanggal: tgl,
+            tanggalBuku: b.tglBuku,
             nama: b.nama,
             status: tgl >= today ? "MENUNGGU" : "TIDAK_SETOR",
             bukuLiter: r2(b.liter),
@@ -173,6 +191,7 @@ router.get("/rekonsiliasi", async (req, res, next) => {
         for (const r of sisaReal) {
           rows.push({
             tanggal: tgl,
+            tanggalBuku: addHari(tgl, -1),
             nama: r.nama,
             status: "TIDAK_DI_BUKU",
             bukuLiter: null,
@@ -188,8 +207,10 @@ router.get("/rekonsiliasi", async (req, res, next) => {
       } else if (sisaReal.length) {
         tanggalBukuKosong.push({
           tanggal: tgl,
+          tanggalBuku: addHari(tgl, -1),
           setoran: sisaReal.length,
           liter: r2(sisaReal.reduce((s, r) => s + r.liter, 0)),
+          daftar: sisaReal.map((r) => ({ nama: r.nama, liter: r2(r.liter) })),
         });
       }
     }
@@ -205,29 +226,47 @@ router.get("/rekonsiliasi", async (req, res, next) => {
     const sopir = (nama) => {
       const k = namaKey(nama);
       if (!perSopir.has(k)) {
-        perSopir.set(k, { nama, tidakSetor: 0, literTidakSetor: 0, tidakDiBuku: 0, literTidakDiBuku: 0, kurangLiter: 0, lebihLiter: 0 });
+        perSopir.set(k, {
+          nama, hariDicek: 0, sesuai: 0,
+          tidakSetor: 0, literTidakSetor: 0,
+          tidakDiBuku: 0, literTidakDiBuku: 0,
+          kurang: 0, kurangLiter: 0, lebih: 0, lebihLiter: 0,
+          totalBuku: 0, totalReal: 0, rincian: [],
+        });
       }
       return perSopir.get(k);
     };
     for (const r of rows) {
-      if (r.status === "SESUAI") ringkasan.sesuai++;
-      else if (r.status === "MENUNGGU") ringkasan.menunggu++;
-      else if (r.status === "TIDAK_SETOR") {
+      if (r.status === "MENUNGGU") {
+        ringkasan.menunggu++;
+        continue;
+      }
+      const s = sopir(r.nama);
+      s.hariDicek++;
+      s.totalBuku += r.bukuLiter || 0;
+      s.totalReal += r.realLiter || 0;
+      if (r.status === "SESUAI") {
+        ringkasan.sesuai++;
+        s.sesuai++;
+        continue;
+      }
+      s.rincian.push({ tanggal: r.tanggal, tanggalBuku: r.tanggalBuku, status: r.status, bukuLiter: r.bukuLiter, realLiter: r.realLiter, selisih: r.selisih });
+      if (r.status === "TIDAK_SETOR") {
         ringkasan.tidakSetor++;
         ringkasan.literTidakSetor += r.bukuLiter;
-        const s = sopir(r.nama); s.tidakSetor++; s.literTidakSetor += r.bukuLiter;
+        s.tidakSetor++; s.literTidakSetor += r.bukuLiter;
       } else if (r.status === "TIDAK_DI_BUKU") {
         ringkasan.tidakDiBuku++;
         ringkasan.literTidakDiBuku += r.realLiter;
-        const s = sopir(r.nama); s.tidakDiBuku++; s.literTidakDiBuku += r.realLiter;
+        s.tidakDiBuku++; s.literTidakDiBuku += r.realLiter;
       } else if (r.status === "KURANG") {
         ringkasan.kurang++;
         ringkasan.literKurang += -r.selisih;
-        sopir(r.nama).kurangLiter += -r.selisih;
+        s.kurang++; s.kurangLiter += -r.selisih;
       } else if (r.status === "LEBIH") {
         ringkasan.lebih++;
         ringkasan.literLebih += r.selisih;
-        sopir(r.nama).lebihLiter += r.selisih;
+        s.lebih++; s.lebihLiter += r.selisih;
       }
     }
     for (const k of ["literTidakSetor", "literTidakDiBuku", "literKurang", "literLebih"]) ringkasan[k] = r2(ringkasan[k]);
@@ -238,14 +277,26 @@ router.get("/rekonsiliasi", async (req, res, next) => {
       rows,
       ringkasan,
       perSopir: [...perSopir.values()]
-        .map((s) => ({
-          ...s,
-          literTidakSetor: r2(s.literTidakSetor),
-          literTidakDiBuku: r2(s.literTidakDiBuku),
-          kurangLiter: r2(s.kurangLiter),
-          lebihLiter: r2(s.lebihLiter),
-        }))
-        .sort((a, b) => b.tidakSetor + b.tidakDiBuku - (a.tidakSetor + a.tidakDiBuku) || a.nama.localeCompare(b.nama, "id")),
+        .map((s) => {
+          // kurang = yang seharusnya masuk tapi tidak masuk; lebih = yang masuk di luar buku
+          const totalKurang = s.literTidakSetor + s.kurangLiter;
+          const totalLebih = s.lebihLiter + s.literTidakDiBuku;
+          return {
+            ...s,
+            literTidakSetor: r2(s.literTidakSetor),
+            literTidakDiBuku: r2(s.literTidakDiBuku),
+            kurangLiter: r2(s.kurangLiter),
+            lebihLiter: r2(s.lebihLiter),
+            totalBuku: r2(s.totalBuku),
+            totalReal: r2(s.totalReal),
+            totalKurang: r2(totalKurang),
+            totalLebih: r2(totalLebih),
+            selisihBersih: r2(totalLebih - totalKurang),
+            bermasalah: s.tidakSetor + s.tidakDiBuku + s.kurang + s.lebih > 0,
+            rincian: s.rincian.sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1)),
+          };
+        })
+        .sort((a, b) => b.totalKurang - a.totalKurang || b.tidakDiBuku - a.tidakDiBuku || a.nama.localeCompare(b.nama, "id")),
       tanggalBukuKosong: tanggalBukuKosong.sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1)),
     });
   } catch (e) {
@@ -327,7 +378,8 @@ router.post("/dari-real", async (req, res, next) => {
     const tx = await prisma.solarTx.findUnique({ where: { id: String(req.body?.solarTxId || "") } });
     if (!tx || tx.tipe !== "MASUK") return res.status(404).json({ error: "Setoran real tidak ditemukan" });
     const row = await prisma.solarBuku.create({
-      data: { tanggal: tx.tanggal, nama: tx.nama, liter: tx.liter, keterangan: "Dilengkapi dari setoran real" },
+      // setoran tgl T+1 berarti di buku harusnya tertulis di tgl T
+      data: { tanggal: new Date(`${addHari(tglStr(tx.tanggal), -1)}T00:00:00.000Z`), nama: tx.nama, liter: tx.liter, keterangan: "Dilengkapi dari setoran real" },
     });
     res.status(201).json(row);
   } catch (e) {

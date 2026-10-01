@@ -6,6 +6,7 @@ import { toast } from "../services/toast.js";
 import SearchableSelect from "../components/SearchableSelect.vue";
 import MoneyInput from "../components/MoneyInput.vue";
 import { fmtM3 } from "../utils/format.js";
+import { sarankanHarga } from "../utils/hargaCustomer.js";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -83,18 +84,15 @@ const form = ref(emptyForm());
 // baris terpilih: { suratJalanId, checked, hargaSatuan }
 const rows = ref([]);
 
-function vehicleTypeForSJ(sj) {
-  const jenis = `${sj.armada?.jenis || ""} ${sj.noPolisi || ""}`.toUpperCase();
-  return jenis.includes("TRONTON") ? "TRONTON" : "CD";
-}
-function suggestedPrice(sj) {
-  const customer = customers.value.find(c => c.id === form.value.customerId);
-  if (!customer) return 0;
-  const stock = `${sj.jenisBarang || ""}`.trim().toUpperCase();
-  const vehicle = vehicleTypeForSJ(sj);
-  const price = (customer.prices || []).find(p => p.vehicleType === vehicle && (p.stockName || "").trim().toUpperCase() === stock)
-    || (customer.prices || []).find(p => (p.stockName || "").trim().toUpperCase() === stock);
-  return Number(price?.hargaM3 || 0);
+// Master Material dipakai sebagai cadangan kalau customer belum punya harga
+// untuk jenis barang tsb (lihat utils/hargaCustomer.js).
+const materials = ref([]);
+
+// Harga otomatis per Surat Jalan: dari harga customer (cocok kode/nama stock,
+// jenis armada, dan tujuan), lalu master Material. Selalu bisa diubah manual.
+function hargaOtomatis(sj) {
+  const customer = customers.value.find((c) => c.id === form.value.customerId);
+  return sarankanHarga(customer?.prices || [], materials.value, sj);
 }
 
 function rupiah(n) {
@@ -124,12 +122,14 @@ const formTotal = computed(() =>
 async function load() {
   loading.value = true;
   try {
-    const [invoiceData, customerData] = await Promise.all([
+    const [invoiceData, customerData, materialData] = await Promise.all([
       api.get("/invoices"),
       api.get("/customers"),
+      api.get("/material").catch(() => []),
     ]);
     invoices.value = invoiceData;
     customers.value = customerData;
+    materials.value = materialData;
   } catch (error) {
     console.error(error);
     toast("Gagal memuat data invoice");
@@ -147,13 +147,17 @@ async function loadBelumDitagih() {
       `/surat-jalan/belum-ditagih?customerId=${form.value.customerId}`
     );
     belumDitagih.value = list;
-    rows.value = list.map((sj) => ({
-      suratJalanId: sj.id,
-      sj,
-      checked: true,
-      qty: sj.m3,
-      hargaSatuan: suggestedPrice(sj),
-    }));
+    rows.value = list.map((sj) => {
+      const saran = hargaOtomatis(sj);
+      return {
+        suratJalanId: sj.id,
+        sj,
+        checked: true,
+        qty: sj.m3,
+        hargaSatuan: saran.harga,
+        hargaInfo: saran,
+      };
+    });
   } catch (error) {
     toast(error?.message || "Gagal memuat surat jalan yang belum ditagih");
   } finally {
@@ -177,10 +181,20 @@ function closeModal() {
   showModal.value = false;
 }
 
+// Menyalin harga yang baru diubah ke baris lain -- HANYA baris dengan jenis
+// barang yang sama. Material berbeda punya harga sendiri-sendiri (otomatis
+// dari harga customer), jadi tidak boleh ikut tertimpa.
+const kunciBarang = (sj) => String(sj?.jenisBarang || "").trim().toUpperCase();
 function applyHargaToAll(idx) {
-  const harga = rows.value[idx]?.hargaSatuan;
-  if (harga === undefined) return;
-  rows.value.forEach((r) => (r.hargaSatuan = harga));
+  const asal = rows.value[idx];
+  if (!asal || asal.hargaSatuan === undefined) return;
+  rows.value.forEach((r) => {
+    if (kunciBarang(r.sj) === kunciBarang(asal.sj)) {
+      r.hargaSatuan = asal.hargaSatuan;
+      if (r !== asal) r.hargaInfo = null;
+    }
+  });
+  asal.hargaInfo = null; // sudah diubah manual, keterangan sumber tidak berlaku lagi
 }
 
 function validateForm() {
@@ -436,13 +450,14 @@ onMounted(load);
                   class="price-input"
                   @change="applyHargaToAll(idx)"
                 />
+                <div v-if="r.hargaInfo" class="harga-info" :class="`harga-${r.hargaInfo.tone}`">{{ r.hargaInfo.label }}</div>
               </td>
               <td class="num mono">{{ rupiah(Number(r.hargaSatuan || 0) * Number(r.qty || 0)) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div class="price-hint">Isi harga di satu baris untuk menyalin ke semua baris terpilih, atau ubah manual per baris.</div>
+      <div class="price-hint">Harga terisi otomatis dari harga customer per jenis barang. Kalau diubah di satu baris, hanya baris dengan jenis barang yang sama ikut berubah.</div>
 
       <div class="invoice-total-preview">
         <span>Perkiraan Total</span>
@@ -489,6 +504,10 @@ onMounted(load);
 .sj-pick-table th, .sj-pick-table td { white-space: nowrap; }
 .price-input { width: 110px; text-align: right; }
 .price-hint { font-size: 10.5px; color: var(--ink-soft); margin: 6px 0 4px; }
+.harga-info { font-size: 10.5px; line-height: 1.3; margin-top: 3px; max-width: 230px; margin-left: auto; text-align: right; }
+.harga-ok { color: #15803d; }
+.harga-warn { color: #b45309; }
+.harga-none { color: #b91c1c; }
 .empty.small { padding: 18px; font-size: 12px; }
 .invoice-total-preview { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding: 14px 16px; border-radius: 9px; background: #f5f7f9; border: 1px solid var(--line); }
 .invoice-total-preview span { font-size: 12px; color: var(--ink-soft); font-weight: 600; }

@@ -57,6 +57,15 @@ function hitungM3(p, l, t) {
   return Math.round(nilai * 1000) / 1000;
 }
 
+// Dasar uang jalan (default 160.000, bisa diubah di menu Pengaturan).
+// Komisi sopir Cold Diesel = Uang Jalan - dasar ini (mis. 185.000 - 160.000
+// = 25.000). Tronton tetap komisi flat dari master Sopir (default 50.000).
+async function getUangJalanDasar() {
+  const row = await prisma.setting.findUnique({ where: { key: "uangJalanDasar" } });
+  const n = Number(row?.value);
+  return Number.isFinite(n) && n >= 0 && row?.value !== "" ? n : 160000;
+}
+
 // Kalau sopirId diisi (pilih dari master Sopir), nama sopirnya "dicache"
 // juga ke kolom teks `sopir` -- sama pola dengan routes/armada.js.
 async function resolveSopirText(sopirId, sopirManual) {
@@ -120,9 +129,17 @@ async function buildDataFields(body, { forCreate }) {
   // auto-isi dari komisi default sopir tsb (Tronton biasanya 50rb, Cold
   // Diesel biasanya 0 karena memang manual tiap kali). Staf tetap bisa
   // menimpa nilainya sebelum/ setelah disimpan kalau situasinya beda.
-  if (forCreate && sopirId && (uangKomisi === undefined || uangKomisi === "")) {
-    const s = await prisma.sopir.findUnique({ where: { id: sopirId } });
-    if (s) data.uangKomisi = s.komisiDefault;
+  if (forCreate && (uangKomisi === undefined || uangKomisi === "")) {
+    const s = sopirId ? await prisma.sopir.findUnique({ where: { id: sopirId } }) : null;
+    if (s && s.tipe === "TRONTON") {
+      data.uangKomisi = s.komisiDefault;
+    } else if (Number(data.uangJalan) > 0) {
+      // Cold Diesel (atau sopir manual): komisi = uang jalan - dasar
+      const dasar = await getUangJalanDasar();
+      data.uangKomisi = Math.max(Number(data.uangJalan) - dasar, 0);
+    } else if (s) {
+      data.uangKomisi = s.komisiDefault;
+    }
   }
 
   if (tanggal) {

@@ -7,6 +7,8 @@ const router = Router();
 // Nilai default kalau belum pernah diatur
 const DEFAULTS = {
   signerName: "",
+  // Dasar uang jalan (Rp). Komisi sopir Cold Diesel = Uang Jalan - nilai ini.
+  uangJalanDasar: "160000",
 };
 
 router.get("/", async (req, res, next) => {

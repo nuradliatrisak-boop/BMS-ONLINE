@@ -4,6 +4,7 @@ import { scopeDivisi } from "../middleware/auth.js";
 import { buildInvoiceWorkbook } from "../services/invoiceXlsx.js";
 import { DEFAULTS as PRINT_CALIB_DEFAULTS } from "./printCalib.js";
 import { geocodeLokasi } from "../services/geocode.js";
+import { cariHargaCustomer, cariHargaMaterial } from "../services/hargaCustomer.js";
 
 const router = Router();
 
@@ -126,9 +127,15 @@ async function buildItemData(tx, it, lokasiGeo = null) {
   let uangKomisi = it.uangKomisi;
   let uangMakan = it.uangMakan;
 
+  // Harga satuan: pakai yang dikirim frontend kalau > 0. Kalau kosong/0 dan
+  // baris ini dari Surat Jalan, cari otomatis dari harga customer (lalu
+  // master Material sebagai cadangan). Tetap bisa diubah lewat "Update Harga".
+  let hargaSatuan = Number(it.hargaSatuan) || 0;
+
   if (it.suratJalanId) {
     const sj = await tx.suratJalan.findUnique({
       where: { id: it.suratJalanId },
+      include: { armada: true, sopirRef: true },
     });
 
     if (!sj) {
@@ -140,6 +147,17 @@ async function buildItemData(tx, it, lokasiGeo = null) {
     keterangan = keterangan || sj.jenisBarang || sj.tujuan;
     qty = qty ?? sj.m3;
     satuan = satuan || "m3";
+
+    if (!hargaSatuan && sj.customerId) {
+      const prices = await tx.customerPrice.findMany({ where: { customerId: sj.customerId } });
+      const hit = cariHargaCustomer(prices, sj);
+      if (hit?.harga > 0) {
+        hargaSatuan = hit.harga;
+      } else {
+        const materials = await tx.material.findMany({ where: { hargaSatuan: { gt: 0 } } });
+        hargaSatuan = cariHargaMaterial(materials, sj)?.harga || 0;
+      }
+    }
 
     if (belanjaPasir === undefined) belanjaPasir = sj.belanjaPasir;
     if (uangMobil === undefined) uangMobil = sj.uangMobil;
@@ -187,7 +205,7 @@ async function buildItemData(tx, it, lokasiGeo = null) {
     keterangan,
     qty: Number(qty) || 0,
     satuan: satuan || null,
-    hargaSatuan: Number(it.hargaSatuan) || 0,
+    hargaSatuan,
     // Khusus baris SEWA ALAT BERAT (opsional). Kalau diisi, baris ini ikut
     // terhitung di menu "Rekap Sewa Alat" & statistik per kategori alat di
     // Dashboard. Invoice material/armada biasa cukup dibiarkan kosong.

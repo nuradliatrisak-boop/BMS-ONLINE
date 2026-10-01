@@ -526,6 +526,24 @@ model SolarTx {
   @@index([tipe, tanggal])
 }
 
+// BUKU CATATAN SOLAR -- isi buku tulis yang dipegang staf: "si A seharusnya
+// setor X liter pada tanggal T". Dibandingkan dengan SolarTx MASUK (stok REAL
+// yang benar-benar masuk) lewat GET /api/solar-buku/rekonsiliasi untuk
+// menemukan dua jenis kesalahan:
+//   - TIDAK_SETOR   : ada di buku, tapi di real tidak ada setoran.
+//   - TIDAK_DI_BUKU : ada setoran real, tapi tidak tercatat di buku.
+// Tabel ini TIDAK memengaruhi saldo stok (saldo tetap dari SolarTx).
+model SolarBuku {
+  id         String   @id @default(cuid())
+  tanggal    DateTime
+  nama       String
+  liter      Float
+  keterangan String?
+  createdAt  DateTime @default(now())
+
+  @@index([tanggal])
+}
+
 // Cache hasil geocoding (teks lokasi -> koordinat lat/lng) supaya tidak
 // perlu memanggil layanan geocoding (Nominatim/OpenStreetMap) berulang
 // kali untuk teks lokasi yang sama -- juga menghormati batas rate limit

@@ -6,6 +6,7 @@ import { toast } from "../services/toast.js";
 import { printInvoice } from "../services/print.js";
 import MoneyInput from "../components/MoneyInput.vue";
 import { fmtM3, fmtQty } from "../utils/format.js";
+import { sarankanHarga } from "../utils/hargaCustomer.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -91,12 +92,12 @@ async function simpanBiaya(item) {
   }
 }
 const customerPrices = computed(() => invoice.value?.customer?.prices || []);
-function vehicleTypeForSJ(sj) { return `${sj?.armada?.jenis || ""}`.toUpperCase().includes("TRONTON") ? "TRONTON" : "CD"; }
-function suggestedPrice(sj) {
-  const stock = `${sj?.jenisBarang || ""}`.trim().toUpperCase();
-  const vehicle = vehicleTypeForSJ(sj);
-  const p = customerPrices.value.find(x => x.vehicleType === vehicle && `${x.stockName || ""}`.trim().toUpperCase() === stock) || customerPrices.value.find(x => `${x.stockName || ""}`.trim().toUpperCase() === stock);
-  return Number(p?.hargaM3 || 0);
+// Master Material = cadangan kalau customer belum punya harga untuk barang tsb.
+const materialList = ref([]);
+// Harga otomatis per Surat Jalan (harga customer -> master Material), selalu
+// bisa diubah manual. Logika di utils/hargaCustomer.js.
+function hargaOtomatis(sj) {
+  return sarankanHarga(customerPrices.value, materialList.value, sj);
 }
 
 const form = ref({
@@ -325,12 +326,13 @@ async function openAddItemModal() {
     const list = await api.get(
       `/surat-jalan/belum-ditagih?customerId=${invoice.value.customerId}`
     );
-    belumDitagihRows.value = list.map((sj) => ({
-      suratJalanId: sj.id,
-      sj,
-      checked: false,
-      hargaSatuan: suggestedPrice(sj),
-    }));
+    if (!materialList.value.length) {
+      materialList.value = await api.get("/material").catch(() => []);
+    }
+    belumDitagihRows.value = list.map((sj) => {
+      const saran = hargaOtomatis(sj);
+      return { suratJalanId: sj.id, sj, checked: false, hargaSatuan: saran.harga, hargaInfo: saran };
+    });
   } catch (e) {
     toast(e?.message || "Gagal memuat surat jalan yang belum ditagih");
   } finally {
@@ -956,7 +958,10 @@ onMounted(load);
                 <td class="mono">{{ r.sj.no }}</td>
                 <td>{{ r.sj.jenisBarang || "-" }}</td>
                 <td class="num mono">{{ fmtM3(r.sj.m3) }}</td>
-                <td class="num"><MoneyInput v-model="r.hargaSatuan" class="item-harga-input" /></td>
+                <td class="num">
+                  <MoneyInput v-model="r.hargaSatuan" class="item-harga-input" @change="r.hargaInfo = null" />
+                  <div v-if="r.hargaInfo" class="harga-info" :class="`harga-${r.hargaInfo.tone}`">{{ r.hargaInfo.label }}</div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -1420,6 +1425,10 @@ onMounted(load);
 .potongan-row { display: flex; justify-content: space-between; padding: 1px 0; }
 .potongan-total { margin-top: 4px; padding-top: 4px; border-top: 1px dashed #cbd5e1; font-weight: 600; }
 .item-harga-input { width: 110px; text-align: right; }
+.harga-info { font-size: 10.5px; line-height: 1.3; margin-top: 3px; max-width: 220px; margin-left: auto; text-align: right; }
+.harga-ok { color: #15803d; }
+.harga-warn { color: #b45309; }
+.harga-none { color: #b91c1c; }
 .tbl-item { min-width: 640px; }
 .tbl-bayar { min-width: 340px; }
 .net-rincian div { white-space: nowrap; }

@@ -9,6 +9,7 @@ const saving = ref(false);
 
 const form = ref({
   signerName: "",
+  uangJalanDasar: 160000, // komisi Cold Diesel = Uang Jalan - nilai ini
 });
 
 async function load() {
@@ -16,6 +17,8 @@ async function load() {
   try {
     const data = await api.get("/settings");
     form.value.signerName = data.signerName || "";
+    const dasar = Number(data.uangJalanDasar);
+    form.value.uangJalanDasar = Number.isFinite(dasar) && data.uangJalanDasar !== "" ? dasar : 160000;
   } catch (e) {
     toast(e?.message || "Gagal memuat pengaturan");
   } finally {
@@ -26,7 +29,10 @@ async function load() {
 async function submit() {
   saving.value = true;
   try {
-    await api.put("/settings", { signerName: form.value.signerName.trim() });
+    await api.put("/settings", {
+      signerName: form.value.signerName.trim(),
+      uangJalanDasar: Number(form.value.uangJalanDasar) || 0,
+    });
     toast("Pengaturan berhasil disimpan");
   } catch (e) {
     toast(e?.message || "Gagal menyimpan pengaturan");
@@ -125,6 +131,17 @@ onMounted(() => {
       <div class="field" style="max-width: 380px">
         <label>Nama Penandatangan</label>
         <input v-model="form.signerName" placeholder="Contoh: Syamsul" />
+      </div>
+
+      <div class="section-title" style="margin-top: 18px">Komisi Sopir Cold Diesel</div>
+      <p class="settings-desc">
+        Komisi otomatis di Surat Jalan = <strong>Uang Jalan − Dasar Uang Jalan</strong>. Contoh: dasar 160.000,
+        uang jalan 185.000, maka komisi 25.000. Komisi Tronton memakai nilai flat dari menu Sopir (default 50.000).
+        Komisi tetap bisa diedit manual per Surat Jalan.
+      </p>
+      <div class="field" style="max-width: 380px">
+        <label>Dasar Uang Jalan</label>
+        <MoneyInput v-model="form.uangJalanDasar" />
       </div>
 
       <button class="btn btn-primary" :disabled="saving" @click="submit">

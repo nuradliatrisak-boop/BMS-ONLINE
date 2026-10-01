@@ -18,6 +18,7 @@ import SolarMasukTable from "../components/SolarMasukTable.vue";
 import SolarKeluarTable from "../components/SolarKeluarTable.vue";
 import WilayahSelect from "../components/WilayahSelect.vue";
 import RapikanNamaModal from "../components/RapikanNamaModal.vue";
+import SolarRekonsiliasi from "../components/SolarRekonsiliasi.vue";
 import { fmtL, fmtTgl, isoLokal } from "../utils/solarUtil.js";
 import MoneyInput from "../components/MoneyInput.vue";
 
@@ -392,6 +393,7 @@ const showSolarModal = ref(false);
 const editingSolarId = ref(null);
 const solarFileInput = ref(null);
 const solarUploading = ref(false);
+const solarVersi = ref(0); // naik tiap data solar dimuat ulang -> panel "Cek Buku vs Real" ikut segar
 
 const emptySolarForm = (tipe) => ({
   tipe,
@@ -738,6 +740,7 @@ async function loadSolar() {
   try {
     const qs = params.toString();
     solarData.value = await api.get(`/solar-tx${qs ? `?${qs}` : ""}`);
+    solarVersi.value++; // segarkan panel "Cek Buku vs Real"
     loadSolarUtang();
     loadSolarNama();
     loadSolarLokasi();
@@ -843,6 +846,15 @@ function openSolarModal(tipe) {
   solarHapusBukti.value = false;
   if (solarFileInput.value) solarFileInput.value.value = "";
   showSolarModal.value = true;
+}
+
+// Dipakai panel "Cek Buku vs Real": buka form Solar Masuk dengan nama, tanggal,
+// dan liter terisi dari baris buku (untuk mencatat setoran yang terlewat).
+function inputRealDariRekon(r) {
+  openSolarModal("MASUK");
+  solarForm.value.tanggal = r.tanggal;
+  solarForm.value.nama = r.nama;
+  solarForm.value.liter = r.bukuLiter ?? "";
 }
 
 function openSolarEditModal(t) {
@@ -1275,6 +1287,9 @@ onMounted(async () => {
         </div>
         <div class="desc" style="margin-top: 10px">Klik salah satu wilayah untuk memfilter daftar Solar Keluar di bawah.</div>
       </div>
+
+      <!-- ===== CEK BUKU vs REAL ===== -->
+      <SolarRekonsiliasi :versi="solarVersi" @input-real="inputRealDariRekon" />
 
       <!-- ===== CEK SOLAR MASUK ===== -->
       <div v-if="belumDicekList.length" class="card" style="margin-bottom: 20px; border-color: #f3b4b4">

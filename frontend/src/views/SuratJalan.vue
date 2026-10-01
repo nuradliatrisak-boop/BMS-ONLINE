@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch, nextTick } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { printSJ } from "../services/print.js";
@@ -85,6 +85,51 @@ const emptyForm = () => ({
 
 const form = ref(emptyForm());
 
+// ---- Komisi sopir otomatis ----
+// Cold Diesel : komisi = Uang Jalan - dasar uang jalan (default 160.000, bisa
+//               diubah di menu Pengaturan). Mis. 185.000 - 160.000 = 25.000.
+// Tronton     : komisi flat dari master Sopir (default 50.000).
+// Komisi tetap bisa diedit manual; begitu diedit, perhitungan otomatis
+// berhenti sampai tombol "Hitung otomatis" ditekan.
+const uangJalanDasar = ref(160000);
+const komisiManual = ref(false);
+
+const sopirDipilih = computed(() => sopirList.value.find((x) => x.id === form.value.sopirId) || null);
+
+const komisiAuto = computed(() => {
+  const s = sopirDipilih.value;
+  if (s?.tipe === "TRONTON") {
+    const flat = Number(s.komisiDefault) || 50000;
+    return { nilai: flat, teks: `Tronton: komisi flat ${rupiah(flat)}` };
+  }
+  const uj = Number(form.value.uangJalan) || 0;
+  if (uj <= 0) return null;
+  const dasar = uangJalanDasar.value;
+  const nilai = Math.max(uj - dasar, 0);
+  return {
+    nilai,
+    teks:
+      uj > dasar
+        ? `Uang jalan ${rupiah(uj)} − ${rupiah(dasar)} = komisi ${rupiah(nilai)}`
+        : `Uang jalan ${rupiah(uj)} tidak melebihi dasar ${rupiah(dasar)}, komisi ${rupiah(0)}`,
+  };
+});
+
+watch([() => form.value.uangJalan, () => form.value.sopirId, uangJalanDasar], () => {
+  if (komisiManual.value || !komisiAuto.value) return;
+  form.value.uangKomisi = komisiAuto.value.nilai;
+});
+
+function onKomisiEdit(v) {
+  form.value.uangKomisi = v;
+  komisiManual.value = true;
+}
+
+function hitungKomisiOtomatis() {
+  komisiManual.value = false;
+  if (komisiAuto.value) form.value.uangKomisi = komisiAuto.value.nilai;
+}
+
 const jumlahDraft = computed(() => list.value.filter((item) => item.isDraft).length);
 const jumlahTTD = computed(
   () => list.value.filter((item) => item.statusTTD === "LENGKAP").length
@@ -150,13 +195,16 @@ async function load() {
   loading.value = true;
   try {
     const q = searchQuery.value.trim();
-    const [suratJalanData, armadaData, customerData, stockData, sopirData] = await Promise.all([
+    const [suratJalanData, armadaData, customerData, stockData, sopirData, settingData] = await Promise.all([
       api.get(`/surat-jalan${q ? `?search=${encodeURIComponent(q)}` : ""}`),
       api.get("/armada"),
       api.get("/customers"),
       api.get("/stock-master"),
       api.get("/sopir?all=1"),
+      api.get("/settings").catch(() => ({})),
     ]);
+    const dasar = Number(settingData?.uangJalanDasar);
+    if (Number.isFinite(dasar) && dasar >= 0 && settingData?.uangJalanDasar !== "") uangJalanDasar.value = dasar;
     list.value = suratJalanData;
     armadaList.value = armadaData;
     customers.value = customerData;
@@ -172,6 +220,7 @@ async function load() {
 
 function openModal() {
   editingId.value = null;
+  komisiManual.value = false;
   form.value = emptyForm();
   customerSearch.value = "";
   showModal.value = true;
@@ -179,6 +228,7 @@ function openModal() {
 
 function openEdit(sj) {
   editingId.value = sj.id;
+  komisiManual.value = true; // tahan perhitungan otomatis selama form diisi ulang
   customerSearch.value = sj.customer ? `${sj.customer.kode} — ${sj.customer.nama}` : "";
   // Hitung berapa SJ lain yang satu batch (dibuat bareng lewat "Jumlah
   // Surat Jalan" > 1), buat tampilin opsi "terapkan ke semua".
@@ -209,6 +259,11 @@ function openEdit(sj) {
     jumlahSuratJalan: 1,
     isDraft: !!sj.isDraft,
   };
+  // Komisi tersimpan yang BEDA dari hitungan otomatis dianggap diubah manual,
+  // jangan ditimpa. Kalau sama, perhitungan otomatis aktif lagi.
+  nextTick(() => {
+    komisiManual.value = komisiAuto.value ? Number(form.value.uangKomisi) !== komisiAuto.value.nilai : false;
+  });
   showModal.value = true;
 }
 
@@ -258,10 +313,12 @@ function onArmadaChange() {
 // tiap kali) -- HANYA kalau kolom komisi masih kosong/0, supaya tidak
 // menimpa nilai yang sudah diketik manual (situasional).
 function onSopirChange() {
-  const s = sopirList.value.find((x) => x.id === form.value.sopirId);
-  if (s && !form.value.uangKomisi) {
-    form.value.uangKomisi = s.komisiDefault || 0;
-  }
+  // Ganti sopir = hitung ulang komisi (Tronton flat / Cold Diesel dari uang
+  // jalan), kecuali komisi sudah diketik manual.
+  const s = sopirDipilih.value;
+  if (komisiManual.value) return;
+  if (komisiAuto.value) form.value.uangKomisi = komisiAuto.value.nilai;
+  else if (s && !form.value.uangKomisi) form.value.uangKomisi = s.komisiDefault || 0;
 }
 
 function validateForm() {
@@ -729,8 +786,16 @@ onMounted(load);
         </div>
         <div class="field">
           <label>Uang Komisi</label>
-          <MoneyInput v-model="form.uangKomisi" />
+          <MoneyInput :model-value="form.uangKomisi" @update:model-value="onKomisiEdit" />
         </div>
+      </div>
+
+      <div v-if="komisiAuto || komisiManual" class="komisi-hint" :class="{ manual: komisiManual }">
+        <template v-if="komisiManual">
+          Komisi diisi manual: <strong>{{ rupiah(form.uangKomisi) }}</strong>.
+          <button v-if="komisiAuto" type="button" class="komisi-reset" @click="hitungKomisiOtomatis">↺ Hitung otomatis</button>
+        </template>
+        <template v-else>💡 {{ komisiAuto.teks }}. Bisa diubah manual di kolom Uang Komisi.</template>
       </div>
 
       <div class="row row-4">
@@ -831,6 +896,9 @@ onMounted(load);
   color: var(--bms-blue-dark); background: var(--bms-blue-soft);
   border-radius: 999px; padding: 1px 7px;
 }
+.komisi-hint { font-size: 12px; background: #eef7ee; border: 1px solid #cfe8d2; color: #15622c; border-radius: 8px; padding: 7px 10px; margin: -2px 0 12px; }
+.komisi-hint.manual { background: #fff7e6; border-color: #f3dfb0; color: #8a5a00; }
+.komisi-reset { margin-left: 6px; border: none; background: none; color: var(--bms-blue-dark); font-weight: 600; cursor: pointer; font-size: 12px; }
 .field-hint { margin-top: 5px; font-size: 11px; color: var(--ink-soft); line-height: 1.4; }
 
 @media (max-width: 700px) {

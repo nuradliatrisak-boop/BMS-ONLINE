@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import SearchableSelect from "../components/SearchableSelect.vue";
+import MoneyInput from "../components/MoneyInput.vue";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -569,8 +570,8 @@ onMounted(() => {
 
       <div class="field"><label>Nama Stock / Jenis</label><input v-model="priceForm.stockName" placeholder="Terisi otomatis dari kode stock, atau isi manual" /></div>
       <div class="row">
-        <div class="field"><label>Harga</label><input v-model.number="priceForm.hargaM3" type="number" min="0" /></div>
-        <div class="field"><label>Sewa Truck</label><input v-model.number="priceForm.sewaTruk" type="number" min="0" /></div>
+        <div class="field"><label>Harga</label><MoneyInput v-model="priceForm.hargaM3" /></div>
+        <div class="field"><label>Sewa Truck</label><MoneyInput v-model="priceForm.sewaTruk" /></div>
       </div>
       <div class="field"><label>Keterangan / Destination</label><input v-model="priceForm.destination" placeholder="Contoh: HRG COLT/M3 SPLIT JKT" /></div>
       <div class="modal-actions">

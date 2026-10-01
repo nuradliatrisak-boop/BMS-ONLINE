@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { fmtM3 } from "../utils/format.js";
 
 function esc(v) {
   return String(v ?? "")
@@ -185,7 +186,7 @@ export async function printSJ(sjOrList) {
         ${field("jenis", sj.jenisBarang || "", true)}
         ${field("nopol", sj.noPolisi || sj.armada?.nopol || "")}
         ${field("bak", ukuran)}
-        ${field("m3", Number(sj.m3 || 0).toFixed(3))}
+        ${field("m3", fmtM3(sj.m3))}
         ${field("sopir", sj.sopir || sj.armada?.sopir || "")}
         ${field("hormat", signerName)}
       </div>`;
@@ -270,7 +271,7 @@ export async function printInvoice(inv) {
             2
           )} ${Number(sj.tinggi ?? 0).toFixed(2)}`
         : `${it.qty} ${it.satuan || ""}`;
-      const m3Text = sj ? Number(sj.m3 || 0).toFixed(3) : Number(it.qty).toFixed(3);
+      const m3Text = sj ? fmtM3(sj.m3) : fmtM3(it.qty);
 
       return `<tr>
         <td>${i + 1}</td>
@@ -393,7 +394,7 @@ export async function printInvoice(inv) {
           <td colspan="4"></td>
           <td class="left"><b>Total M3</b></td>
           <td></td>
-          <td><b>${totalM3.toFixed(3)}</b></td>
+          <td><b>${fmtM3(totalM3)}</b></td>
           <td></td>
           <td class="num"><b>${rupiah(total)}</b></td>
         </tr>

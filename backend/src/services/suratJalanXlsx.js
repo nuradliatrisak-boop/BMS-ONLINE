@@ -1,5 +1,14 @@
 import ExcelJS from "exceljs";
 
+function fmtM3(n) {
+  const v = Number(n);
+  return (Number.isFinite(v) ? v : 0).toLocaleString("id-ID", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 3,
+  });
+}
+
+
 // ============================================================
 // EXPORT SURAT JALAN KE EXCEL (.xlsx)
 //
@@ -136,7 +145,7 @@ export async function buildSJWorkbook(sjOrList, calib, signerName) {
       jam: sj.jam || "",
       nopol: sj.noPolisi || sj.armada?.nopol || "",
       ukuranBak: ukuran,
-      m3: Number(sj.m3 || 0).toFixed(3),
+      m3: fmtM3(sj.m3),
       sopirNama: sj.sopir || sj.armada?.sopir || "",
       hormatKamiNama: signerName || "",
     };

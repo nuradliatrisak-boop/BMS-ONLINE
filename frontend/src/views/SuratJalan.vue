@@ -4,6 +4,8 @@ import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { printSJ } from "../services/print.js";
 import SearchableSelect from "../components/SearchableSelect.vue";
+import MoneyInput from "../components/MoneyInput.vue";
+import { fmtM3 } from "../utils/format.js";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -545,7 +547,7 @@ onMounted(load);
               </td>
               <td>{{ sj.jenisBarang || "-" }}</td>
               <td class="mono">{{ sj.noPolisi || "-" }}</td>
-              <td class="num mono">{{ Number(sj.m3 || 0).toFixed(3) }}</td>
+              <td class="num mono">{{ fmtM3(sj.m3) }}</td>
               <td>{{ formatTanggal(sj.tanggal) }}</td>
               <td>
                 <span class="badge" :class="statusClass(sj)">{{ statusText(sj) }}</span>
@@ -715,19 +717,19 @@ onMounted(load);
       <div class="row row-4">
         <div class="field">
           <label>Belanja Pasir</label>
-          <input v-model.number="form.belanjaPasir" type="number" min="0" />
+          <MoneyInput v-model="form.belanjaPasir" />
         </div>
         <div class="field">
           <label>Uang Mobil</label>
-          <input v-model.number="form.uangMobil" type="number" min="0" />
+          <MoneyInput v-model="form.uangMobil" />
         </div>
         <div class="field">
           <label>Uang Jalan</label>
-          <input v-model.number="form.uangJalan" type="number" min="0" />
+          <MoneyInput v-model="form.uangJalan" />
         </div>
         <div class="field">
           <label>Uang Komisi</label>
-          <input v-model.number="form.uangKomisi" type="number" min="0" />
+          <MoneyInput v-model="form.uangKomisi" />
         </div>
       </div>
 
@@ -750,7 +752,7 @@ onMounted(load);
         </div>
       </div>
 
-      <div class="m3-hint">M3 = <strong>{{ m3Preview.toFixed(3) }}</strong></div>
+      <div class="m3-hint">M3 = <strong>{{ fmtM3(m3Preview) }}</strong></div>
 
       <label class="draft-check">
         <input v-model="form.isDraft" type="checkbox" />

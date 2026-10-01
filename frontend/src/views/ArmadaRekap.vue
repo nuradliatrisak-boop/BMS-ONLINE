@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { useAuthStore } from "../stores/auth.js";
+import { fmtM3 } from "../utils/format.js";
 
 const BULAN_NAMA = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -193,7 +194,7 @@ onMounted(load);
             <td>{{ groupBy === "nopol" ? (r.sopir || "-") : r.nopol }}</td>
             <td>{{ r.divisi }}</td>
             <td style="text-align:right;">{{ r.ritasi }}</td>
-            <td style="text-align:right;">{{ r.totalM3.toLocaleString("id-ID") }}</td>
+            <td style="text-align:right;">{{ fmtM3(r.totalM3) }}</td>
             <td style="text-align:right;">{{ rupiah(r.pendapatan) }}</td>
             <td style="text-align:right;">{{ rupiah(r.sparepart) }}</td>
             <td
@@ -209,7 +210,7 @@ onMounted(load);
           <tr style="font-weight:700; border-top:2px solid #e5e7eb;">
             <td colspan="3">Total</td>
             <td style="text-align:right;">{{ totalRitasi }}</td>
-            <td style="text-align:right;">{{ totalM3.toLocaleString("id-ID") }}</td>
+            <td style="text-align:right;">{{ fmtM3(totalM3) }}</td>
             <td style="text-align:right;">{{ rupiah(totalPendapatan) }}</td>
             <td style="text-align:right;">{{ rupiah(totalSparepart) }}</td>
             <td

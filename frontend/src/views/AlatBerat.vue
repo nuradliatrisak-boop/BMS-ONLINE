@@ -5,6 +5,7 @@ import { toast } from "../services/toast.js";
 import { parseDivisiExcel } from "../utils/excelImport.js";
 import { exportAlatBeratExcel } from "../utils/excelExport.js";
 import { exportAlatBeratPdf } from "../utils/pdfExport.js";
+import MoneyInput from "../components/MoneyInput.vue";
 
 const BULAN_NAMA = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -497,7 +498,7 @@ onMounted(loadSewaAlat);
       </div>
 
       <div class="row">
-        <div class="field"><label>Nominal</label><input v-model.number="txForm.nominal" type="number" /></div>
+        <div class="field"><label>Nominal</label><MoneyInput v-model="txForm.nominal" /></div>
         <div class="field"><label>Tanggal</label><input v-model="txForm.tanggal" type="date" /></div>
       </div>
 

@@ -4,6 +4,8 @@ import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import DokumenAsetPanel from "../components/DokumenAsetPanel.vue";
 import SearchableSelect from "../components/SearchableSelect.vue";
+import MoneyInput from "../components/MoneyInput.vue";
+import { fmtM3 } from "../utils/format.js";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -539,7 +541,7 @@ onMounted(load);
         <div class="field"><label>Volume (m³)</label><input v-model="form.volume" type="number" step="0.01" /></div>
         <div class="field" style="justify-content:flex-end; display:flex; flex-direction:column;">
           <button v-if="volumeOtomatis !== null" type="button" class="btn btn-ghost btn-sm" @click="pakaiVolumeOtomatis">
-            Pakai hasil P×L×T ({{ volumeOtomatis }} m³)
+            Pakai hasil P×L×T ({{ fmtM3(volumeOtomatis) }} m³)
           </button>
         </div>
       </div>
@@ -676,7 +678,7 @@ onMounted(load);
       </div>
 
       <div class="row">
-        <div class="field"><label>Nominal</label><input v-model.number="txForm.nominal" type="number" /></div>
+        <div class="field"><label>Nominal</label><MoneyInput v-model="txForm.nominal" /></div>
         <div class="field"><label>Tanggal</label><input v-model="txForm.tanggal" type="date" /></div>
       </div>
 

@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
+import MoneyInput from "../components/MoneyInput.vue";
 
 const loading = ref(true);
 const saving = ref(false);
@@ -174,7 +175,7 @@ onMounted(() => {
             <option value="Diatas Air">Diatas Air</option>
           </select>
         </div>
-        <div class="field"><label>Nominal</label><input v-model.number="uangMakanForm.nominal" type="number" min="0" /></div>
+        <div class="field"><label>Nominal</label><MoneyInput v-model="uangMakanForm.nominal" /></div>
       </div>
       <div style="display:flex; gap:8px;">
         <button class="btn btn-primary btn-sm" @click="submitUangMakan">{{ editingUangMakanId ? "Simpan Perubahan" : "+ Tambah Rate" }}</button>

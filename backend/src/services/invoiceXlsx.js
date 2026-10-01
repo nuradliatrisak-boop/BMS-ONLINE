@@ -1,5 +1,14 @@
 import ExcelJS from "exceljs";
 
+function fmtM3(n) {
+  const v = Number(n);
+  return (Number.isFinite(v) ? v : 0).toLocaleString("id-ID", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 3,
+  });
+}
+
+
 // ============================================================
 // EXPORT INVOICE KE EXCEL (.xlsx)
 //
@@ -748,6 +757,9 @@ export async function buildInvoiceWorkbook(
         }
       );
 
+      // M3 -- minimal 2 angka di belakang koma (3,60), maksimal 3 (6,498)
+      row.getCell(9).numFmt = '0.00#';
+
       // Harga
       row.getCell(10).numFmt =
         '"Rp" #,##0';
@@ -837,7 +849,7 @@ export async function buildInvoiceWorkbook(
     "",
     "",
     "",
-    totalM3.toFixed(3),
+    fmtM3(totalM3),
     "",
     total,
   ]);

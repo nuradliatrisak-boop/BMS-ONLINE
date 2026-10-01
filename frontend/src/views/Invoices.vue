@@ -4,6 +4,8 @@ import { useRouter } from "vue-router";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import SearchableSelect from "../components/SearchableSelect.vue";
+import MoneyInput from "../components/MoneyInput.vue";
+import { fmtM3 } from "../utils/format.js";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -427,12 +429,10 @@ onMounted(load);
               <td>{{ formatTanggal(r.sj.tanggal) }}</td>
               <td>{{ r.sj.jenisBarang || "-" }}</td>
               <td class="mono">{{ r.sj.noPolisi || "-" }}</td>
-              <td class="num mono">{{ Number(r.qty || 0).toFixed(3) }}</td>
+              <td class="num mono">{{ fmtM3(r.qty) }}</td>
               <td class="num">
-                <input
-                  v-model.number="r.hargaSatuan"
-                  type="number"
-                  min="0"
+                <MoneyInput
+                  v-model="r.hargaSatuan"
                   class="price-input"
                   @change="applyHargaToAll(idx)"
                 />

@@ -4,6 +4,8 @@ import { useRoute, useRouter } from "vue-router";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { printInvoice } from "../services/print.js";
+import MoneyInput from "../components/MoneyInput.vue";
+import { fmtM3, fmtQty } from "../utils/format.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -25,6 +27,37 @@ const itemEdits = ref({}); // { [itemId]: { hargaSatuan, qty } }
 const biayaEdits = ref({}); // { [itemId]: { belanjaPasir, uangMobil, uangJalan, uangKomisi, uangMakan } }
 const unitAlatList = ref([]); // master AlatBeratUnit (buat datalist saran nama unit, samain sama Tensiv)
 const openBiayaId = ref(null); // id item yang lagi dibuka rincian biayanya
+
+// Pos potongan internal per baris invoice. Dipakai buat nampilin rincian
+// "Net" supaya angka Net tidak tiba-tiba lebih kecil dari Subtotal tanpa
+// keterangan -- tiap potongan (termasuk Uang Jalan) tampil dengan namanya.
+const POS_POTONGAN = [
+  { key: "belanjaPasir", label: "Belanja Pasir" },
+  { key: "uangMobil", label: "Uang Mobil" },
+  { key: "uangJalan", label: "Uang Jalan" },
+  { key: "uangKomisi", label: "Uang Komisi" },
+  { key: "uangMakan", label: "Uang Makan" },
+];
+
+function potonganItem(it) {
+  return POS_POTONGAN
+    .map((p) => ({ ...p, nilai: Number(it[p.key] || 0) }))
+    .filter((p) => p.nilai > 0);
+}
+
+const ringkasPotongan = computed(() => {
+  const items = invoice.value?.items || [];
+  return POS_POTONGAN
+    .map((p) => ({
+      ...p,
+      nilai: items.reduce((sum, it) => sum + Number(it[p.key] || 0), 0),
+    }))
+    .filter((p) => p.nilai > 0);
+});
+
+const totalPotongan = computed(() =>
+  ringkasPotongan.value.reduce((sum, p) => sum + p.nilai, 0)
+);
 
 function toggleBiaya(itemId) {
   openBiayaId.value = openBiayaId.value === itemId ? null : itemId;
@@ -662,15 +695,13 @@ onMounted(load);
                 </td>
 
                 <td class="num mono">
-                  {{ it.qty }} {{ it.satuan }}
+                  {{ fmtQty(it.qty, it.satuan) }} {{ it.satuan }}
                 </td>
 
                 <td class="num">
-                  <input
+                  <MoneyInput
                     v-if="itemEdits[it.id]"
-                    v-model.number="itemEdits[it.id].hargaSatuan"
-                    type="number"
-                    min="0"
+                    v-model="itemEdits[it.id].hargaSatuan"
                     class="item-harga-input"
                   />
                 </td>
@@ -680,7 +711,15 @@ onMounted(load);
                 </td>
 
                 <td class="num mono">
-                  {{ rupiah(it.net) }}
+                  <div>{{ rupiah(it.net) }}</div>
+                  <!-- Rincian potongan baris ini (Belanja Pasir, Uang Mobil,
+                       Uang Jalan, Komisi, Uang Makan) biar Net tidak
+                       tiba-tiba berkurang tanpa keterangan. -->
+                  <div v-if="potonganItem(it).length" class="net-rincian">
+                    <div v-for="p in potonganItem(it)" :key="p.key">
+                      − {{ p.label }} {{ rupiah(p.nilai) }}
+                    </div>
+                  </div>
                 </td>
 
                 <td class="item-actions">
@@ -698,25 +737,25 @@ onMounted(load);
                     <div class="row row-4">
                       <div class="field">
                         <label>Belanja Pasir</label>
-                        <input v-model.number="biayaEdits[it.id].belanjaPasir" type="number" min="0" />
+                        <MoneyInput v-model="biayaEdits[it.id].belanjaPasir" />
                       </div>
                       <div class="field">
                         <label>Uang Mobil</label>
-                        <input v-model.number="biayaEdits[it.id].uangMobil" type="number" min="0" />
+                        <MoneyInput v-model="biayaEdits[it.id].uangMobil" />
                       </div>
                       <div class="field">
                         <label>Uang Jalan</label>
-                        <input v-model.number="biayaEdits[it.id].uangJalan" type="number" min="0" />
+                        <MoneyInput v-model="biayaEdits[it.id].uangJalan" />
                       </div>
                       <div class="field">
                         <label>Uang Komisi</label>
-                        <input v-model.number="biayaEdits[it.id].uangKomisi" type="number" min="0" />
+                        <MoneyInput v-model="biayaEdits[it.id].uangKomisi" />
                       </div>
                     </div>
                     <div class="row" v-if="it.kategoriAlat">
                       <div class="field">
                         <label>Uang Makan (Alat Berat)</label>
-                        <input v-model.number="biayaEdits[it.id].uangMakan" type="number" min="0" />
+                        <MoneyInput v-model="biayaEdits[it.id].uangMakan" />
                       </div>
                     </div>
                     <button class="btn btn-sm btn-primary" @click="simpanBiaya(it)">Simpan Biaya</button>
@@ -739,6 +778,22 @@ onMounted(load);
             <span class="mono">
               {{ rupiah(invoice.total) }}
             </span>
+          </div>
+
+          <!-- Rincian potongan seluruh invoice (internal): Total - potongan = Net -->
+          <div v-if="ringkasPotongan.length" class="potongan-box">
+            <div
+              v-for="p in ringkasPotongan"
+              :key="p.key"
+              class="potongan-row"
+            >
+              <span>− {{ p.label }}</span>
+              <span class="mono">{{ rupiah(p.nilai) }}</span>
+            </div>
+            <div class="potongan-row potongan-total">
+              <span>Total Potongan</span>
+              <span class="mono">{{ rupiah(totalPotongan) }}</span>
+            </div>
           </div>
 
           <div
@@ -896,8 +951,8 @@ onMounted(load);
                 <td><input type="checkbox" v-model="r.checked" /></td>
                 <td class="mono">{{ r.sj.no }}</td>
                 <td>{{ r.sj.jenisBarang || "-" }}</td>
-                <td class="num mono">{{ Number(r.sj.m3 || 0).toFixed(3) }}</td>
-                <td class="num"><input v-model.number="r.hargaSatuan" type="number" min="0" class="item-harga-input" /></td>
+                <td class="num mono">{{ fmtM3(r.sj.m3) }}</td>
+                <td class="num"><MoneyInput v-model="r.hargaSatuan" class="item-harga-input" /></td>
               </tr>
             </tbody>
           </table>
@@ -944,7 +999,7 @@ onMounted(load);
                 <td>{{ r.ts.unitAlat || "-" }}</td>
                 <td>{{ r.ts.kategoriAlat || "-" }}</td>
                 <td class="num mono">{{ r.ts.totalJamKerja }}</td>
-                <td class="num"><input v-model.number="r.hargaSatuan" type="number" min="0" class="item-harga-input" /></td>
+                <td class="num"><MoneyInput v-model="r.hargaSatuan" class="item-harga-input" /></td>
               </tr>
             </tbody>
           </table>
@@ -1013,7 +1068,7 @@ onMounted(load);
           </div>
           <div class="field">
             <label>Harga / Jam</label>
-            <input v-model.number="manualItem.hargaSatuan" type="number" min="0" />
+            <MoneyInput v-model="manualItem.hargaSatuan" />
           </div>
           <div class="field">
             <label>Subtotal</label>
@@ -1025,7 +1080,7 @@ onMounted(load);
         <div class="row" v-else>
           <div class="field">
             <label>Biaya Mobilisasi</label>
-            <input v-model.number="manualItem.hargaSatuan" type="number" min="0" />
+            <MoneyInput v-model="manualItem.hargaSatuan" />
           </div>
         </div>
 
@@ -1072,10 +1127,8 @@ onMounted(load);
 
           <div class="field">
             <label>Nominal</label>
-            <input
-              v-model.number="form.nominal"
-              type="number"
-              min="1"
+            <MoneyInput
+              v-model="form.nominal"
             />
           </div>
         </div>
@@ -1358,6 +1411,10 @@ onMounted(load);
 
 <style scoped>
 .item-sj-sub { font-size: 10.5px; color: var(--ink-soft); }
+.net-rincian { margin-top: 3px; font-size: 10.5px; font-weight: 400; color: var(--ink-soft); line-height: 1.45; }
+.potongan-box { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--bms-blue-soft, #f3f6fb); font-size: 12.5px; color: var(--ink-soft, #8a94a3); }
+.potongan-row { display: flex; justify-content: space-between; padding: 1px 0; }
+.potongan-total { margin-top: 4px; padding-top: 4px; border-top: 1px dashed #cbd5e1; font-weight: 600; }
 .item-harga-input { width: 110px; text-align: right; }
 .item-actions { display: flex; gap: 6px; white-space: nowrap; }
 .empty.small { padding: 18px; font-size: 12px; }

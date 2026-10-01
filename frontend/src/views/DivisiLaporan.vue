@@ -19,6 +19,7 @@ import SolarKeluarTable from "../components/SolarKeluarTable.vue";
 import WilayahSelect from "../components/WilayahSelect.vue";
 import RapikanNamaModal from "../components/RapikanNamaModal.vue";
 import { fmtL, fmtTgl, isoLokal } from "../utils/solarUtil.js";
+import MoneyInput from "../components/MoneyInput.vue";
 
 const route = useRoute();
 const tab = ref(route.query.tab === "solar" ? "solar" : "laba-rugi"); // "laba-rugi" | "solar"
@@ -1579,7 +1580,7 @@ onMounted(async () => {
 
       <div v-if="selectedKelompok?.hasQty" class="row">
         <div class="field"><label>Qty</label><input v-model.number="form.qty" type="number" placeholder="mis. jumlah hari" /></div>
-        <div class="field"><label>Harga Satuan</label><input v-model.number="form.hargaSatuan" type="number" /></div>
+        <div class="field"><label>Harga Satuan</label><MoneyInput v-model="form.hargaSatuan" /></div>
       </div>
       <div v-if="selectedKelompok?.hasQty && nominalOtomatis !== null" class="field">
         <label>Nominal (otomatis)</label>
@@ -1588,7 +1589,7 @@ onMounted(async () => {
 
       <div class="field" v-if="!selectedKelompok?.hasQty || nominalOtomatis === null">
         <label>Nominal</label>
-        <input v-model.number="form.nominal" type="number" />
+        <MoneyInput v-model="form.nominal" />
       </div>
 
       <div class="row">

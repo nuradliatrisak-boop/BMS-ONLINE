@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
+import MoneyInput from "../components/MoneyInput.vue";
 
 // Tronton = komisi biasanya flat, tapi tetap bisa situasional per SJ.
 // Cold Diesel = komisi diinput manual tiap kali (kadang diambil per hari),
@@ -305,7 +306,7 @@ onMounted(load);
         </div>
         <div class="field">
           <label>Komisi Default</label>
-          <input v-model.number="form.komisiDefault" type="number" min="0" />
+          <MoneyInput v-model="form.komisiDefault" />
           <div class="field-hint" v-if="form.tipe === 'COLD_DIESEL'">
             Cold Diesel biasanya komisinya manual tiap kali (kadang diambil per hari) — boleh dibiarkan 0
             kalau memang tidak ada nilai flat, nanti diisi langsung saat bikin Surat Jalan.

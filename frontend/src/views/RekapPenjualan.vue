@@ -3,6 +3,8 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import SearchableSelect from "../components/SearchableSelect.vue";
+import MoneyInput from "../components/MoneyInput.vue";
+import { fmtM3 } from "../utils/format.js";
 
 // ---- Penyimpanan lokal: pilihan filter & orientasi tidak hilang saat refresh ----
 const FILTER_KEY = "bms.rekapPenjualan.ui";
@@ -741,7 +743,7 @@ onBeforeUnmount(() => {
         <div v-if="deposit.aktif" class="row">
           <div class="field"><label>Tanggal Deposit</label><input v-model="deposit.tanggal" type="date" /></div>
           <div class="field"><label>No. Rekap Sebelumnya</label><input v-model="deposit.noRef" placeholder="BM-PM 384" /></div>
-          <div class="field"><label>Nominal Sisa Deposit</label><input v-model.number="deposit.nominal" type="number" min="0" /></div>
+          <div class="field"><label>Nominal Sisa Deposit</label><MoneyInput v-model="deposit.nominal" /></div>
         </div>
       </div>
       <div class="row" v-if="headerRecipientOptions.length">
@@ -767,7 +769,7 @@ onBeforeUnmount(() => {
     </div>
     <div v-else class="rekap-summary grid g3">
       <div class="stat"><div class="lbl">JUMLAH BARIS</div><div class="val">{{ summary.count }}</div></div>
-      <div class="stat"><div class="lbl">TOTAL VOLUME</div><div class="val">{{ Number(summary.jumlah || 0).toLocaleString("id-ID") }}</div></div>
+      <div class="stat"><div class="lbl">TOTAL VOLUME</div><div class="val">{{ fmtM3(summary.jumlah || 0) }}</div></div>
       <div class="stat"><div class="lbl">TOTAL TAGIHAN</div><div class="val">{{ rupiah(summary.total) }}</div></div>
     </div>
 
@@ -814,7 +816,7 @@ onBeforeUnmount(() => {
               <td>{{ idx + 1 }}</td>
               <td>{{ g.penerima }}</td>
               <td class="num">{{ g.count }}</td>
-              <td class="num">{{ Number(g.jumlah).toLocaleString("id-ID") }}</td>
+              <td class="num">{{ fmtM3(g.jumlah) }}</td>
               <td class="num">{{ Math.round(g.total).toLocaleString("id-ID") }}</td>
             </tr>
           </tbody>
@@ -822,7 +824,7 @@ onBeforeUnmount(() => {
             <tr>
               <td colspan="2"><b>TOTAL</b></td>
               <td class="num"><b>{{ summary.count }}</b></td>
-              <td class="num"><b>{{ Number(summary.jumlah || 0).toLocaleString("id-ID") }}</b></td>
+              <td class="num"><b>{{ fmtM3(summary.jumlah || 0) }}</b></td>
               <td class="num"><b>{{ Math.round(summary.total || 0).toLocaleString("id-ID") }}</b></td>
             </tr>
           </tfoot>
@@ -846,7 +848,7 @@ onBeforeUnmount(() => {
               <td class="num">{{ r.panjang.toFixed(2) }}</td>
               <td class="num">{{ r.lebar.toFixed(2) }}</td>
               <td class="num">{{ r.tinggi.toFixed(2) }}</td>
-              <td class="num">{{ Number(r.jumlah).toLocaleString("id-ID") }}</td>
+              <td class="num">{{ fmtM3(r.jumlah) }}</td>
               <td class="num">{{ Math.round(r.harga).toLocaleString("id-ID") }}</td>
               <td class="num">{{ Math.round(r.total).toLocaleString("id-ID") }}</td>
               <td class="no-print aksi"><button class="btn btn-sm btn-ghost" @click="openEdit(r)">Edit</button> <button class="btn btn-sm btn-danger" @click="removeRow(r.id)">Hapus</button></td>
@@ -911,11 +913,11 @@ onBeforeUnmount(() => {
         <tbody>
           <tr v-for="(g, idx) in groups" :key="g.penerima">
             <td>{{ idx + 1 }}</td><td>{{ formatTanggal(g.tanggalTerakhir) }}</td><td class="left">{{ g.penerima }}</td>
-            <td>{{ g.count }}</td><td>{{ Number(g.jumlah).toLocaleString("id-ID") }}</td><td>{{ Math.round(g.total).toLocaleString("id-ID") }}</td>
+            <td>{{ g.count }}</td><td>{{ fmtM3(g.jumlah) }}</td><td>{{ Math.round(g.total).toLocaleString("id-ID") }}</td>
           </tr>
         </tbody>
         <tfoot>
-          <tr><td colspan="3" class="total-label">TOTAL TAGIHAN</td><td>{{ summary.count }}</td><td>{{ Number(summary.jumlah || 0).toLocaleString("id-ID") }}</td><td>{{ Math.round(summary.total || 0).toLocaleString("id-ID") }}</td></tr>
+          <tr><td colspan="3" class="total-label">TOTAL TAGIHAN</td><td>{{ summary.count }}</td><td>{{ fmtM3(summary.jumlah || 0) }}</td><td>{{ Math.round(summary.total || 0).toLocaleString("id-ID") }}</td></tr>
         </tfoot>
       </table>
 
@@ -929,11 +931,11 @@ onBeforeUnmount(() => {
         <tbody>
           <tr v-for="(r, idx) in rows" :key="r.id">
             <td>{{ idx + 1 }}</td><td>{{ formatTanggal(r.tanggal) }}</td><td>{{ r.noSuratJalan }}</td><td>{{ r.noPolisi }}</td><td>{{ r.jenisBarang }}</td>
-            <td>{{ r.panjang.toFixed(2) }}</td><td>{{ r.lebar.toFixed(2) }}</td><td>{{ r.tinggi.toFixed(2) }}</td><td>{{ Number(r.jumlah).toLocaleString("id-ID") }}</td><td>{{ Math.round(r.harga).toLocaleString("id-ID") }}</td><td>{{ Math.round(r.total).toLocaleString("id-ID") }}</td>
+            <td>{{ r.panjang.toFixed(2) }}</td><td>{{ r.lebar.toFixed(2) }}</td><td>{{ r.tinggi.toFixed(2) }}</td><td>{{ fmtM3(r.jumlah) }}</td><td>{{ Math.round(r.harga).toLocaleString("id-ID") }}</td><td>{{ Math.round(r.total).toLocaleString("id-ID") }}</td>
           </tr>
         </tbody>
         <tfoot>
-          <tr><td colspan="8" class="total-label">TOTAL</td><td>{{ Number(summary.jumlah || 0).toLocaleString("id-ID") }}</td><td></td><td>{{ Math.round(summary.total || 0).toLocaleString("id-ID") }}</td></tr>
+          <tr><td colspan="8" class="total-label">TOTAL</td><td>{{ fmtM3(summary.jumlah || 0) }}</td><td></td><td>{{ Math.round(summary.total || 0).toLocaleString("id-ID") }}</td></tr>
         </tfoot>
       </table>
 
@@ -989,7 +991,7 @@ onBeforeUnmount(() => {
         <div class="field"><label>T</label><input v-model.number="form.tinggi" type="number" step="0.01" /></div>
         <div class="field"><label>Jumlah</label><input v-model.number="form.jumlah" type="number" step="0.001" /></div>
       </div>
-      <div class="field"><label>Harga</label><input v-model.number="form.harga" type="number" min="0" /></div>
+      <div class="field"><label>Harga</label><MoneyInput v-model="form.harga" /></div>
       <div class="volume-hint">Volume dari P × L × T: <strong>{{ hitungVolume() || 0 }}</strong> — jumlah dapat diisi sesuai data aktual surat jalan.</div>
 
       <div class="modal-actions">

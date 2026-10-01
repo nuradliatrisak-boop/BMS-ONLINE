@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
+import MoneyInput from "../components/MoneyInput.vue";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -341,10 +342,8 @@ onMounted(() => {
         <div class="field">
           <label>Harga Satuan</label>
 
-          <input
-            v-model.number="form.hargaSatuan"
-            type="number"
-            min="0"
+          <MoneyInput
+            v-model="form.hargaSatuan"
             placeholder="0"
           />
         </div>

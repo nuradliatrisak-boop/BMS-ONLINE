@@ -663,7 +663,8 @@ onMounted(load);
             </div>
           </div>
 
-          <table>
+          <div class="table-wrap">
+          <table class="tbl-item">
             <thead>
               <tr>
                 <th>Keterangan</th>
@@ -765,6 +766,7 @@ onMounted(load);
               </template>
             </tbody>
           </table>
+          </div>
 
           <div
             style="
@@ -852,7 +854,8 @@ onMounted(load);
             Belum ada pembayaran.
           </div>
 
-          <table v-else>
+          <div v-else class="table-wrap">
+          <table class="tbl-bayar">
             <thead>
               <tr>
                 <th>Tanggal</th>
@@ -880,6 +883,7 @@ onMounted(load);
               </tr>
             </tbody>
           </table>
+        </div>
 
           <button
             class="btn btn-gold"
@@ -1416,6 +1420,9 @@ onMounted(load);
 .potongan-row { display: flex; justify-content: space-between; padding: 1px 0; }
 .potongan-total { margin-top: 4px; padding-top: 4px; border-top: 1px dashed #cbd5e1; font-weight: 600; }
 .item-harga-input { width: 110px; text-align: right; }
+.tbl-item { min-width: 640px; }
+.tbl-bayar { min-width: 340px; }
+.net-rincian div { white-space: nowrap; }
 .item-actions { display: flex; gap: 6px; white-space: nowrap; }
 .empty.small { padding: 18px; font-size: 12px; }
 .biaya-row td { padding: 0; border-top: none; }

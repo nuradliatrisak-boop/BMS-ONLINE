@@ -721,3 +721,95 @@ export function printGrid(w, h) {
     <div class="grid">${v}${g}</div>
   `);
 }
+
+// ============================================================
+// CETAK BUKU KOMISI SOPIR (menu Sopir) -- satu sopir, satu periode.
+// ============================================================
+export function printSopir({ sopir, periodeLabel, summary, rows }) {
+  if (!sopir) return;
+  const origin = window.location.origin;
+  const kopSuratUrl = `${origin}/letterhead/kop-surat.jpeg`;
+  const watermarkUrl = `${origin}/letterhead/bm-logo-transparent.png`;
+  const tipe = sopir.tipe === "COLD_DIESEL" ? "Cold Diesel" : sopir.tipe === "TRONTON" ? "Tronton" : sopir.tipe;
+
+  const statusText = (r) => {
+    if (!r.selesai) return "Belum selesai";
+    if (r.komisiDiambil) return `Sudah diambil${r.komisiDiambilAt ? " " + fmtDate(r.komisiDiambilAt) : ""}`;
+    return "Belum diambil";
+  };
+  const selesaiTotal = rows.filter((r) => r.selesai).reduce((s, r) => s + Number(r.uangKomisi || 0), 0);
+
+  const bodyRows = rows.length
+    ? rows
+        .map(
+          (r, i) => `
+        <tr${r.selesai ? "" : ' class="muted"'}>
+          <td>${i + 1}</td>
+          <td>${esc(fmtDate(r.tanggal))}</td>
+          <td>${esc(r.no)}</td>
+          <td>${esc(r.noPolisi || "-")}</td>
+          <td>${esc(r.tujuan || r.penerima || "-")}</td>
+          <td>${esc(r.jenisBarang || "-")}</td>
+          <td class="num">${rupiah(r.uangKomisi)}</td>
+          <td>${esc(statusText(r))}</td>
+        </tr>`
+        )
+        .join("")
+    : `<tr><td colspan="8" class="empty">Belum ada perjalanan pada periode ini.</td></tr>`;
+
+  openPrint(`
+    <style>
+      @page { size: A4; margin: 14mm; }
+      * { box-sizing: border-box; }
+      body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; }
+      .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 65%; max-width: 400px; opacity: 0.07; z-index: -1; pointer-events: none; }
+      .head { text-align: center; margin-bottom: 12px; }
+      .kop { width: 100%; max-height: 90px; object-fit: contain; margin-bottom: 6px; }
+      .title { font-weight: 700; margin-top: 2px; }
+      .period { color: #555; margin-top: 2px; }
+      .info { margin: 8px 0; line-height: 1.6; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #999; padding: 3px 6px; font-size: 11px; vertical-align: top; }
+      th { background: #f0f0f0; text-align: left; }
+      .num { text-align: right; white-space: nowrap; }
+      .empty { text-align: center; color: #777; padding: 8px; }
+      .muted td { color: #777; }
+      tfoot td { background: #fafafa; font-weight: 700; }
+      .sum { margin-bottom: 10px; }
+      .sum th, .sum td { text-align: center; }
+      tr { page-break-inside: avoid; }
+    </style>
+    <img class="watermark" src="${watermarkUrl}" alt="" />
+    <div class="head">
+      <img class="kop" src="${kopSuratUrl}" alt="PT. Bintang Muara Sejati" />
+      <div class="title">BUKU KOMISI SOPIR</div>
+      <div class="period">Periode ${esc(periodeLabel)}</div>
+    </div>
+    <div class="info">
+      <b>Nama:</b> ${esc(sopir.nama)}<br />
+      <b>Tipe:</b> ${esc(tipe)}${sopir.noHp ? ` &nbsp;|&nbsp; <b>No HP:</b> ${esc(sopir.noHp)}` : ""}
+    </div>
+    <table class="sum">
+      <thead><tr><th>Trip selesai</th><th>Total komisi</th><th>Sudah diambil</th><th>Belum diambil</th></tr></thead>
+      <tbody><tr>
+        <td>${summary.tripSelesai}</td>
+        <td>${rupiah(summary.totalKomisi)}</td>
+        <td>${rupiah(summary.sudahDiambil)}</td>
+        <td>${rupiah(summary.belumDiambil)}</td>
+      </tr></tbody>
+    </table>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28px">No</th><th>Tanggal</th><th>No Surat Jalan</th><th>No Polisi</th>
+          <th>Tujuan</th><th>Barang</th><th class="num">Komisi</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>${bodyRows}</tbody>
+      <tfoot>
+        <tr><td colspan="6">TOTAL KOMISI (tugas selesai)</td><td class="num">${rupiah(selesaiTotal)}</td><td></td></tr>
+      </tfoot>
+    </table>
+  `);
+}

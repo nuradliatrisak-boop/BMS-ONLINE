@@ -20,7 +20,10 @@ const divisiOptions = computed(() =>
 );
 
 const divisi = ref(auth.isAdmin ? "Semua Divisi" : auth.user?.divisi);
-const bulan = ref(new Date().toISOString().slice(0, 7));
+// Pakai tanggal lokal (WIB), bukan toISOString() yang UTC -- kalau tidak, jam
+// 00:00-07:00 di tanggal 1 akan membuka bulan SEBELUMNYA.
+const _now = new Date();
+const bulan = ref(`${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}`);
 const groupBy = ref("nopol"); // "nopol" | "sopir"
 const data = ref(null);
 const loading = ref(false);
@@ -42,68 +45,109 @@ const bulanLabel = computed(() => {
   return `${BULAN_NAMA[Number(m) - 1]} ${y}`;
 });
 
-// Baris ditampilkan per Nopol (default, sesuai sheet REKAP) atau digabung per
-// Sopir kalau satu sopir memegang lebih dari satu kendaraan dalam bulan itu.
+// Baris ditampilkan per Nopol (default, sesuai sheet REKAP) atau per Sopir.
+// Mode Sopir: Ritasi, m3 & Komisi dihitung dari Surat Jalan (melekat ke ORANG
+// sopirnya, walau dia pindah-pindah kendaraan); Pendapatan/Sparepart diambil
+// dari kendaraan yang dipegang sopir itu di data Armada.
 const rows = computed(() => {
   if (!data.value) return [];
   const showAll = !auth.isAdmin || divisi.value === "Semua Divisi";
   const q = search.value.trim().toLowerCase();
-  const base = data.value.rekap.filter((r) => {
-    if (!(showAll || r.divisi === divisi.value)) return false;
-    if (filterJenis.value !== "Semua" && r.jenis !== filterJenis.value) return false;
-    if (!q) return true;
-    return (r.nopol || "").toLowerCase().includes(q) || (r.sopir || "").toLowerCase().includes(q);
-  });
+  const cocokDivisi = (r) => showAll || r.divisi === divisi.value;
 
-  if (groupBy.value === "nopol") return base;
+  if (groupBy.value === "nopol") {
+    return data.value.rekap
+      .filter((r) => {
+        if (!cocokDivisi(r)) return false;
+        if (filterJenis.value !== "Semua" && r.jenis !== filterJenis.value) return false;
+        if (!q) return true;
+        return (r.nopol || "").toLowerCase().includes(q) || (r.sopir || "").toLowerCase().includes(q);
+      })
+      .map((r) => ({ ...r, komisi: 0, komisiBelum: 0 }));
+  }
 
+  // --- per Sopir
   const map = new Map();
-  for (const r of base) {
-    const key = r.sopir || "(Tanpa Sopir)";
+  const ambil = (key, nama) => {
     if (!map.has(key)) {
       map.set(key, {
-        nopol: "-",
-        sopir: key,
-        jenis: "",
-        divisi: r.divisi,
+        sopir: nama || "(Tanpa Sopir)",
+        divisiSet: new Set(),
+        nopolSet: new Set(),
         ritasi: 0,
         totalM3: 0,
+        komisi: 0,
+        komisiBelum: 0,
         pendapatan: 0,
         sparepart: 0,
         hasilBersih: 0,
-        _nopolList: [],
       });
     }
-    const acc = map.get(key);
-    acc.ritasi += r.ritasi;
-    acc.totalM3 += r.totalM3;
+    return map.get(key);
+  };
+
+  // uang kendaraan yang dipegang sopir (sesuai filter Divisi)
+  for (const r of data.value.rekap) {
+    if (!cocokDivisi(r)) continue;
+    if (!r.sopirKey || r.sopirKey === "-") {
+      // kendaraan tanpa sopir: tampil hanya kalau memang ada angkanya
+      if (!(r.ritasi || r.pendapatan || r.sparepart)) continue;
+    }
+    const acc = ambil(r.sopirKey || "-", r.sopir);
+    acc.divisiSet.add(r.divisi);
+    acc.nopolSet.add(r.nopol);
     acc.pendapatan += r.pendapatan;
     acc.sparepart += r.sparepart;
     acc.hasilBersih += r.hasilBersih;
-    acc._nopolList.push(r.nopol);
   }
-  return Array.from(map.values()).map((r) => ({ ...r, nopol: r._nopolList.join(", ") }));
+  // ritasi, m3 & komisi dari Surat Jalan
+  for (const p of data.value.perSopir || []) {
+    // kalau divisi dibatasi, hanya sopir yang punya kendaraan di divisi itu
+    if (!showAll && !map.has(p.sopirKey)) continue;
+    const acc = ambil(p.sopirKey, p.sopir);
+    acc.ritasi = p.ritasi;
+    acc.totalM3 = p.totalM3;
+    acc.komisi = p.komisi;
+    acc.komisiBelum = p.komisiBelumDiambil;
+    (p.nopol || []).forEach((n) => acc.nopolSet.add(n));
+  }
+
+  return Array.from(map.values())
+    .map((r) => ({
+      ...r,
+      divisi: Array.from(r.divisiSet).join(", ") || "-",
+      nopol: Array.from(r.nopolSet).join(", ") || "-",
+    }))
+    .filter((r) => !q || r.sopir.toLowerCase().includes(q) || r.nopol.toLowerCase().includes(q))
+    .sort((x, y) => x.sopir.localeCompare(y.sopir));
 });
 
 const totalRitasi = computed(() => rows.value.reduce((s, r) => s + r.ritasi, 0));
 const totalM3 = computed(() => rows.value.reduce((s, r) => s + r.totalM3, 0));
+const totalKomisi = computed(() => rows.value.reduce((s, r) => s + (r.komisi || 0), 0));
+const tidakCocok = computed(() => data.value?.tidakCocok || null);
+const adaTidakCocok = computed(() => !!(tidakCocok.value && (tidakCocok.value.sjJumlah || tidakCocok.value.txJumlah)));
 const totalPendapatan = computed(() => rows.value.reduce((s, r) => s + r.pendapatan, 0));
 const totalSparepart = computed(() => rows.value.reduce((s, r) => s + r.sparepart, 0));
 const totalHasilBersih = computed(() => totalPendapatan.value - totalSparepart.value);
 
+let loadSeq = 0;
 async function load() {
   if (!bulan.value) return;
+  const seq = ++loadSeq;
   loading.value = true;
   try {
-    data.value = await api.get(`/armada/rekap/${bulan.value}`);
+    const res = await api.get(`/armada/rekap/${bulan.value}`);
+    if (seq === loadSeq) data.value = res; // abaikan respon basi
   } catch (e) {
-    toast(e.message || "Gagal memuat rekap armada");
+    if (seq === loadSeq) toast(e.message || "Gagal memuat rekap armada");
   } finally {
-    loading.value = false;
+    if (seq === loadSeq) loading.value = false;
   }
 }
 
-watch([bulan, divisi], load);
+// Divisi cuma menyaring tampilan (data dari server sama), jadi tidak perlu load ulang.
+watch(bulan, load);
 onMounted(load);
 </script>
 
@@ -147,7 +191,7 @@ onMounted(load);
 
         <div class="field">
           <label>Jenis</label>
-          <select v-model="filterJenis">
+          <select v-model="filterJenis" :disabled="groupBy === 'sopir'">
             <option value="Semua">Semua Jenis</option>
             <option v-for="j in jenisTersedia" :key="j" :value="j">{{ j }}</option>
           </select>
@@ -155,8 +199,28 @@ onMounted(load);
       </div>
 
       <div class="msub">
-        Ritasi &amp; total m³ diambil dari Surat Jalan bulan berjalan. Pendapatan (Uang Jalan)
-        dan Sparepart diambil dari transaksi Laporan Divisi yang ditandai per nomor polisi kendaraan.
+        Ritasi &amp; total m³ diambil dari Surat Jalan bulan terpilih (kendaraan dicocokkan lewat armada
+        atau nomor polisi di SJ). Pendapatan (Uang Jalan) dan Sparepart/pengeluaran diambil dari transaksi
+        Laporan Divisi yang ditandai per nomor polisi kendaraan.
+        <template v-if="groupBy === 'sopir'">
+          Mode Sopir: Ritasi, m³ &amp; Komisi dihitung dari Surat Jalan per sopir (komisi hanya tugas TTD lengkap);
+          Pendapatan &amp; Sparepart dari kendaraan yang dipegang sopir tsb. Filter Jenis dimatikan di mode ini.
+        </template>
+      </div>
+    </div>
+
+    <div v-if="adaTidakCocok" class="card" style="margin-bottom:16px; border-left:4px solid #d97706;">
+      <div style="font-weight:600; margin-bottom:4px;">⚠ Ada data yang belum cocok ke kendaraan manapun</div>
+      <div class="msub" style="margin:0;">
+        <span v-if="tidakCocok.sjJumlah">
+          {{ tidakCocok.sjJumlah }} Surat Jalan tidak punya Armada / No. Polisi yang terdaftar di menu Armada
+          (tetap dihitung di mode Sopir, tapi tidak masuk baris kendaraan).
+        </span>
+        <span v-if="tidakCocok.txJumlah">
+          {{ tidakCocok.txJumlah }} transaksi Laporan Divisi (pendapatan {{ rupiah(tidakCocok.txPendapatan) }},
+          pengeluaran {{ rupiah(tidakCocok.txPengeluaran) }}) memakai nopol yang tidak ada di menu Armada:
+          {{ tidakCocok.txNopol.join(", ") }}. Cek penulisan nopolnya atau daftarkan kendaraannya.
+        </span>
       </div>
     </div>
 
@@ -182,6 +246,7 @@ onMounted(load);
             <th>Divisi</th>
             <th style="text-align:right;">Ritasi</th>
             <th style="text-align:right;">Total m³</th>
+            <th v-if="groupBy === 'sopir'" style="text-align:right;">Komisi</th>
             <th style="text-align:right;">Pendapatan</th>
             <th style="text-align:right;">Sparepart</th>
             <th style="text-align:right;">Hasil Bersih</th>
@@ -189,12 +254,13 @@ onMounted(load);
         </thead>
 
         <tbody>
-          <tr v-for="(r, i) in rows" :key="i">
+          <tr v-for="(r, i) in rows" :key="r.armadaId || r.sopir + i">
             <td class="mono">{{ groupBy === "nopol" ? r.nopol : r.sopir }}</td>
             <td>{{ groupBy === "nopol" ? (r.sopir || "-") : r.nopol }}</td>
             <td>{{ r.divisi }}</td>
             <td style="text-align:right;">{{ r.ritasi }}</td>
             <td style="text-align:right;">{{ fmtM3(r.totalM3) }}</td>
+            <td v-if="groupBy === 'sopir'" style="text-align:right;">{{ rupiah(r.komisi) }}</td>
             <td style="text-align:right;">{{ rupiah(r.pendapatan) }}</td>
             <td style="text-align:right;">{{ rupiah(r.sparepart) }}</td>
             <td
@@ -211,6 +277,7 @@ onMounted(load);
             <td colspan="3">Total</td>
             <td style="text-align:right;">{{ totalRitasi }}</td>
             <td style="text-align:right;">{{ fmtM3(totalM3) }}</td>
+            <td v-if="groupBy === 'sopir'" style="text-align:right;">{{ rupiah(totalKomisi) }}</td>
             <td style="text-align:right;">{{ rupiah(totalPendapatan) }}</td>
             <td style="text-align:right;">{{ rupiah(totalSparepart) }}</td>
             <td

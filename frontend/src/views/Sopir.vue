@@ -3,6 +3,9 @@ import { ref, computed, onMounted } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import MoneyInput from "../components/MoneyInput.vue";
+import { exportSopirExcel } from "../utils/excelExport.js";
+import { exportSopirPdf } from "../utils/pdfExport.js";
+import { printSopir } from "../services/print.js";
 
 // Tronton = komisi biasanya flat, tapi tetap bisa situasional per SJ.
 // Cold Diesel = komisi diinput manual tiap kali (kadang diambil per hari),
@@ -186,6 +189,42 @@ async function tandai(diambil) {
   }
 }
 
+// ---------------- Print / Excel / PDF per sopir ----------------
+const BULAN_NAMA = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+function periodeLabel(bulan) {
+  if (!bulan) return "Semua waktu";
+  const [y, m] = bulan.split("-");
+  return `${BULAN_NAMA[Number(m) - 1]} ${y}`;
+}
+
+const mengekspor = ref(false); // cegah klik ganda selama data diambil / PDF dibuat
+
+// Dari daftar sopir -> ambil data semua waktu. Dari dalam Buku komisi -> pakai
+// periode yang sedang dipilih di situ (data yang sedang tampil dipakai ulang).
+async function aksiCetak(jenis, s, bulan = "", dataSiap = null) {
+  if (mengekspor.value) return;
+  mengekspor.value = true;
+  try {
+    const d = dataSiap || (await api.get(`/sopir/${s.id}/perjalanan${bulan ? `?bulan=${bulan}` : ""}`));
+    const payload = {
+      sopir: d.sopir || s,
+      periodeLabel: periodeLabel(bulan),
+      summary: d.summary,
+      rows: d.rows,
+    };
+    if (jenis === "print") printSopir(payload);
+    else if (jenis === "excel") exportSopirExcel(payload);
+    else await exportSopirPdf(payload);
+  } catch (e) {
+    toast("Gagal membuat laporan sopir: " + (e?.message || String(e)));
+  } finally {
+    mengekspor.value = false;
+  }
+}
+
 onMounted(load);
 </script>
 
@@ -250,6 +289,7 @@ onMounted(load);
             <th class="num">Trip selesai</th>
             <th class="num">Komisi belum diambil</th>
             <th>Status</th>
+            <th>Laporan</th>
             <th></th>
           </tr>
         </thead>
@@ -264,6 +304,11 @@ onMounted(load);
             <td class="num mono">{{ s.trip || 0 }}</td>
             <td class="num mono" :style="{ fontWeight: s.komisiBelumDiambil ? 600 : 400 }">{{ rupiah(s.komisiBelumDiambil) }}</td>
             <td>{{ s.aktif ? "Aktif" : "Nonaktif" }}</td>
+            <td style="white-space:nowrap;">
+              <button class="btn btn-sm btn-ghost" style="margin-right:4px;" :disabled="mengekspor" title="Cetak buku komisi sopir ini (semua waktu)" @click="aksiCetak('print', s)">🖨 Print</button>
+              <button class="btn btn-sm btn-ghost" style="margin-right:4px;" :disabled="mengekspor" title="Download Excel (semua waktu)" @click="aksiCetak('excel', s)">Excel</button>
+              <button class="btn btn-sm btn-ghost" :disabled="mengekspor" title="Download PDF (semua waktu)" @click="aksiCetak('pdf', s)">PDF</button>
+            </td>
             <td style="text-align:right; white-space:nowrap;">
               <button class="btn btn-sm btn-gold" style="margin-right:6px;" @click="openBuku(s)">Buku komisi</button>
               <button class="btn btn-sm btn-ghost" style="margin-right:6px;" @click="openEdit(s)">Edit</button>
@@ -357,6 +402,11 @@ onMounted(load);
 
       <div v-if="bukuLoading" class="empty">Memuat…</div>
       <template v-else-if="buku?.summary">
+        <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-top:8px;">
+          <button class="btn btn-ghost btn-sm" :disabled="mengekspor" @click="aksiCetak('print', buku.sopir, bukuBulan, buku)">🖨 Print</button>
+          <button class="btn btn-ghost btn-sm" :disabled="mengekspor" @click="aksiCetak('excel', buku.sopir, bukuBulan, buku)">⬇ Export Excel</button>
+          <button class="btn btn-ghost btn-sm" :disabled="mengekspor" @click="aksiCetak('pdf', buku.sopir, bukuBulan, buku)">⬇ Export PDF</button>
+        </div>
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:10px 0 14px;">
           <div class="card" style="margin:0;"><div class="msub">Trip selesai</div><b>{{ buku.summary.tripSelesai }}</b></div>
           <div class="card" style="margin:0;"><div class="msub">Total komisi</div><b>{{ rupiah(buku.summary.totalKomisi) }}</b></div>

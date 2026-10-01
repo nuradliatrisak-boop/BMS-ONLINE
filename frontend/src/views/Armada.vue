@@ -21,7 +21,8 @@ const list = ref([]);
 const sopirList = ref([]); // master Sopir (aktif) -- dropdown pilih sopir per kendaraan
 const rekap = ref(null); // hasil /armada/rekap/:bulan (pendapatan, sparepart, hasilBersih per nopol)
 const txAll = ref([]); // semua transaksi divisi Armada bulan ini (utk rincian per kendaraan)
-const bulan = ref(new Date().toISOString().slice(0, 10).slice(0, 7));
+const _now = new Date();
+const bulan = ref(`${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}`);
 const loading = ref(true);
 
 // --- Search & filter daftar kendaraan ---

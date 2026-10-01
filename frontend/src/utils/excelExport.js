@@ -529,3 +529,60 @@ export function exportSolarStokExcel({
 
   XLSX.writeFile(wb, namaFile);
 }
+
+// ------------------------------------------------------------
+// Buku komisi per Sopir (menu Sopir)
+// ------------------------------------------------------------
+const TIPE_SOPIR_LABEL = { TRONTON: "Tronton", COLD_DIESEL: "Cold Diesel" };
+
+function statusKomisiText(r) {
+  if (!r.selesai) return "Belum selesai";
+  if (r.komisiDiambil) return `Sudah diambil ${r.komisiDiambilAt ? fmtDateID(r.komisiDiambilAt) : ""}`.trim();
+  return "Belum diambil";
+}
+
+export function exportSopirExcel({ sopir, periodeLabel, summary, rows }) {
+  const aoa = [
+    ["PT. BINTANG MUARA SEJATI"],
+    ["BUKU KOMISI SOPIR"],
+    [`Nama: ${sopir.nama}`],
+    [`Tipe: ${TIPE_SOPIR_LABEL[sopir.tipe] || sopir.tipe}${sopir.noHp ? `   |   No HP: ${sopir.noHp}` : ""}`],
+    [`Periode: ${periodeLabel}`],
+    [],
+    ["Trip selesai", summary.tripSelesai],
+    ["Total komisi", rupiahNum(summary.totalKomisi)],
+    ["Sudah diambil", rupiahNum(summary.sudahDiambil)],
+    ["Belum diambil", rupiahNum(summary.belumDiambil)],
+    [],
+    ["No", "Tanggal", "No Surat Jalan", "No Polisi", "Tujuan", "Barang", "Komisi", "Status"],
+  ];
+
+  if (!rows.length) {
+    aoa.push(["", "Belum ada perjalanan pada periode ini."]);
+  } else {
+    rows.forEach((r, i) => {
+      aoa.push([
+        i + 1,
+        fmtDateID(r.tanggal),
+        r.no,
+        r.noPolisi || "-",
+        r.tujuan || r.penerima || "-",
+        r.jenisBarang || "-",
+        rupiahNum(r.uangKomisi),
+        statusKomisiText(r),
+      ]);
+    });
+  }
+
+  const selesai = rows.filter((r) => r.selesai);
+  aoa.push([]);
+  aoa.push(["", "TOTAL KOMISI (tugas selesai)", "", "", "", "", rupiahNum(selesai.reduce((s, r) => s + r.uangKomisi, 0)), ""]);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"] = autoWidth(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetNameFor(sopir.nama));
+
+  const slug = (v) => String(v || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  XLSX.writeFile(wb, `komisi-sopir-${slug(sopir.nama)}-${slug(periodeLabel) || "semua"}.xlsx`);
+}

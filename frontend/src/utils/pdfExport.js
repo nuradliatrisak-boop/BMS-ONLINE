@@ -360,3 +360,83 @@ export async function exportSolarStokPdf({ bulanLabel, items, totalMasuk, totalK
 
   doc.save(`stok-solar-${bulanLabel.toLowerCase().replace(/\s+/g, "-")}.pdf`);
 }
+
+// ------------------------------------------------------------
+// Buku komisi per Sopir (menu Sopir)
+// ------------------------------------------------------------
+export async function exportSopirPdf({ sopir, periodeLabel, summary, rows, orientation = "portrait" }) {
+  const [kopImg, logoImg] = await Promise.all([loadImageDataUrl(KOP_SURAT_URL), loadImageDataUrl(LOGO_WATERMARK_URL)]);
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation });
+  const margin = 14;
+  const tipe = sopir.tipe === "COLD_DIESEL" ? "Cold Diesel" : sopir.tipe === "TRONTON" ? "Tronton" : sopir.tipe;
+
+  let y = drawSectionHeader(doc, {
+    kopImg,
+    logoImg,
+    margin,
+    title: "BUKU KOMISI SOPIR",
+    periodLabel: `Periode ${periodeLabel}`,
+  });
+
+  doc.setFontSize(9.5);
+  doc.setFont(undefined, "bold");
+  doc.text(`Nama: ${sopir.nama}`, margin, y);
+  doc.setFont(undefined, "normal");
+  doc.text(`Tipe: ${tipe}${sopir.noHp ? `   |   No HP: ${sopir.noHp}` : ""}`, margin, y + 5);
+  y += 10;
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: margin, right: margin },
+    head: [["Trip selesai", "Total komisi", "Sudah diambil", "Belum diambil"]],
+    body: [[String(summary.tripSelesai), rupiah(summary.totalKomisi), rupiah(summary.sudahDiambil), rupiah(summary.belumDiambil)]],
+    theme: "grid",
+    styles: { fontSize: 9, cellPadding: 1.8, halign: "center" },
+    headStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },
+  });
+  y = doc.lastAutoTable.finalY + 6;
+
+  const statusText = (r) => {
+    if (!r.selesai) return "Belum selesai";
+    if (r.komisiDiambil) return `Sudah diambil${r.komisiDiambilAt ? " " + fmtDateID(r.komisiDiambilAt) : ""}`;
+    return "Belum diambil";
+  };
+  const selesaiTotal = rows.filter((r) => r.selesai).reduce((s, r) => s + r.uangKomisi, 0);
+  const body = rows.length
+    ? rows.map((r, i) => [
+        i + 1,
+        fmtDateID(r.tanggal),
+        r.no,
+        r.noPolisi || "-",
+        r.tujuan || r.penerima || "-",
+        r.jenisBarang || "-",
+        rupiah(r.uangKomisi),
+        statusText(r),
+      ])
+    : [[{ content: "Belum ada perjalanan pada periode ini.", colSpan: 8, styles: { halign: "center", textColor: 130 } }]];
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: margin, right: margin },
+    head: [["No", "Tanggal", "No Surat Jalan", "No Polisi", "Tujuan", "Barang", "Komisi", "Status"]],
+    body,
+    foot: [[
+      { content: "TOTAL KOMISI (tugas selesai)", colSpan: 6, styles: { fontStyle: "bold" } },
+      { content: rupiah(selesaiTotal), styles: { fontStyle: "bold", halign: "right" } },
+      "",
+    ]],
+    theme: "grid",
+    styles: { fontSize: 8, cellPadding: 1.5 },
+    headStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },
+    footStyles: { fillColor: [250, 250, 250], textColor: 20 },
+    showFoot: "lastPage", // total hanya di halaman terakhir
+    columnStyles: { 0: { cellWidth: 8 }, 6: { halign: "right" } },
+    // watermark & kop di halaman lanjutan (jumlah perjalanan bisa banyak)
+    didDrawPage: (d) => {
+      if (d.pageNumber > 1) drawWatermark(doc, logoImg);
+    },
+  });
+
+  const slug = (v) => String(v || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  doc.save(`komisi-sopir-${slug(sopir.nama)}-${slug(periodeLabel) || "semua"}.pdf`);
+}

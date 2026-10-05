@@ -67,6 +67,7 @@ const inv = reactive({
   rows: [], warnings: [], totalTagihanTerbaca: 0, totalM3Terbaca: 0, match: null, namaTerbaca: "",
 });
 const saving = ref(false);
+const errSave = ref("");
 const cekSjBusy = ref(false);
 let skipWatch = false;
 
@@ -209,7 +210,7 @@ function ambilFoto() {
   const v = videoEl.value;
   if (!v || !v.videoWidth) return;
   const { sx, sy, sw, sh } = cropFromVideo();
-  const outW = Math.min(2400, Math.round(sw));
+  const outW = Math.min(3200, Math.round(sw));
   const outH = Math.round((outW * sh) / sw);
   const c = document.createElement("canvas");
   c.width = outW; c.height = outH;
@@ -224,7 +225,7 @@ function dariFile(e) {
   const url = URL.createObjectURL(file);
   const img = new Image();
   img.onload = () => {
-    const w = Math.min(2400, img.naturalWidth);
+    const w = Math.min(3200, img.naturalWidth);
     const h = Math.round((w * img.naturalHeight) / img.naturalWidth);
     const c = document.createElement("canvas");
     c.width = w; c.height = h;
@@ -240,11 +241,11 @@ function dariFile(e) {
 async function prosesCanvas(canvas) {
   stopCamera();
   errMsg.value = "";
-  const pw = Math.min(1800, canvas.width), ph = Math.round((pw * canvas.height) / canvas.width);
+  const pw = Math.min(2200, canvas.width), ph = Math.round((pw * canvas.height) / canvas.width);
   const pc = document.createElement("canvas");
   pc.width = pw; pc.height = ph;
   pc.getContext("2d").drawImage(canvas, 0, 0, pw, ph);
-  photoUrl.value = pc.toDataURL("image/jpeg", 0.85);
+  photoUrl.value = pc.toDataURL("image/jpeg", 0.9);
   step.value = "proses";
 
   let hasil = null;
@@ -271,10 +272,12 @@ async function prosesCanvas(canvas) {
 }
 
 // Beberapa percobaan pemrosesan foto (kanal warna & ukuran berbeda); dipilih hasil yang paling lengkap.
+// Cetakan dot-matrix = titik-titik renggang. Varian 2-4 menghaluskan + menebalkan goresan supaya huruf utuh.
 const VARIAN = [
-  { W: 2400, channel: "r" },
-  { W: 3200, channel: "luma" },
-  { W: 3200, channel: "r" },
+  { W: 2400, channel: "r", dilate: 0, blur: false },
+  { W: 3000, channel: "r", dilate: 1, blur: true },
+  { W: 3200, channel: "luma", dilate: 1, blur: true },
+  { W: 3600, channel: "r", dilate: 1, blur: false, C: 10 },
 ];
 
 async function bacaOcr(canvas) {
@@ -284,8 +287,8 @@ async function bacaOcr(canvas) {
   const worker = await window.Tesseract.createWorker("eng", 1, {
     langPath: TESS_LANG,
     logger: (m) => {
-      const dasar = 10 + aktif * 28;
-      if (m.status === "recognizing text") progress.value = { label: `Membaca teks (percobaan ${aktif + 1}/${VARIAN.length})…`, pct: dasar + Math.round(m.progress * 26) };
+      const dasar = 10 + aktif * 22;
+      if (m.status === "recognizing text") progress.value = { label: `Membaca teks (percobaan ${aktif + 1}/${VARIAN.length})…`, pct: dasar + Math.round(m.progress * 20) };
       else if (m.status && m.status.indexOf("loading") === 0) progress.value = { label: "Memuat data bahasa…", pct: 8 };
     },
   });
@@ -294,17 +297,17 @@ async function bacaOcr(canvas) {
     await worker.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
     for (let k = 0; k < VARIAN.length; k++) {
       aktif = k;
-      const { W, channel } = VARIAN[k];
+      const { W, channel, dilate, blur, C } = VARIAN[k];
       const H = Math.round((W * canvas.height) / canvas.width);
       const c = document.createElement("canvas");
       c.width = W; c.height = H;
       const ctx = c.getContext("2d", { willReadFrequently: true });
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(canvas, 0, 0, W, H);
-      progress.value = { label: `Membersihkan foto (percobaan ${k + 1}/${VARIAN.length})…`, pct: 8 + k * 28 };
+      progress.value = { label: `Membersihkan foto (percobaan ${k + 1}/${VARIAN.length})…`, pct: 8 + k * 22 };
       await new Promise((r) => setTimeout(r, 30));
       const id = ctx.getImageData(0, 0, W, H);
-      const bin = P.binarize(id, { channel });
+      const bin = P.binarize(id, { channel, dilate, blur, C });
       for (let i = 0, p = 0; i < bin.length; i++, p += 4) {
         id.data[p] = id.data[p + 1] = id.data[p + 2] = bin[i];
         id.data[p + 3] = 255;
@@ -315,7 +318,7 @@ async function bacaOcr(canvas) {
       const sc = P.scoreResult(props.tipe, hasil);
       if (sc > bestScore) { best = hasil; bestScore = sc; best.rawText = data.text; }
       // sudah lengkap & cocok -> tidak perlu percobaan lagi
-      if (isSJ.value ? sc >= 9 : hasil.totalCocok) break;
+      if (isSJ.value ? sc >= 10 : hasil.totalCocok) break;
     }
   } finally {
     worker.terminate();
@@ -328,16 +331,18 @@ function isoDateOnly(v) { return v ? String(v).slice(0, 10) : ""; }
 function terapkanHasil(h) {
   const def = auth.user?.divisi && DIVISI.includes(auth.user.divisi) ? auth.user.divisi : "Supplier";
   if (isSJ.value) {
+    errSave.value = "";
     Object.assign(sj, {
-      no: h.no, tanggal: h.tanggal, jam: h.jam, divisi: def,
+      no: h.no, tanggal: h.tanggal || new Date().toISOString().slice(0, 10), jam: h.jam, divisi: def,
       penerima: h.penerima || h.dari, tujuan: h.tujuan, jenisBarang: h.jenisBarang, noPolisi: h.noPolisi,
       panjang: h.panjang, lebar: h.lebar, tinggi: h.tinggi, timpa: false, warnings: h.warnings.slice(),
     });
     const m = P.matchCustomer(customers.value, { nama: h.dari || h.penerima });
     sj.customerId = m ? m.id : "";
     sj.match = m;
-    if (!m) sj.warnings.push("Customer belum cocok otomatis — pilih manual.");
+    if (!m) sj.warnings.push("Customer belum cocok otomatis — boleh dipilih nanti, surat jalan tetap bisa disimpan.");
   } else {
+    errSave.value = "";
     const m = P.matchCustomer(customers.value, { kode: h.kodeCustomer, nama: h.namaCustomer });
     // harga master customer -> bantu koreksi harga yang salah baca
     const cust = m ? customers.value.find((c) => c.id === m.id) : null;
@@ -356,6 +361,19 @@ function terapkanHasil(h) {
     });
     if (!m) inv.warnings.push("Customer belum cocok otomatis — pilih manual.");
   }
+}
+
+// Admin mengetik/mengubah jenis barang -> rapikan spasi, cocokkan master, isi kode otomatis
+function rapikanJenis() {
+  const rj = P.resolveJenis(sj.jenisBarang);
+  if (!rj.jenis) return;
+  sj.jenisBarang = rj.jenis;
+  sj.warnings = sj.warnings.filter((w) => !/^Jenis barang/.test(w));
+  if (rj.warn) sj.warnings.push(rj.warn);
+}
+function rapikanKodeBaris(r) {
+  const kd = P.fixKode(r.kode);
+  if (kd) r.kode = kd;
 }
 
 // ------------------------------------------------------------------ invoice: cek SJ
@@ -406,35 +424,46 @@ function hapusBaris(i) { inv.rows.splice(i, 1); }
 
 // ------------------------------------------------------------------ simpan
 async function simpanSJ() {
-  if (!sj.no || !sj.tanggal || !sj.divisi) return toast("Nomor, tanggal, dan divisi wajib diisi");
-  if (!sj.customerId) return toast("Pilih customer dulu");
+  errSave.value = "";
+  // Hanya nomor yang wajib. Customer, nopol, ukuran, tujuan, dll boleh kosong (bisa dilengkapi nanti).
+  if (!sj.no || !String(sj.no).trim()) {
+    errSave.value = "Nomor surat jalan wajib diisi.";
+    return toast(errSave.value);
+  }
+  rapikanJenis();
   saving.value = true;
   try {
     const res = await api.post("/scan/surat-jalan", {
-      no: sj.no, tanggal: sj.tanggal, jam: sj.jam, divisi: sj.divisi, customerId: sj.customerId,
+      no: String(sj.no).trim(), tanggal: sj.tanggal || undefined, jam: sj.jam, divisi: sj.divisi || "Supplier", customerId: sj.customerId || undefined,
       penerima: sj.penerima, tujuan: sj.tujuan, jenisBarang: sj.jenisBarang, noPolisi: sj.noPolisi,
-      panjang: sj.panjang, lebar: sj.lebar, tinggi: sj.tinggi, timpa: sj.timpa,
+      panjang: Number(sj.panjang) || 0, lebar: Number(sj.lebar) || 0, tinggi: Number(sj.tinggi) || 0, timpa: sj.timpa,
     });
     toast(res.diperbarui ? `Surat jalan ${sj.no} diperbarui` : `Surat jalan ${sj.no} tersimpan`);
     emit("saved");
     resetUntukBerikutnya();
   } catch (e) {
-    if (/sudah ada/i.test(e.message)) sj.warnings.unshift(e.message);
-    toast(e.message);
+    errSave.value = e.message || "Gagal menyimpan surat jalan";
+    if (/sudah ada/i.test(errSave.value)) sj.timpa = true;
+    toast(errSave.value);
   } finally {
     saving.value = false;
   }
 }
 
+function gagalInvoice(msg) {
+  errSave.value = msg;
+  toast(msg);
+}
 async function simpanInvoice() {
-  if (!inv.no || !inv.tanggal || !inv.divisi) return toast("Nomor, tanggal, dan divisi wajib diisi");
-  if (!inv.customerId) return toast("Pilih customer dulu");
-  if (!inv.rows.length) return toast("Belum ada baris invoice");
+  errSave.value = "";
+  if (!inv.no || !inv.tanggal || !inv.divisi) return gagalInvoice("Nomor, tanggal, dan divisi invoice wajib diisi");
+  if (!inv.customerId) return gagalInvoice("Pilih customer dulu (invoice harus punya customer)");
+  if (!inv.rows.length) return gagalInvoice("Belum ada baris invoice");
   for (const r of inv.rows) {
     if (!r.noSJ || !(rowM3(r) > 0) || !(Number(r.harga) > 0)) {
-      return toast(`Baris SJ ${r.noSJ || "(kosong)"}: nomor SJ, ukuran P-L-T, dan harga wajib terisi`);
+      return gagalInvoice(`Baris SJ ${r.noSJ || "(kosong)"}: nomor SJ, ukuran P-L-T, dan harga wajib terisi (dipakai untuk menghitung tagihan)`);
     }
-    if (r.sjInfo?.tertagih && r.suratJalanId) return toast(`SJ ${r.sjInfo.no} sudah tertagih di invoice ${r.sjInfo.invoiceNo}`);
+    if (r.sjInfo?.tertagih && r.suratJalanId) return gagalInvoice(`SJ ${r.sjInfo.no} sudah tertagih di invoice ${r.sjInfo.invoiceNo}`);
   }
   if (selisihTotal.value !== null && Math.abs(selisihTotal.value) > 1) {
     if (!confirm(`Total hitungan ${fmtRp(invTotal.value)} berbeda dari total di kertas ${fmtRp(inv.totalTagihanTerbaca)}.\nTetap simpan?`)) return;
@@ -446,6 +475,7 @@ async function simpanInvoice() {
       jenisDefault: inv.jenisDefault, buatRekap: inv.buatRekap,
       items: inv.rows.map((r) => ({
         suratJalanId: r.suratJalanId || undefined, noSJ: r.noSJ, tglKirim: r.tglKirim, kode: r.kode,
+        jenisBarang: P.jenisDariKode(r.kode, inv.jenisDefault) || undefined,
         alamat: r.alamat, panjang: r.panjang, lebar: r.lebar, tinggi: r.tinggi, harga: r.harga,
       })),
     });
@@ -457,8 +487,8 @@ async function simpanInvoice() {
     emit("saved");
     resetUntukBerikutnya();
   } catch (e) {
-    toast(e.message);
-    inv.warnings.unshift(e.message);
+    errSave.value = e.message || "Gagal menyimpan invoice";
+    toast(errSave.value);
   } finally {
     saving.value = false;
   }
@@ -478,6 +508,7 @@ onMounted(async () => {
   document.body.style.overflow = "hidden";
   try { customers.value = await api.get("/customers"); } catch (e) { toast("Gagal memuat customer: " + e.message); }
   try { Object.assign(config, await api.get("/scan/config")); } catch { /* AI tidak tersedia */ }
+  try { P.setMaster(await api.get("/stock-master")); } catch { /* tanpa master: hanya rapikan spasi */ }
   await nextTick();
   updateFrameStyle();
   window.addEventListener("resize", updateFrameStyle);
@@ -562,6 +593,7 @@ onBeforeUnmount(() => {
             <summary>Teks mentah hasil baca (untuk diagnosa)</summary>
             <pre>{{ rawText }}</pre>
           </details>
+          <div v-if="errSave" class="rv-err">⛔ {{ errSave }}</div>
           <div v-if="(isSJ ? sj.warnings : inv.warnings).length" class="rv-warn">
             <b>⚠ Perlu dicek:</b>
             <ul><li v-for="(w, i) in (isSJ ? sj.warnings : inv.warnings)" :key="i">{{ w }}</li></ul>
@@ -579,14 +611,17 @@ onBeforeUnmount(() => {
               </label>
               <label>Jam<input v-model="sj.jam" placeholder="14:23:23" /></label>
             </div>
-            <label class="fl">Customer
+            <label class="fl">Customer (boleh dikosongkan)
               <SearchableSelect v-model="sj.customerId" :options="customerOptions" placeholder="Pilih customer…" />
               <small v-if="sj.match">Terbaca “{{ sj.penerima }}” → cocok {{ Math.round(sj.match.score * 100) }}%</small>
             </label>
             <label class="fl">Penerima<input v-model="sj.penerima" /></label>
             <label class="fl">Tujuan<input v-model="sj.tujuan" /></label>
-            <label class="fl">Jenis barang<input v-model="sj.jenisBarang" /></label>
-            <label class="fl">No. Polisi<input v-model="sj.noPolisi" placeholder="B 1234 XYZ" /></label>
+            <label class="fl">Jenis barang / kode
+              <input v-model="sj.jenisBarang" placeholder="mis. BATU SPLIT / BB" @change="rapikanJenis" />
+              <small>Spasi &amp; kode dirapikan otomatis dari master barang. Boleh dikosongkan.</small>
+            </label>
+            <label class="fl">No. Polisi (boleh kosong)<input v-model="sj.noPolisi" placeholder="B 1234 XYZ" /></label>
             <div class="f3">
               <label>Panjang<input type="number" step="0.01" inputmode="decimal" v-model.number="sj.panjang" /></label>
               <label>Lebar<input type="number" step="0.01" inputmode="decimal" v-model.number="sj.lebar" /></label>
@@ -629,6 +664,7 @@ onBeforeUnmount(() => {
                   <span class="no">#{{ i + 1 }}</span>
                   <label>No SJ<input v-model="r.noSJ" inputmode="numeric" /></label>
                   <label>Tgl kirim<input type="date" v-model="r.tglKirim" /></label>
+                  <label class="kd">Kode<input v-model="r.kode" maxlength="3" placeholder="BB" @change="rapikanKodeBaris(r)" /></label>
                   <button class="x" @click="hapusBaris(i)" title="Hapus baris">🗑</button>
                 </div>
                 <div class="inv-row-nums">
@@ -650,7 +686,7 @@ onBeforeUnmount(() => {
                     <button class="btn btn-sm" @click="pakaiSaran(r)">Pakai ini</button>
                     <span v-if="r.sjInfo.tertagih" class="red"> sudah ditagih di {{ r.sjInfo.invoiceNo }}</span>
                   </template>
-                  <template v-else>＋ SJ belum ada — akan dibuat otomatis (BM-{{ r.noSJ }})</template>
+                  <template v-else>＋ SJ belum ada — akan dibuat otomatis (BM-{{ r.noSJ }}<template v-if="r.jenisBarang">, {{ r.jenisBarang }}</template>)</template>
                 </div>
                 <ul v-if="r.warn && r.warn.length" class="row-warn">
                   <li class="hdr">Catatan hasil baca awal (abaikan bila sudah Anda perbaiki):</li>
@@ -749,7 +785,8 @@ onBeforeUnmount(() => {
 .inv-rows-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .inv-row { border: 1px solid #dbe3ee; border-radius: 10px; padding: 8px; background: #fafcff; }
 .inv-row.bad { border-color: #e2a53a; background: #fffaf0; }
-.inv-row-top { display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 6px; align-items: end; }
+.inv-row-top { display: grid; grid-template-columns: auto 1fr 1fr 64px auto; gap: 6px; align-items: end; }
+.rv-err { background: #fdebec; border: 1px solid #e49aa0; color: #8a1118; padding: 8px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; }
 .inv-row-top .no { font-weight: 700; color: #2459a6; padding-bottom: 10px; }
 .inv-row-top .x { background: none; border: 0; font-size: 18px; cursor: pointer; padding-bottom: 6px; }
 .inv-row-nums { display: grid; grid-template-columns: 1fr 1fr 1fr 1.6fr; gap: 6px; margin-top: 6px; }

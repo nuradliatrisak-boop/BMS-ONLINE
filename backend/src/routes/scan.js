@@ -56,6 +56,16 @@ const PROMPT_INV = `Ini foto kertas INVOICE (cetak dot-matrix, PT Bintang Muara 
 {"no":"No. Invoice","tanggal":"YYYY-MM-DD","halaman":1,"kodeCustomer":"","namaCustomer":"","alamat":"alamat customer di header","rows":[{"tglKirim":"YYYY-MM-DD","noSJ":"No SJ tanpa awalan, mis. 002096","kode":"kode setelah no SJ mis. BB atau BS, kosong jika tidak ada","alamat":"Alamat Kirim","panjang":0,"lebar":0,"tinggi":0,"m3":0,"harga":0,"jumlah":0}],"totalM3":0,"totalTagihan":0}
 Aturan: satu objek per baris tabel (No 1,2,3,...). Angka berupa number tanpa pemisah ribuan (harga 445000, jumlah 2285965; P/L/T/m3 pakai titik desimal). totalTagihan dari "Jumlah Total Tagihan". Abaikan tulisan tangan, coretan, lingkaran/kotak spidol, dan stempel. Jika tidak terbaca jelas, isi "" atau 0 -- JANGAN menebak.`;
 
+async function daftarKodeBarang() {
+  try {
+    const list = await prisma.stockMaster.findMany({ where: { aktif: true }, orderBy: { kode: "asc" } });
+    if (!list.length) return "";
+    return `\nDaftar kode barang resmi (KODE=NAMA): ${list.map((x) => `${x.kode}=${x.nama}`).join("; ")}. Untuk "jenisBarang"/"kode", salin nama dan kode persis seperti tercetak di kertas; daftar ini hanya untuk membantu membaca huruf yang kabur.`;
+  } catch {
+    return "";
+  }
+}
+
 async function geminiExtract(tipe, dataUrl) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw httpError(501, "AI belum diaktifkan di server (GEMINI_API_KEY belum diisi)");
@@ -79,7 +89,7 @@ async function geminiExtract(tipe, dataUrl) {
             {
               role: "user",
               parts: [
-                { text: tipe === "INVOICE" ? PROMPT_INV : PROMPT_SJ },
+                { text: (tipe === "INVOICE" ? PROMPT_INV : PROMPT_SJ) + (await daftarKodeBarang()) },
                 { inline_data: { mime_type: m[1], data: m[2] } },
               ],
             },
@@ -131,7 +141,8 @@ router.post("/ai-extract", async (req, res, next) => {
 // ---------------------------------------------------------------------------
 async function cariSuratJalan(db, req, customerId, row, dipakai) {
   const tgl = row.tglKirim ? new Date(row.tglKirim) : null;
-  const where = { customerId, isDraft: false, ...scopeDivisi(req) };
+  // SJ hasil scan boleh belum punya customer -> ikut dicari supaya tidak dobel saat invoice discan
+  const where = { OR: [{ customerId }, { customerId: null }], isDraft: false, ...scopeDivisi(req) };
   if (tgl && !isNaN(tgl)) {
     const dari = new Date(tgl); dari.setDate(dari.getDate() - 20);
     const sampai = new Date(tgl); sampai.setDate(sampai.getDate() + 20);
@@ -208,11 +219,15 @@ router.post("/surat-jalan", async (req, res, next) => {
   try {
     const b = req.body || {};
     const no = String(b.no || "").trim();
+    // Hanya nomor yang wajib (kunci unik). Sisanya boleh kosong: nopol, kubikasi, customer, tujuan, dst.
     if (!no) throw httpError(400, "Nomor surat jalan wajib diisi");
-    if (!b.tanggal) throw httpError(400, "Tanggal wajib diisi");
-    if (!b.divisi) throw httpError(400, "Divisi wajib diisi");
-    const tujuan = String(b.tujuan || b.penerima || "").trim();
-    if (!tujuan) throw httpError(400, "Tujuan wajib diisi");
+
+    let tanggal = b.tanggal ? new Date(b.tanggal) : new Date();
+    if (isNaN(tanggal)) tanggal = new Date();
+
+    let customer = null;
+    if (b.customerId) customer = await prisma.customer.findUnique({ where: { id: b.customerId } });
+    const tujuan = String(b.tujuan || b.penerima || customer?.nama || "").trim() || "-";
 
     const p = Number(b.panjang) || 0, l = Number(b.lebar) || 0, t = Number(b.tinggi) || 0;
     const m3 = r3(p * l * t);
@@ -230,8 +245,8 @@ router.post("/surat-jalan", async (req, res, next) => {
     }
 
     const data = {
-      divisi: divisiFor(req, b.divisi),
-      customerId: b.customerId || null,
+      divisi: divisiFor(req, b.divisi || "Supplier"),
+      customerId: customer ? customer.id : null,
       armadaId,
       tujuan,
       penerima: b.penerima ? String(b.penerima).trim() : null,
@@ -244,22 +259,29 @@ router.post("/surat-jalan", async (req, res, next) => {
       tinggi: t,
       m3,
       jam: b.jam || null,
-      tanggal: new Date(b.tanggal),
+      tanggal,
       isDraft: false,
     };
 
     const ada = await prisma.suratJalan.findUnique({ where: { no } });
     if (ada && !b.timpa) {
       return res.status(409).json({
-        error: `Surat jalan ${no} sudah ada di sistem. Centang "Timpa data lama" kalau mau diperbarui.`,
+        error: `Surat jalan ${no} sudah ada di sistem. Centang "Timpa data lama" lalu simpan lagi kalau mau diperbarui.`,
         exists: true,
         id: ada.id,
       });
     }
     if (ada) {
       if (req.user?.role !== "ADMIN" && ada.divisi !== req.user?.divisi) throw httpError(403, "Tidak punya akses ke surat jalan ini");
-      const upd = await prisma.suratJalan.update({ where: { id: ada.id }, data });
-      return res.json({ ok: true, diperbarui: true, sj: upd });
+      // Timpa hanya mengisi yang terbaca: isian kosong dari scan tidak menghapus data lama
+      const upd = {};
+      for (const [k, v] of Object.entries(data)) {
+        const kosong = v === null || v === "" || v === "-" || v === 0;
+        if (!kosong) upd[k] = v;
+      }
+      if (!(p && l && t)) { delete upd.panjang; delete upd.lebar; delete upd.tinggi; delete upd.m3; }
+      const hasil = await prisma.suratJalan.update({ where: { id: ada.id }, data: upd });
+      return res.json({ ok: true, diperbarui: true, sj: hasil });
     }
     const sj = await prisma.suratJalan.create({ data: { no, ...data } });
     res.status(201).json({ ok: true, diperbarui: false, sj });
@@ -299,6 +321,9 @@ router.post("/invoice", async (req, res, next) => {
       if (k) seen.add(k);
     }
 
+    const masterList = await prisma.stockMaster.findMany({ select: { kode: true, nama: true } });
+    const namaByKode = new Map(masterList.map((x) => [String(x.kode).toUpperCase(), x.nama]));
+
     const hasil = await prisma.$transaction(
       async (tx) => {
         const dipakai = new Set();
@@ -330,34 +355,57 @@ router.post("/invoice", async (req, res, next) => {
               include: { invoice: { select: { no: true } } },
             });
             if (sudah) throw httpError(409, `Surat jalan ${sj.no} sudah tertagih di invoice ${sudah.invoice.no}`);
+            // SJ hasil scan yang customernya/ukurannya masih kosong dilengkapi dari baris invoice
+            const lengkapi = {};
+            if (!sj.customerId) lengkapi.customerId = b.customerId;
+            if (!(sj.panjang && sj.lebar && sj.tinggi) && p && l && t) Object.assign(lengkapi, { panjang: p, lebar: l, tinggi: t, m3 });
+            if (!sj.jenisBarang && it.jenisBarang) lengkapi.jenisBarang = String(it.jenisBarang).trim();
+            if (Object.keys(lengkapi).length) sj = await tx.suratJalan.update({ where: { id: sj.id }, data: lengkapi });
             sjTertaut++;
           } else {
             const dg = digitsOnly(it.noSJ);
             const noBaru = dg.length >= 3 ? `BM-${dg}` : String(it.noSJ || "").trim();
             if (!noBaru) throw httpError(400, "Ada baris tanpa nomor SJ");
-            if (await tx.suratJalan.findUnique({ where: { no: noBaru } })) {
-              throw httpError(409, `Nomor ${noBaru} sudah ada tapi untuk customer/tanggal lain. Pilih SJ-nya di chip "Mirip SJ" atau ubah nomornya.`);
-            }
+            const kodeBaris = String(it.kode || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
             const jenis =
-              it.jenisBarang ||
-              (b.jenisDefault ? `${b.jenisDefault}${it.kode ? " / " + it.kode : ""}` : it.kode || null);
-            sj = await tx.suratJalan.create({
-              data: {
-                no: noBaru,
-                divisi,
-                customerId: b.customerId,
-                tujuan: String(it.alamat || customer.alamat || customer.nama).trim(),
-                penerima: customer.nama,
-                jenisBarang: jenis,
-                panjang: p,
-                lebar: l,
-                tinggi: t,
-                m3,
-                tanggal: new Date(it.tglKirim || b.tanggal),
-                isDraft: false,
-              },
-            });
-            sjBaru++;
+              (it.jenisBarang && String(it.jenisBarang).trim()) ||
+              (b.jenisDefault ? `${b.jenisDefault}${kodeBaris ? " / " + kodeBaris : ""}` : null) ||
+              (namaByKode.has(kodeBaris) ? `${namaByKode.get(kodeBaris)} / ${kodeBaris}` : kodeBaris || null);
+            const bentrok = await tx.suratJalan.findUnique({ where: { no: noBaru } });
+            if (bentrok) {
+              const tertagihLain = await tx.invoiceItem.findFirst({ where: { suratJalanId: bentrok.id }, include: { invoice: { select: { no: true } } } });
+              if (tertagihLain) throw httpError(409, `Surat jalan ${noBaru} sudah tertagih di invoice ${tertagihLain.invoice.no}.`);
+              if (bentrok.customerId && bentrok.customerId !== b.customerId) {
+                throw httpError(409, `Nomor ${noBaru} sudah ada tapi untuk customer lain. Pilih SJ-nya di chip "Mirip SJ" atau ubah nomornya.`);
+              }
+              sj = await tx.suratJalan.update({
+                where: { id: bentrok.id },
+                data: {
+                  customerId: b.customerId,
+                  ...(p && l && t && !(bentrok.panjang && bentrok.lebar && bentrok.tinggi) ? { panjang: p, lebar: l, tinggi: t, m3 } : {}),
+                  ...(!bentrok.jenisBarang && jenis ? { jenisBarang: jenis } : {}),
+                },
+              });
+              sjTertaut++;
+            } else {
+              sj = await tx.suratJalan.create({
+                data: {
+                  no: noBaru,
+                  divisi,
+                  customerId: b.customerId,
+                  tujuan: String(it.alamat || customer.alamat || customer.nama).trim(),
+                  penerima: customer.nama,
+                  jenisBarang: jenis,
+                  panjang: p,
+                  lebar: l,
+                  tinggi: t,
+                  m3,
+                  tanggal: new Date(it.tglKirim || b.tanggal),
+                  isDraft: false,
+                },
+              });
+              sjBaru++;
+            }
           }
           dipakai.add(sj.id);
 

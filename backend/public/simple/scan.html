@@ -63,11 +63,11 @@
     <div id="formSJ" class="card" style="display:none"><h2>Surat Jalan</h2>
       <table class="row2"><tr><td><label>No. Surat Jalan</label><input type="text" id="sj_no"></td><td><label>Tanggal</label><input type="date" id="sj_tanggal"></td></tr></table>
       <table class="row2"><tr><td><label>Divisi</label><select id="sj_divisi"></select></td><td><label>Jam</label><input type="text" id="sj_jam" placeholder="14:23:23"></td></tr></table>
-      <label>Customer</label><select id="sj_customer"><option value="">-- Pilih Customer --</option></select><div id="sj_match" style="font-size:11px;color:#666"></div>
+      <label>Customer (boleh dikosongkan)</label><select id="sj_customer"><option value="">-- Pilih Customer --</option></select><div id="sj_match" style="font-size:11px;color:#666"></div>
       <label>Penerima</label><input type="text" id="sj_penerima">
       <label>Tujuan</label><input type="text" id="sj_tujuan">
-      <label>Jenis barang</label><input type="text" id="sj_jenis">
-      <label>No. Polisi</label><input type="text" id="sj_nopol" placeholder="B 1234 XYZ">
+      <label>Jenis barang / kode</label><input type="text" id="sj_jenis" placeholder="mis. BATU SPLIT / BB"><div style="font-size:11px;color:#666">Spasi &amp; kode dirapikan otomatis dari master barang. Boleh dikosongkan.</div>
+      <label>No. Polisi (boleh kosong)</label><input type="text" id="sj_nopol" placeholder="B 1234 XYZ">
       <table class="row2"><tr><td><label>Panjang</label><input type="number" step="0.01" id="sj_p"></td><td><label>Lebar</label><input type="number" step="0.01" id="sj_l"></td><td><label>Tinggi</label><input type="number" step="0.001" id="sj_t"></td></tr></table>
       <div class="tot" id="sj_m3"></div>
       <label style="font-weight:normal"><input type="checkbox" id="sj_timpa"> Timpa data lama bila nomor ini sudah ada</label>
@@ -111,6 +111,7 @@ var def=(user.divisi&&DIVISI.indexOf(user.divisi)!==-1)?user.divisi:"Supplier";
 makeSearchableSelect($("sj_customer"),{placeholder:"Cari customer..."});makeSearchableSelect($("iv_customer"),{placeholder:"Cari customer..."});
 
 api.get("/customers").then(function(d){customers=d;d.forEach(function(c){["sj_customer","iv_customer"].forEach(function(id){var o=document.createElement("option");o.value=c.id;o.textContent=c.kode+" - "+c.nama;$(id).appendChild(o)})})}).catch(function(e){showMsg(msg,"Gagal memuat customer: "+e.message,"err")});
+var masterReady=api.get("/stock-master").then(function(m){P.setMaster(m)},function(){});
 api.get("/scan/config").then(function(c){config=c;if(c.ai){$("aiBox").style.display="block";$("useAi").checked=localStorage.getItem("bms.scan.ai")!=="0"}}).catch(function(){});
 $("useAi").onchange=function(){localStorage.setItem("bms.scan.ai",this.checked?"1":"0")};
 
@@ -142,18 +143,19 @@ function quality(){var v=$("video");if(!v.videoWidth)return;try{var c=cropFromVi
   else if(q.brightness>225){el.className="bad";el.textContent="Terlalu silau - miringkan sedikit"}
   else if(q.sharpness<120){el.className="warn";el.textContent="Belum fokus - tahan HP sebentar"}
   else{el.className="ok";el.textContent="Bagus - tahan, lalu ambil foto"}}catch(e){}}
-$("btnShot").onclick=function(){var v=$("video");if(!v.videoWidth)return;var c=cropFromVideo(),W=Math.min(2400,Math.round(c.sw)),H=Math.round(W*c.sh/c.sw),cv=document.createElement("canvas");cv.width=W;cv.height=H;cv.getContext("2d").drawImage(v,c.sx,c.sy,c.sw,c.sh,0,0,W,H);process(cv)};
-$("fileIn").onchange=function(e){var f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;var url=URL.createObjectURL(f),img=new Image();img.onload=function(){var W=Math.min(2400,img.naturalWidth),H=Math.round(W*img.naturalHeight/img.naturalWidth),cv=document.createElement("canvas");cv.width=W;cv.height=H;cv.getContext("2d").drawImage(img,0,0,W,H);URL.revokeObjectURL(url);process(cv)};img.onerror=function(){showMsg(msg,"Foto tidak bisa dibuka","err")};img.src=url};
+$("btnShot").onclick=function(){var v=$("video");if(!v.videoWidth)return;var c=cropFromVideo(),W=Math.min(3200,Math.round(c.sw)),H=Math.round(W*c.sh/c.sw),cv=document.createElement("canvas");cv.width=W;cv.height=H;cv.getContext("2d").drawImage(v,c.sx,c.sy,c.sw,c.sh,0,0,W,H);process(cv)};
+$("fileIn").onchange=function(e){var f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;var url=URL.createObjectURL(f),img=new Image();img.onload=function(){var W=Math.min(3200,img.naturalWidth),H=Math.round(W*img.naturalHeight/img.naturalWidth),cv=document.createElement("canvas");cv.width=W;cv.height=H;cv.getContext("2d").drawImage(img,0,0,W,H);URL.revokeObjectURL(url);process(cv)};img.onerror=function(){showMsg(msg,"Foto tidak bisa dibuka","err")};img.src=url};
 
 // ---------------- proses ----------------
 function prog(label,pct){$("procLabel").textContent=label;$("procBar").style.width=pct+"%"}
 function loadScript(src){return new Promise(function(res,rej){if(window.Tesseract)return res();var s=document.createElement("script");s.src=src;s.onload=res;s.onerror=function(){rej(new Error("Gagal memuat pembaca teks (cek internet)."))};document.head.appendChild(s)})}
-var VARIAN=[{W:2400,ch:"r"},{W:3200,ch:"luma"},{W:3200,ch:"r"}];
+// Dot-matrix = titik renggang. Varian 2-4 menghaluskan + menebalkan goresan supaya huruf utuh.
+var VARIAN=[{W:2400,ch:"r",dil:0,blur:false},{W:3000,ch:"r",dil:1,blur:true},{W:3200,ch:"luma",dil:1,blur:true},{W:3600,ch:"r",dil:1,blur:false,C:10}];
 function ocr(canvas){
   prog("Menyiapkan pembaca teks (pertama kali +-3 MB)...",3);
   var aktif=0;
   return loadScript(TESS_JS).then(function(){
-    return window.Tesseract.createWorker("eng",1,{langPath:TESS_LANG,logger:function(m){if(m.status==="recognizing text")prog("Membaca teks (percobaan "+(aktif+1)+"/"+VARIAN.length+")...",10+aktif*28+Math.round(m.progress*26));else if(m.status&&m.status.indexOf("loading")===0)prog("Memuat data bahasa...",8)}});
+    return window.Tesseract.createWorker("eng",1,{langPath:TESS_LANG,logger:function(m){if(m.status==="recognizing text")prog("Membaca teks (percobaan "+(aktif+1)+"/"+VARIAN.length+")...",10+aktif*22+Math.round(m.progress*20));else if(m.status&&m.status.indexOf("loading")===0)prog("Memuat data bahasa...",8)}});
   }).then(function(worker){
     var best=null,bestScore=-1;
     function stop(){try{worker.terminate()}catch(e){}}
@@ -162,16 +164,16 @@ function ocr(canvas){
       VARIAN.forEach(function(v,k){chain=chain.then(function(){
         if(done)return;aktif=k;
         var W=v.W,H=Math.round(W*canvas.height/canvas.width),c=document.createElement("canvas");c.width=W;c.height=H;var x=c.getContext("2d");x.drawImage(canvas,0,0,W,H);
-        prog("Membersihkan foto (percobaan "+(k+1)+"/"+VARIAN.length+")...",8+k*28);
+        prog("Membersihkan foto (percobaan "+(k+1)+"/"+VARIAN.length+")...",8+k*22);
         return new Promise(function(r){setTimeout(r,30)}).then(function(){
-          var id=x.getImageData(0,0,W,H),bin=P.binarize(id,{channel:v.ch});
+          var id=x.getImageData(0,0,W,H),bin=P.binarize(id,{channel:v.ch,dilate:v.dil,blur:v.blur,C:v.C});
           for(var i=0,p=0;i<bin.length;i++,p+=4){id.data[p]=id.data[p+1]=id.data[p+2]=bin[i];id.data[p+3]=255}
           x.putImageData(id,0,0);
           return worker.recognize(c);
         }).then(function(r){
           var res=isSJ?P.parseSuratJalan(r.data.text):P.parseInvoice(r.data.text),sc=P.scoreResult(qs,res);
           if(sc>bestScore){best=res;bestScore=sc;best.rawText=r.data.text}
-          if(isSJ?sc>=9:res.totalCocok)done=true;
+          if(isSJ?sc>=10:res.totalCocok)done=true;
         });
       })});
       return chain;
@@ -180,12 +182,15 @@ function ocr(canvas){
 }
 function process(canvas){
   stopCam();hideMsg(msg);
-  var pw=Math.min(1800,canvas.width),ph=Math.round(pw*canvas.height/canvas.width),pc=document.createElement("canvas");pc.width=pw;pc.height=ph;pc.getContext("2d").drawImage(canvas,0,0,pw,ph);
-  photoUrl=pc.toDataURL("image/jpeg",0.85);show("proc");prog("Memulai...",2);
+  var pw=Math.min(2200,canvas.width),ph=Math.round(pw*canvas.height/canvas.width),pc=document.createElement("canvas");pc.width=pw;pc.height=ph;pc.getContext("2d").drawImage(canvas,0,0,pw,ph);
+  photoUrl=pc.toDataURL("image/jpeg",0.9);show("proc");prog("Memulai...",2);
   var p;
   if(config.ai&&$("useAi").checked){prog("AI membaca dokumen...",30);p=api.post("/scan/ai-extract",{tipe:qs,image:photoUrl}).then(function(j){return P.fromAi(qs,j)},function(e){alert("AI gagal: "+e.message+"\nMemakai pembaca bawaan.");return ocr(canvas)})}
   else p=ocr(canvas);
-  p.then(apply).catch(function(e){show("capture");showMsg(msg,e.message||"Gagal membaca dokumen","err");startCam()});
+  p.then(function(h){return masterReady.then(function(){return h})}).then(function(h){
+    // hasil dibaca sebelum master termuat? parse ulang jenis dgn master terbaru
+    if(isSJ&&h.jenisBarang){var rj=P.resolveJenis(h.jenisBarang);h.jenisBarang=rj.jenis;h.jenisKode=rj.kode;if(rj.warn)h.warnings.push(rj.warn)}
+    return h}).then(apply).catch(function(e){show("capture");showMsg(msg,e.message||"Gagal membaca dokumen","err");startCam()});
 }
 
 // ---------------- review ----------------
@@ -195,11 +200,11 @@ function apply(h){
   $("photo").src=photoUrl;$("photo").onclick=function(){this.style.maxHeight=this.style.maxHeight==="none"?"260px":"none"};
   if(isSJ){
     $("formSJ").style.display="block";$("formINV").style.display="none";
-    $("sj_no").value=h.no;$("sj_tanggal").value=h.tanggal;$("sj_jam").value=h.jam;$("sj_penerima").value=h.penerima||h.dari;$("sj_tujuan").value=h.tujuan;$("sj_jenis").value=h.jenisBarang;$("sj_nopol").value=h.noPolisi;
+    $("sj_no").value=h.no;$("sj_tanggal").value=h.tanggal||new Date().toISOString().slice(0,10);$("sj_jam").value=h.jam;$("sj_penerima").value=h.penerima||h.dari;$("sj_tujuan").value=h.tujuan;$("sj_jenis").value=h.jenisBarang;$("sj_nopol").value=h.noPolisi;
     $("sj_p").value=h.panjang||"";$("sj_l").value=h.lebar||"";$("sj_t").value=h.tinggi||"";$("sj_timpa").checked=false;$("sj_divisi").value=def;
     var m=P.matchCustomer(customers,{nama:h.dari||h.penerima});$("sj_customer").value=m?m.id:"";
     $("sj_match").textContent=m?("Terbaca \""+(h.dari||h.penerima)+"\" -> cocok "+Math.round(m.score*100)+"%"):"";
-    var w=h.warnings.slice();if(!m)w.push("Customer belum cocok otomatis - pilih manual.");warns(w);sjM3();
+    var w=h.warnings.slice();if(!m)w.push("Customer belum cocok otomatis - boleh dipilih nanti, surat jalan tetap bisa disimpan.");warns(w);sjM3();
   }else{
     $("formSJ").style.display="none";$("formINV").style.display="block";
     var m2=P.matchCustomer(customers,{kode:h.kodeCustomer,nama:h.namaCustomer});
@@ -215,6 +220,8 @@ function apply(h){
 function f3(n){return (Math.round(n*1000)/1000).toFixed(3)}
 function sjM3(){$("sj_m3").textContent="M3 = P x L x T = "+f3(P.hitungM3($("sj_p").value,$("sj_l").value,$("sj_t").value))}
 ["sj_p","sj_l","sj_t"].forEach(function(id){$(id).oninput=sjM3});
+function rapikanJenis(){var rj=P.resolveJenis($("sj_jenis").value);if(rj.jenis)$("sj_jenis").value=rj.jenis;return rj}
+$("sj_jenis").onchange=function(){var rj=rapikanJenis();if(rj.warn)showMsg(msg,rj.warn,"err");else hideMsg(msg)};
 
 function rowM3(r){return P.hitungM3(r.panjang,r.lebar,r.tinggi)}
 function rowJml(r){return Math.round(rowM3(r)*(Number(r.harga)||0))}
@@ -223,16 +230,16 @@ function renderRows(){
   var box=$("iv_rows");box.innerHTML="";$("iv_count").textContent="Baris invoice ("+rows.length+")";
   rows.forEach(function(r,i){
     var d=document.createElement("div");d.className="irow"+(r.warn&&r.warn.length?" bad":"");
-    d.innerHTML='<table class="g4"><tr><td style="width:36%"><label>#'+(i+1)+' No SJ</label><input type="text" data-k="noSJ"></td><td><label>Tgl kirim</label><input type="date" data-k="tglKirim"></td><td style="width:34px;vertical-align:bottom"><button type="button" class="btn danger" style="padding:6px 8px" data-del="1">x</button></td></tr></table>'+
+    d.innerHTML='<table class="g4"><tr><td style="width:36%"><label>#'+(i+1)+' No SJ</label><input type="text" data-k="noSJ"></td><td><label>Tgl kirim</label><input type="date" data-k="tglKirim"></td><td style="width:52px"><label>Kode</label><input type="text" data-k="kode" maxlength="3" placeholder="BB"></td><td style="width:34px;vertical-align:bottom"><button type="button" class="btn danger" style="padding:6px 8px" data-del="1">x</button></td></tr></table>'+
     '<table class="g4"><tr><td><label>P</label><input type="number" step="0.01" data-k="panjang"></td><td><label>L</label><input type="number" step="0.01" data-k="lebar"></td><td><label>T</label><input type="number" step="0.01" data-k="tinggi"></td><td style="width:34%"><label>Harga/m3</label><input type="number" step="500" data-k="harga"></td></tr></table><div class="sum" style="font-size:13px;margin-top:6px"></div><div class="chipbox"></div><div class="rw"></div>';
     var ins=d.getElementsByTagName("input");
-    for(var k=0;k<ins.length;k++)(function(inp){var key=inp.getAttribute("data-k");inp.value=r[key]===0||r[key]===undefined?"":r[key];inp.oninput=function(){r[key]=(inp.type==="number")?(inp.value===""?0:Number(inp.value)):inp.value;sum(d,r);tot()}})(ins[k]);
+    for(var k=0;k<ins.length;k++)(function(inp){var key=inp.getAttribute("data-k");inp.value=r[key]===0||r[key]===undefined?"":r[key];inp.oninput=function(){r[key]=(inp.type==="number")?(inp.value===""?0:Number(inp.value)):inp.value;sum(d,r);tot()};if(key==="kode")inp.onchange=function(){var kd=P.fixKode(inp.value);if(kd){inp.value=kd;r.kode=kd}}})(ins[k]);
     d.querySelector("[data-del]").onclick=function(){rows.splice(i,1);renderRows()};
     var cb=d.querySelector(".chipbox");
     if(r.sjStatus){var c=document.createElement("div");c.className="chip "+r.sjStatus;
       if(r.sjStatus==="ADA"){c.innerHTML="&#10004; SJ di sistem: <b>"+escapeHtml(r.sjInfo.no)+"</b>"+(r.sjInfo.tertagih?' <span class="red"> sudah ditagih di '+escapeHtml(r.sjInfo.invoiceNo)+"</span>":"")}
       else if(r.sjStatus==="SARAN"){c.innerHTML="? Mirip SJ <b>"+escapeHtml(r.sjInfo.no)+"</b> ("+iso(r.sjInfo.tanggal)+", ukuran sama) ";var bt=document.createElement("button");bt.type="button";bt.className="btn secondary";bt.style.cssText="padding:3px 8px;font-size:12px";bt.textContent="Pakai ini";bt.onclick=function(){r.suratJalanId=r.sjInfo.id;r.noSJ=String(r.sjInfo.no).replace(/\D/g,"");r.tglKirim=iso(r.sjInfo.tanggal);r.sjStatus="ADA";renderRows()};c.appendChild(bt)}
-      else c.textContent="+ SJ belum ada - akan dibuat otomatis (BM-"+r.noSJ+")";
+      else c.textContent="+ SJ belum ada - akan dibuat otomatis (BM-"+r.noSJ+(r.jenisBarang?", "+r.jenisBarang:"")+")";
       cb.appendChild(c)}
     if(r.warn&&r.warn.length){var h2="<ul style='margin:6px 0 0 16px;padding:0;font-size:12px;color:#a35a00'><li style='list-style:none;margin-left:-16px;font-weight:bold'>Catatan hasil baca awal (abaikan bila sudah diperbaiki):</li>";for(var w=0;w<r.warn.length;w++)h2+="<li>"+escapeHtml(r.warn[w])+"</li>";d.querySelector(".rw").innerHTML=h2+"</ul>"}
     sum(d,r);box.appendChild(d);
@@ -257,24 +264,25 @@ $("btnRetake").onclick=function(){show("capture");hideMsg(msg);startCam()};
 function nextShot(){photoUrl="";show("capture");startCam();window.scrollTo(0,0)}
 $("btnSaveSJ").onclick=function(){
   hideMsg(msg);var b=this;
-  if(!$("sj_no").value||!$("sj_tanggal").value){showMsg(msg,"Nomor dan tanggal wajib diisi","err");return}
-  if(!$("sj_customer").value){showMsg(msg,"Pilih customer dulu","err");return}
+  // Hanya nomor yang wajib. Customer, nopol, ukuran, tujuan, dll boleh kosong.
+  if(!$("sj_no").value.replace(/\s/g,"")){showMsg(msg,"Nomor surat jalan wajib diisi","err");window.scrollTo(0,0);return}
+  rapikanJenis();
   b.disabled=true;b.textContent="Menyimpan...";
-  api.post("/scan/surat-jalan",{no:$("sj_no").value.trim(),tanggal:$("sj_tanggal").value,jam:$("sj_jam").value,divisi:$("sj_divisi").value,customerId:$("sj_customer").value,penerima:$("sj_penerima").value,tujuan:$("sj_tujuan").value,jenisBarang:$("sj_jenis").value,noPolisi:$("sj_nopol").value,panjang:Number($("sj_p").value)||0,lebar:Number($("sj_l").value)||0,tinggi:Number($("sj_t").value)||0,timpa:$("sj_timpa").checked}).then(function(r){
+  api.post("/scan/surat-jalan",{no:$("sj_no").value.trim(),tanggal:$("sj_tanggal").value||undefined,jam:$("sj_jam").value,divisi:$("sj_divisi").value||"Supplier",customerId:$("sj_customer").value||undefined,penerima:$("sj_penerima").value,tujuan:$("sj_tujuan").value,jenisBarang:$("sj_jenis").value,noPolisi:$("sj_nopol").value,panjang:Number($("sj_p").value)||0,lebar:Number($("sj_l").value)||0,tinggi:Number($("sj_t").value)||0,timpa:$("sj_timpa").checked}).then(function(r){
     showMsg(msg,"Surat jalan "+$("sj_no").value+(r.diperbarui?" diperbarui":" tersimpan")+". Siap scan berikutnya.","ok");nextShot()
-  }).catch(function(e){showMsg(msg,e.message,"err");window.scrollTo(0,0)}).then(function(){b.disabled=false;b.textContent="Simpan Surat Jalan"});
+  }).catch(function(e){if(/sudah ada/i.test(e.message))$("sj_timpa").checked=true;showMsg(msg,e.message,"err");window.scrollTo(0,0)}).then(function(){b.disabled=false;b.textContent="Simpan Surat Jalan"});
 };
 $("btnSaveINV").onclick=function(){
   hideMsg(msg);var b=this;
   if(!$("iv_no").value||!$("iv_tanggal").value){showMsg(msg,"Nomor dan tanggal wajib diisi","err");return}
-  if(!$("iv_customer").value){showMsg(msg,"Pilih customer dulu","err");return}
+  if(!$("iv_customer").value){showMsg(msg,"Pilih customer dulu (invoice harus punya customer)","err");window.scrollTo(0,0);return}
   if(!rows.length){showMsg(msg,"Belum ada baris invoice","err");return}
   for(var i=0;i<rows.length;i++){var r=rows[i];if(!r.noSJ||!(rowM3(r)>0)||!(Number(r.harga)>0)){showMsg(msg,"Baris #"+(i+1)+": nomor SJ, ukuran P-L-T, dan harga wajib terisi","err");return}
     if(r.sjInfo&&r.sjInfo.tertagih&&r.suratJalanId){showMsg(msg,"SJ "+r.sjInfo.no+" sudah ditagih di invoice "+r.sjInfo.invoiceNo,"err");return}}
   var t=tot();if(ivTotalKertas&&Math.abs(t-ivTotalKertas)>1&&!confirm("Total hitungan "+rupiah(t)+" berbeda dari total di kertas "+rupiah(ivTotalKertas)+".\nTetap simpan?"))return;
   b.disabled=true;b.textContent="Menyimpan...";
   api.post("/scan/invoice",{no:$("iv_no").value.trim(),tanggal:$("iv_tanggal").value,halaman:Number($("iv_hal").value)||1,divisi:$("iv_divisi").value,customerId:$("iv_customer").value,jenisDefault:$("iv_jenis").value,buatRekap:$("iv_rekap").checked,
-    items:rows.map(function(r){return{suratJalanId:r.suratJalanId||undefined,noSJ:r.noSJ,tglKirim:r.tglKirim,kode:r.kode,alamat:r.alamat,panjang:r.panjang,lebar:r.lebar,tinggi:r.tinggi,harga:r.harga}})}).then(function(r){
+    items:rows.map(function(r){return{suratJalanId:r.suratJalanId||undefined,noSJ:r.noSJ,tglKirim:r.tglKirim,kode:r.kode,jenisBarang:P.jenisDariKode(r.kode,$("iv_jenis").value)||undefined,alamat:r.alamat,panjang:r.panjang,lebar:r.lebar,tinggi:r.tinggi,harga:r.harga}})}).then(function(r){
     showMsg(msg,"Invoice "+r.no+" tersimpan ("+r.baris+" baris, "+rupiah(r.total)+")"+(r.sjBaru?", "+r.sjBaru+" SJ baru":"")+($("iv_rekap").checked?", rekap +"+r.rekapBaru:"")+".","ok");nextShot()
   }).catch(function(e){showMsg(msg,e.message,"err");window.scrollTo(0,0)}).then(function(){b.disabled=false;b.textContent="Simpan Invoice"});
 };

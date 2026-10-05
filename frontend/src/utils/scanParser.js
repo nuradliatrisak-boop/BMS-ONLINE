@@ -69,6 +69,152 @@ const factory = function () {
     return out;
   }
 
+
+  // ------------------------------------------------------- master jenis barang
+  // MASTER = [{kode, nama}] dari /api/stock-master (diisi lewat setMaster).
+  // Dipakai untuk: (1) menambah spasi yang hilang, (2) membetulkan nama yang salah
+  // baca sedikit (FASIR BANGKA -> PASIR BANGKA), (3) menentukan kode barang.
+  var MASTER = [], BY_KODE = {};
+  var VOCAB = {};
+  var KATA = ["PASIR", "BATU", "BANGKA", "SPLIT", "PUTIH", "URUK", "BELAH", "CUCI", "CELUP", "COR", "HITAM",
+    "LAMPUNG", "SUPER", "ABU", "EXTRA", "BETON", "AYAK", "BELITUNG", "CILEGON", "RANGKAS", "CIWANDAN",
+    "JAMBI", "KALIMANTAN", "MALIMPING", "TAYAN", "PAP"];
+  (function () { for (var i = 0; i < KATA.length; i++) VOCAB[KATA[i]] = 1; })();
+
+  function setMaster(list) {
+    var i, j, w;
+    MASTER = []; BY_KODE = {};
+    VOCAB = {};
+    for (i = 0; i < KATA.length; i++) VOCAB[KATA[i]] = 1;
+    for (i = 0; i < (list || []).length; i++) {
+      var it = list[i];
+      if (!it || !it.kode || !it.nama || it.aktif === false) continue;
+      var kode = String(it.kode).toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (!kode) continue;
+      var rec = { kode: kode, nama: String(it.nama).toUpperCase().replace(/\s+/g, " ").trim() };
+      MASTER.push(rec); BY_KODE[kode] = rec;
+      // kata dari nama yang MEMANG berspasi di master ikut jadi kamus pemisah spasi
+      if (rec.nama.indexOf(" ") > 0) {
+        var ws = rec.nama.split(/[^A-Z0-9]+/);
+        for (j = 0; j < ws.length; j++) { w = ws[j]; if (w.length >= 3) VOCAB[w] = 1; }
+      }
+    }
+  }
+
+  // "PASIRBANGKA" -> "PASIR BANGKA" (hanya kalau seluruh kata bisa dipecah jadi kata yang dikenal)
+  function pecahKata(tok) {
+    var n = tok.length, best = [], from = [], i, j;
+    if (n < 6 || !/^[A-Z]+$/.test(tok)) return tok;
+    for (i = 0; i <= n; i++) { best[i] = 1e9; from[i] = -1; }
+    best[0] = 0;
+    for (i = 1; i <= n; i++) {
+      for (j = 0; j < i; j++) {
+        if (best[j] < 1e9 && i - j >= 3 && VOCAB[tok.slice(j, i)] && best[j] + 1 < best[i]) { best[i] = best[j] + 1; from[i] = j; }
+      }
+    }
+    if (best[n] >= 1e9 || best[n] < 2) return tok;
+    var parts = [], p = n;
+    while (p > 0) { parts.unshift(tok.slice(from[p], p)); p = from[p]; }
+    return parts.join(" ");
+  }
+  function spasiNama(s) {
+    s = String(s || "").toUpperCase().replace(/\s+/g, " ").trim();
+    var toks = s.split(" "), i;
+    for (i = 0; i < toks.length; i++) toks[i] = pecahKata(toks[i]);
+    return toks.join(" ");
+  }
+  // "JL.SUNTER" -> "JL. SUNTER"
+  function rapikanAlamat(s) {
+    return String(s || "").replace(/\b(JL|JLN|GG)\.?(?=[A-Z]{3})/gi, function (m, a) { return a.toUpperCase() + ". "; }).replace(/\s+/g, " ").trim();
+  }
+
+  function lev(a, b) {
+    var m = a.length, n = b.length, i, j, prev = [], cur = [];
+    for (j = 0; j <= n; j++) prev[j] = j;
+    for (i = 1; i <= m; i++) {
+      cur = [i];
+      for (j = 1; j <= n; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+      }
+      prev = cur;
+    }
+    return prev[n];
+  }
+  // 0..1, spasi diabaikan (PASIRBANGKA == PASIR BANGKA)
+  function nameScore(a, b) {
+    a = norm(a); b = norm(b);
+    if (!a || !b) return 0;
+    if (a === b) return 1;
+    return Math.max(1 - lev(a, b) / Math.max(a.length, b.length), similarity(a, b));
+  }
+
+  // Kode 2 huruf; OCR sering menukar huruf/angka (88 -> BB). Return kode valid di master atau "".
+  function fixKode(k) {
+    k = String(k || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!k) return "";
+    if (BY_KODE[k]) return k;
+    var alt = k.replace(/8/g, "B").replace(/0/g, "O").replace(/5/g, "S").replace(/1/g, "I").replace(/6/g, "G").replace(/2/g, "Z");
+    return BY_KODE[alt] ? alt : "";
+  }
+
+  // Teks jenis barang (hasil baca / ketikan) -> {jenis:"PASIR BANGKA / BA", nama, kode, matched, warn}
+  //  - ada kode di kertas & valid  -> pakai kode itu (nama diambil dari master)
+  //  - hanya nama                  -> cocokkan ke master (toleran salah baca), kode ditentukan otomatis
+  //  - tidak ada di master         -> dipertahankan apa adanya (spasi dirapikan), tetap boleh disimpan
+  function resolveJenis(raw) {
+    var out = { jenis: "", nama: "", kode: "", matched: false, warn: "" };
+    var s = String(cleanField(raw) || "").toUpperCase().replace(/\s+/g, " ").trim();
+    if (!s) return out;
+    var name = s, kode = "", cm, i, sc;
+    if (s.length === 2 && fixKode(s)) { name = ""; kode = fixKode(s); }
+    else if ((cm = /^(.*?)[\s\/|\\_,;:\-]+([A-Z0-9]{2})$/.exec(s)) && fixKode(cm[2])) { name = cm[1].replace(/[\s\/|\\_,;:\-]+$/, ""); kode = fixKode(cm[2]); }
+    var codeItem = kode ? BY_KODE[kode] : null;
+
+    var best = null, second = 0;
+    if (name && MASTER.length) {
+      for (i = 0; i < MASTER.length; i++) {
+        sc = nameScore(name, MASTER[i].nama);
+        if (!best || sc > best.score) { if (best) second = Math.max(second, best.score); best = { item: MASTER[i], score: sc }; }
+        else if (sc > second) second = sc;
+      }
+    }
+    var nameItem = best && best.score >= 0.7 && (best.score === 1 || best.score - second >= 0.04) ? best.item : null;
+
+    var item = null;
+    if (codeItem) {
+      item = codeItem; // kode di kertas = acuan utama
+      if (nameItem && nameItem.kode !== codeItem.kode && best.score >= 0.8) {
+        out.warn = "Nama “" + name + "” mirip " + nameItem.nama + " (" + nameItem.kode + "), tapi kode di kertas " + codeItem.kode + " (" + codeItem.nama + "). Dipakai kode di kertas, cek lagi.";
+      }
+    } else if (nameItem) item = nameItem;
+
+    if (item) {
+      out.nama = spasiNama(item.nama); out.kode = item.kode; out.matched = true;
+      out.jenis = out.nama + " / " + out.kode;
+      if (!out.warn && norm(name || "") !== norm(item.nama) && name) {
+        out.warn = "Jenis barang terbaca “" + s + "” dicocokkan ke master: " + out.jenis + ".";
+      }
+      return out;
+    }
+    out.nama = spasiNama(name); out.kode = kode;
+    out.jenis = out.nama + (kode ? " / " + kode : "");
+    if (MASTER.length && name) out.warn = "Jenis barang “" + out.nama + "” tidak ditemukan di master kode barang. Dibiarkan apa adanya (boleh disimpan).";
+    return out;
+  }
+
+  // Jenis barang untuk 1 baris invoice: kode baris + (opsional) nama umum yang diketik admin
+  function jenisDariKode(kode, jenisDefault) {
+    var kd = fixKode(kode), jd = String(jenisDefault || "").trim();
+    if (jd) {
+      var rj = resolveJenis(jd);
+      var nm = rj.matched ? rj.nama : spasiNama(jd.replace(/[\s\/\-]+[A-Z0-9]{2}$/, function (m) { return fixKode(m.replace(/[^A-Z0-9]/g, "")) ? "" : m; }));
+      var kk = kd || rj.kode || "";
+      return nm + (kk ? " / " + kk : "");
+    }
+    if (kd) return spasiNama(BY_KODE[kd].nama) + " / " + kd;
+    return "";
+  }
+
   // ------------------------------------------------------------ preprocess
   // imageData: {data: RGBA, width, height}. Hasil Uint8Array 0/255 (hitam-putih).
   // channel "r" (default) menghilangkan stempel/tinta merah & kertas pink.
@@ -79,6 +225,18 @@ const factory = function () {
     var gray = new Uint8Array(w * h), i, p;
     for (i = 0, p = 0; i < w * h; i++, p += 4) {
       gray[i] = channel === "luma" ? (src[p] * 299 + src[p + 1] * 587 + src[p + 2] * 114) / 1000 : src[p];
+    }
+    // sedikit haluskan (kernel 1-2-1) supaya titik-titik dot-matrix menyambung
+    if (opts.blur) {
+      var g2 = new Uint8Array(w * h), xx, yy;
+      for (yy = 0; yy < h; yy++) for (xx = 0; xx < w; xx++) {
+        var a0 = gray[yy * w + (xx > 0 ? xx - 1 : xx)], a1 = gray[yy * w + xx], a2 = gray[yy * w + (xx < w - 1 ? xx + 1 : xx)];
+        g2[yy * w + xx] = (a0 + 2 * a1 + a2) >> 2;
+      }
+      for (yy = 0; yy < h; yy++) for (xx = 0; xx < w; xx++) {
+        var b0 = g2[(yy > 0 ? yy - 1 : yy) * w + xx], b1 = g2[yy * w + xx], b2 = g2[(yy < h - 1 ? yy + 1 : yy) * w + xx];
+        gray[yy * w + xx] = (b0 + 2 * b1 + b2) >> 2;
+      }
     }
     var win = opts.window || Math.max(25, Math.round(w / 65));
     var C = opts.C === undefined ? 12 : opts.C;
@@ -100,6 +258,23 @@ const factory = function () {
         var sum = ii[(y1 + 1) * W1 + x1 + 1] - ii[y0 * W1 + x1 + 1] - ii[(y1 + 1) * W1 + x0] + ii[y0 * W1 + x0];
         out[y * w + x] = gray[y * w + x] < sum / area - C ? 0 : 255;
       }
+    }
+    // tebalkan goresan: titik dot-matrix yang renggang jadi huruf utuh (dilate piksel hitam)
+    var dil = opts.dilate | 0;
+    if (dil > 0) {
+      var tmp = new Uint8Array(w * h), k, xq, yq, hit;
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        hit = 255;
+        for (k = -dil; k <= dil; k++) { xq = x + k; if (xq >= 0 && xq < w && out[y * w + xq] === 0) { hit = 0; break; } }
+        tmp[y * w + x] = hit;
+      }
+      var out2 = new Uint8Array(w * h);
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        hit = 255;
+        for (k = -dil; k <= dil; k++) { yq = y + k; if (yq >= 0 && yq < h && tmp[yq * w + x] === 0) { hit = 0; break; } }
+        out2[y * w + x] = hit;
+      }
+      out = out2;
     }
     return out;
   }
@@ -155,9 +330,16 @@ const factory = function () {
     if (res.m3Terbaca && res.m3 && Math.abs(res.m3Terbaca - res.m3) > 0.002) {
       res.warnings.push("M3 di kertas " + res.m3Terbaca.toFixed(3) + " tidak sama dengan P×L×T = " + res.m3.toFixed(3) + ". Cek ukuran bak.");
     }
+    // jenis barang: rapikan spasi, cocokkan ke master, tentukan kode
+    var rj = resolveJenis(res.jenisBarang);
+    res.jenisBarang = rj.jenis;
+    res.jenisKode = rj.kode;
+    if (rj.warn) res.warnings.push(rj.warn);
+    if (!res.jenisBarang) res.warnings.push("Jenis barang tidak terbaca (boleh dikosongkan).");
+    res.tujuan = rapikanAlamat(res.tujuan);
     if (!res.no) res.warnings.push("Nomor surat jalan tidak terbaca.");
-    if (!res.tanggal) res.warnings.push("Tanggal tidak terbaca.");
-    if (!res.noPolisi) res.warnings.push("Nomor polisi tidak terbaca / kosong di kertas.");
+    if (!res.tanggal) res.warnings.push("Tanggal tidak terbaca (diisi hari ini bila dikosongkan).");
+    if (!res.noPolisi) res.warnings.push("Nomor polisi tidak terbaca / kosong di kertas (boleh disimpan kosong).");
     return res;
   }
 
@@ -233,9 +415,12 @@ const factory = function () {
     var noSJ = nm[1];
     var rest = after.slice(nm.index + nm[0].length);
 
-    var kode = "";
-    var km = /^\s*[-–—~_]?\s*([A-Z]{1,3})(?=\s)/.exec(rest);
-    if (km) kode = km[1];
+    var kode = "", kodeDipakai = false;
+    var km = /^\s*[-–—~_]?\s*([A-Z0-9]{1,3})(?=\s)/.exec(rest);
+    if (km) {
+      if (MASTER.length) { var kf = fixKode(km[1]); if (kf) { kode = kf; kodeDipakai = true; } }
+      else if (/^[A-Z]{1,3}$/.test(km[1])) { kode = km[1]; kodeDipakai = true; }
+    }
 
     var toks = rest.match(/\d[\d.,]*\d|\d/g) || [];
     var dims = [], m3Read = NaN, harga = NaN, jumlahRead = "", i, tk, val;
@@ -258,8 +443,8 @@ const factory = function () {
 
     var firstDim = dims.length ? rest.search(/\d[.,]\d{2,3}\s+\d[.,]\d{2,3}/) : -1;
     var addrPart = firstDim > 0 ? rest.slice(0, firstDim) : rest;
-    addrPart = addrPart.replace(/^\s*[-–—~_]?\s*[A-Z]{1,3}(?=\s)/, "");
-    var alamat = cleanField(addrPart.replace(/[^A-Za-z0-9.,\/\-() ]+/g, " "));
+    if (kodeDipakai) addrPart = addrPart.replace(/^\s*[-–—~_]?\s*[A-Z0-9]{1,3}(?=\s)/, "");
+    var alamat = rapikanAlamat(cleanField(addrPart.replace(/[^A-Za-z0-9.,\/\-() ]+/g, " ")));
 
     return {
       tglKirim: tglKirim, noSJ: noSJ, kode: kode, alamat: alamat,
@@ -272,6 +457,8 @@ const factory = function () {
 
   function finalizeRow(r) {
     r.warn = [];
+    if (r.kode) { var kf2 = fixKode(r.kode); if (kf2) r.kode = kf2; }
+    r.jenisBarang = r.kode && BY_KODE[r.kode] ? spasiNama(BY_KODE[r.kode].nama) + " / " + r.kode : "";
     r.m3 = hitungM3(r.panjang, r.lebar, r.tinggi);
     r.jumlah = Math.round(r.m3 * r.harga);
     if (!r.panjang || !r.lebar || !r.tinggi) r.warn.push("Ukuran P-L-T belum lengkap");
@@ -498,6 +685,7 @@ const factory = function () {
       if (r.dari || r.penerima) n += 1;
       if (r.tujuan) n += 1;
       if (r.jenisBarang) n += 1;
+      if (r.jenisKode) n += 1;
       if (r.panjang && r.lebar && r.tinggi) n += 2;
       if (r.m3Terbaca && Math.abs(r.m3Terbaca - r.m3) <= 0.002) n += 2;
       return n;
@@ -528,7 +716,8 @@ const factory = function () {
     binarize: binarize, quality: quality,
     parseSuratJalan: parseSuratJalan, parseInvoice: parseInvoice, fromAi: fromAi,
     finalizeRow: finalizeRow, sumInvoice: sumInvoice, reconcileHarga: reconcileHarga,
-    matchCustomer: matchCustomer, scoreResult: scoreResult, hitungM3: hitungM3, similarity: similarity, fmt: fmt
+    matchCustomer: matchCustomer, scoreResult: scoreResult, hitungM3: hitungM3, similarity: similarity, fmt: fmt,
+    setMaster: setMaster, resolveJenis: resolveJenis, jenisDariKode: jenisDariKode, spasiNama: spasiNama, fixKode: fixKode
   };
 };
 

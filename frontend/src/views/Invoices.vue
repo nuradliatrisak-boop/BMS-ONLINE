@@ -1,4 +1,5 @@
 <script setup>
+import ScanDokumen from "../components/ScanDokumen.vue";
 import { ref, onMounted, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { api } from "../services/api.js";
@@ -259,6 +260,9 @@ function goDetail(id) {
 }
 
 onMounted(load);
+
+// ---- Scan kamera (HP): foto Invoice kertas -> masuk sistem ----
+const showScan = ref(false);
 </script>
 
 <template>
@@ -268,7 +272,10 @@ onMounted(load);
       <div class="desc">Tagihan ke customer</div>
     </div>
 
-    <button class="btn btn-primary" @click="openModal">+ Buat Invoice</button>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap">
+      <button class="btn" @click="showScan = true">📷 Scan Invoice</button>
+      <button class="btn btn-primary" @click="openModal">+ Buat Invoice</button>
+    </div>
   </div>
 
   <div class="content">
@@ -478,6 +485,8 @@ onMounted(load);
       </div>
     </div>
   </div>
+
+  <ScanDokumen v-if="showScan" tipe="INVOICE" @close="showScan = false" @saved="load" />
 </template>
 
 <style scoped>

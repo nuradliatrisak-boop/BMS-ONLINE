@@ -27,6 +27,7 @@ import rekapAlatRoutes from "./routes/rekapAlat.js";
 import sopirRoutes from "./routes/sopir.js";
 import uangMakanAlatRoutes from "./routes/uangMakanAlat.js";
 import laporanNetRoutes from "./routes/laporanNet.js";
+import scanRoutes from "./routes/scan.js";
 
 import { requireAuth, requireRole } from "./middleware/auth.js";
 
@@ -58,6 +59,10 @@ app.use(
     credentials: true,
   })
 );
+// Scan kamera mengirim foto (base64) -> butuh batas body lebih besar dari default
+// 100kb. HARUS dipasang SEBELUM express.json() global di bawah.
+app.use("/api/scan", requireAuth, express.json({ limit: "12mb" }), scanRoutes);
+
 app.use(express.json());
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));

@@ -1,4 +1,5 @@
 <script setup>
+import ScanDokumen from "../components/ScanDokumen.vue";
 import { ref, onMounted, computed, watch, nextTick } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
@@ -559,6 +560,9 @@ async function exportSJXlsx(sj) {
 }
 
 onMounted(load);
+
+// ---- Scan kamera (HP): foto Surat Jalan kertas -> masuk sistem ----
+const showScan = ref(false);
 </script>
 
 <template>
@@ -568,7 +572,10 @@ onMounted(load);
       <div class="desc">Dokumen pengiriman barang</div>
     </div>
 
-    <button class="btn btn-primary" @click="openModal">+ Buat Surat Jalan</button>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap">
+      <button class="btn" @click="showScan = true">📷 Scan Surat Jalan</button>
+      <button class="btn btn-primary" @click="openModal">+ Buat Surat Jalan</button>
+    </div>
   </div>
 
   <div class="content">
@@ -906,6 +913,8 @@ onMounted(load);
       </div>
     </div>
   </div>
+
+  <ScanDokumen v-if="showScan" tipe="SJ" @close="showScan = false" @saved="reloadList" />
 </template>
 
 <style scoped>

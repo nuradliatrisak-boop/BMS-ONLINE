@@ -40,6 +40,7 @@ const config = reactive({ ai: false, model: null });
 const pakaiAi = ref(localStorage.getItem("bms.scan.ai") !== "0");
 
 const photoUrl = ref("");
+const rawText = ref("");
 const progress = ref({ label: "", pct: 0 });
 const errMsg = ref("");
 const zoomFoto = ref(false);
@@ -258,6 +259,7 @@ async function prosesCanvas(canvas) {
       }
     }
     if (!hasil) hasil = await bacaOcr(canvas);
+    rawText.value = hasil.rawText || "";
     terapkanHasil(hasil);
     step.value = "review";
     if (!isSJ.value && inv.customerId) cekSjDiSistem();
@@ -268,38 +270,57 @@ async function prosesCanvas(canvas) {
   }
 }
 
+// Beberapa percobaan pemrosesan foto (kanal warna & ukuran berbeda); dipilih hasil yang paling lengkap.
+const VARIAN = [
+  { W: 2400, channel: "r" },
+  { W: 3200, channel: "luma" },
+  { W: 3200, channel: "r" },
+];
+
 async function bacaOcr(canvas) {
   progress.value = { label: "Menyiapkan pembaca teks (pertama kali ±3 MB)…", pct: 3 };
   await loadScript(TESS_JS);
-  const W = 2400, H = Math.round((W * canvas.height) / canvas.width);
-  const c = document.createElement("canvas");
-  c.width = W; c.height = H;
-  const ctx = c.getContext("2d", { willReadFrequently: true });
-  ctx.drawImage(canvas, 0, 0, W, H);
-  progress.value = { label: "Membersihkan foto…", pct: 8 };
-  await new Promise((r) => setTimeout(r, 30));
-  const id = ctx.getImageData(0, 0, W, H);
-  const bin = P.binarize(id, { channel: "r" });
-  for (let i = 0, p = 0; i < bin.length; i++, p += 4) {
-    id.data[p] = id.data[p + 1] = id.data[p + 2] = bin[i];
-    id.data[p + 3] = 255;
-  }
-  ctx.putImageData(id, 0, 0);
-
+  let aktif = 0;
   const worker = await window.Tesseract.createWorker("eng", 1, {
     langPath: TESS_LANG,
     logger: (m) => {
-      if (m.status === "recognizing text") progress.value = { label: "Membaca teks…", pct: 20 + Math.round(m.progress * 75) };
-      else if (m.status && m.status.indexOf("loading") === 0) progress.value = { label: "Memuat data bahasa…", pct: 10 };
+      const dasar = 10 + aktif * 28;
+      if (m.status === "recognizing text") progress.value = { label: `Membaca teks (percobaan ${aktif + 1}/${VARIAN.length})…`, pct: dasar + Math.round(m.progress * 26) };
+      else if (m.status && m.status.indexOf("loading") === 0) progress.value = { label: "Memuat data bahasa…", pct: 8 };
     },
   });
+  let best = null, bestScore = -1;
   try {
     await worker.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
-    const { data } = await worker.recognize(c);
-    return isSJ.value ? P.parseSuratJalan(data.text) : P.parseInvoice(data.text);
+    for (let k = 0; k < VARIAN.length; k++) {
+      aktif = k;
+      const { W, channel } = VARIAN[k];
+      const H = Math.round((W * canvas.height) / canvas.width);
+      const c = document.createElement("canvas");
+      c.width = W; c.height = H;
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(canvas, 0, 0, W, H);
+      progress.value = { label: `Membersihkan foto (percobaan ${k + 1}/${VARIAN.length})…`, pct: 8 + k * 28 };
+      await new Promise((r) => setTimeout(r, 30));
+      const id = ctx.getImageData(0, 0, W, H);
+      const bin = P.binarize(id, { channel });
+      for (let i = 0, p = 0; i < bin.length; i++, p += 4) {
+        id.data[p] = id.data[p + 1] = id.data[p + 2] = bin[i];
+        id.data[p + 3] = 255;
+      }
+      ctx.putImageData(id, 0, 0);
+      const { data } = await worker.recognize(c);
+      const hasil = isSJ.value ? P.parseSuratJalan(data.text) : P.parseInvoice(data.text);
+      const sc = P.scoreResult(props.tipe, hasil);
+      if (sc > bestScore) { best = hasil; bestScore = sc; best.rawText = data.text; }
+      // sudah lengkap & cocok -> tidak perlu percobaan lagi
+      if (isSJ.value ? sc >= 9 : hasil.totalCocok) break;
+    }
   } finally {
     worker.terminate();
   }
+  return best;
 }
 
 function isoDateOnly(v) { return v ? String(v).slice(0, 10) : ""; }
@@ -537,6 +558,10 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="rv-form">
+          <details v-if="rawText" class="rv-raw">
+            <summary>Teks mentah hasil baca (untuk diagnosa)</summary>
+            <pre>{{ rawText }}</pre>
+          </details>
           <div v-if="(isSJ ? sj.warnings : inv.warnings).length" class="rv-warn">
             <b>⚠ Perlu dicek:</b>
             <ul><li v-for="(w, i) in (isSJ ? sj.warnings : inv.warnings)" :key="i">{{ w }}</li></ul>
@@ -716,6 +741,8 @@ onBeforeUnmount(() => {
 .chk input { width: auto; }
 .btn-save { padding: 13px; font-size: 16px; }
 .rv-warn { background: #fff4df; border: 1px solid #f0c36d; color: #7a4a00; padding: 8px 10px; border-radius: 8px; font-size: 13px; }
+.rv-raw { font-size: 12px; color: #475569; }
+.rv-raw pre { white-space: pre-wrap; background: #f1f5f9; padding: 8px; border-radius: 8px; max-height: 200px; overflow: auto; font-size: 11px; }
 .rv-warn ul { margin: 4px 0 0 18px; padding: 0; }
 
 .inv-rows { display: flex; flex-direction: column; gap: 8px; }

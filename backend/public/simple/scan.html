@@ -57,6 +57,7 @@
   <!-- 3. REVIEW -->
   <div id="stepReview" style="display:none">
     <div class="card"><img id="photo" alt="foto"><div style="font-size:11px;color:#666;margin:4px 0 8px">Ketuk foto untuk memperbesar. Cocokkan dengan isian di bawah.</div><button type="button" class="btn secondary" id="btnRetake">Foto ulang</button></div>
+    <details id="rawBox" style="display:none;font-size:12px;color:#475569;margin-bottom:8px"><summary>Teks mentah hasil baca (untuk diagnosa)</summary><pre id="rawTxt" style="white-space:pre-wrap;background:#f1f5f9;padding:8px;max-height:200px;overflow:auto;font-size:11px"></pre></details>
     <div id="warnBox" class="warnbox" style="display:none"></div>
 
     <div id="formSJ" class="card" style="display:none"><h2>Surat Jalan</h2>
@@ -147,19 +148,34 @@ $("fileIn").onchange=function(e){var f=e.target.files&&e.target.files[0];e.targe
 // ---------------- proses ----------------
 function prog(label,pct){$("procLabel").textContent=label;$("procBar").style.width=pct+"%"}
 function loadScript(src){return new Promise(function(res,rej){if(window.Tesseract)return res();var s=document.createElement("script");s.src=src;s.onload=res;s.onerror=function(){rej(new Error("Gagal memuat pembaca teks (cek internet)."))};document.head.appendChild(s)})}
+var VARIAN=[{W:2400,ch:"r"},{W:3200,ch:"luma"},{W:3200,ch:"r"}];
 function ocr(canvas){
   prog("Menyiapkan pembaca teks (pertama kali +-3 MB)...",3);
+  var aktif=0;
   return loadScript(TESS_JS).then(function(){
-    var W=2400,H=Math.round(W*canvas.height/canvas.width),c=document.createElement("canvas");c.width=W;c.height=H;var x=c.getContext("2d");x.drawImage(canvas,0,0,W,H);
-    prog("Membersihkan foto...",8);
-    return new Promise(function(r){setTimeout(r,30)}).then(function(){
-      var id=x.getImageData(0,0,W,H),bin=P.binarize(id,{channel:"r"});
-      for(var i=0,p=0;i<bin.length;i++,p+=4){id.data[p]=id.data[p+1]=id.data[p+2]=bin[i];id.data[p+3]=255}
-      x.putImageData(id,0,0);
-      return window.Tesseract.createWorker("eng",1,{langPath:TESS_LANG,logger:function(m){if(m.status==="recognizing text")prog("Membaca teks...",20+Math.round(m.progress*75));else if(m.status&&m.status.indexOf("loading")===0)prog("Memuat data bahasa...",10)}});
-    }).then(function(worker){
-      return worker.setParameters({tessedit_pageseg_mode:"6",preserve_interword_spaces:"1"}).then(function(){return worker.recognize(c)}).then(function(r){worker.terminate();return isSJ?P.parseSuratJalan(r.data.text):P.parseInvoice(r.data.text)},function(e){worker.terminate();throw e});
-    });
+    return window.Tesseract.createWorker("eng",1,{langPath:TESS_LANG,logger:function(m){if(m.status==="recognizing text")prog("Membaca teks (percobaan "+(aktif+1)+"/"+VARIAN.length+")...",10+aktif*28+Math.round(m.progress*26));else if(m.status&&m.status.indexOf("loading")===0)prog("Memuat data bahasa...",8)}});
+  }).then(function(worker){
+    var best=null,bestScore=-1;
+    function stop(){try{worker.terminate()}catch(e){}}
+    return worker.setParameters({tessedit_pageseg_mode:"6",preserve_interword_spaces:"1"}).then(function(){
+      var chain=Promise.resolve(),done=false;
+      VARIAN.forEach(function(v,k){chain=chain.then(function(){
+        if(done)return;aktif=k;
+        var W=v.W,H=Math.round(W*canvas.height/canvas.width),c=document.createElement("canvas");c.width=W;c.height=H;var x=c.getContext("2d");x.drawImage(canvas,0,0,W,H);
+        prog("Membersihkan foto (percobaan "+(k+1)+"/"+VARIAN.length+")...",8+k*28);
+        return new Promise(function(r){setTimeout(r,30)}).then(function(){
+          var id=x.getImageData(0,0,W,H),bin=P.binarize(id,{channel:v.ch});
+          for(var i=0,p=0;i<bin.length;i++,p+=4){id.data[p]=id.data[p+1]=id.data[p+2]=bin[i];id.data[p+3]=255}
+          x.putImageData(id,0,0);
+          return worker.recognize(c);
+        }).then(function(r){
+          var res=isSJ?P.parseSuratJalan(r.data.text):P.parseInvoice(r.data.text),sc=P.scoreResult(qs,res);
+          if(sc>bestScore){best=res;bestScore=sc;best.rawText=r.data.text}
+          if(isSJ?sc>=9:res.totalCocok)done=true;
+        });
+      })});
+      return chain;
+    }).then(function(){stop();return best},function(e){stop();throw e});
   });
 }
 function process(canvas){
@@ -175,6 +191,7 @@ function process(canvas){
 // ---------------- review ----------------
 function warns(list){var b=$("warnBox");if(!list.length){b.style.display="none";return}var h="<b>Perlu dicek:</b><ul>";for(var i=0;i<list.length;i++)h+="<li>"+escapeHtml(list[i])+"</li>";b.innerHTML=h+"</ul>";b.style.display="block"}
 function apply(h){
+  $("rawTxt").textContent=h.rawText||"";$("rawBox").style.display=h.rawText?"block":"none";
   $("photo").src=photoUrl;$("photo").onclick=function(){this.style.maxHeight=this.style.maxHeight==="none"?"260px":"none"};
   if(isSJ){
     $("formSJ").style.display="block";$("formINV").style.display="none";

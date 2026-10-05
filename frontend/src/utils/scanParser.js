@@ -60,6 +60,7 @@ const factory = function () {
     s = s.replace(/\s+(Nomor|Nomer|Tanggal|Halaman|No\.?\s*Invoice)\b.*$/i, "");
     s = s.replace(/^[^A-Za-z0-9]+/, "");
     s = s.replace(/[|_~=\\]+/g, " ").replace(/\s+/g, " ").trim();
+    s = s.replace(/[\s'"`+,;:*\-]+$/, "");
     return s;
   }
   function cleanLines(text) {
@@ -122,8 +123,33 @@ const factory = function () {
   }
 
   // ------------------------------------------------------------ Surat Jalan
+  // M3 di kertas biasanya terbaca benar (angka besar). Kalau P x L x T tidak cocok,
+  // coba cari SATU ukuran yang salah baca: ukuran = M3 / (dua ukuran lainnya).
+  function fixDimsByM3(res) {
+    var d = [res.panjang, res.lebar, res.tinggi], k, o, v, cand = [];
+    if (!res.m3Terbaca || !d[0] || !d[1] || !d[2]) return;
+    if (Math.abs(hitungM3(d[0], d[1], d[2]) - res.m3Terbaca) <= 0.002) return;
+    for (k = 0; k < 3; k++) {
+      o = d.filter(function (_, i) { return i !== k; });
+      v = res.m3Terbaca / (o[0] * o[1]);
+      var dec = k === 2 ? 3 : 2;
+      var rv = Math.round(v * Math.pow(10, dec)) / Math.pow(10, dec);
+      var test = d.slice(); test[k] = rv;
+      if (rv > 0 && Math.abs(hitungM3(test[0], test[1], test[2]) - res.m3Terbaca) <= 0.0008) cand.push({ k: k, v: rv });
+    }
+    if (cand.length === 1) {
+      var nm = ["Panjang", "Lebar", "Tinggi"][cand[0].k], was = d[cand[0].k];
+      if (cand[0].k === 0) res.panjang = cand[0].v; else if (cand[0].k === 1) res.lebar = cand[0].v; else res.tinggi = cand[0].v;
+      res.koreksi = (res.koreksi || []);
+      res.koreksi.push(nm + " dikoreksi otomatis " + was + " → " + cand[0].v + " (supaya cocok dengan M3 " + res.m3Terbaca.toFixed(3) + " di kertas). Cek lagi.");
+    }
+  }
+
   function finishSj(res) {
     res.warnings = [];
+    res.koreksi = [];
+    fixDimsByM3(res);
+    for (var kk = 0; kk < res.koreksi.length; kk++) res.warnings.push(res.koreksi[kk]);
     if (!res.panjang || !res.lebar || !res.tinggi) res.warnings.push("Ukuran bak (P-L-T) tidak terbaca, isi manual.");
     res.m3 = hitungM3(res.panjang, res.lebar, res.tinggi);
     if (res.m3Terbaca && res.m3 && Math.abs(res.m3Terbaca - res.m3) > 0.002) {
@@ -135,6 +161,14 @@ const factory = function () {
     return res;
   }
 
+  // "TU BATU SPLIT 7 9B" -> "BATU SPLIT" ; "BATU SPLIT / BB" tetap
+  function cleanJenis(v) {
+    v = cleanField(v).replace(/^(?:[A-Z]{1,2}\s+)+(?=[A-Z]{3,})/, "");
+    var m = /^(.*?)\s+[\/7T1|]\s+([A-Z0-9]{1,3})$/.exec(v);
+    if (m) return /^[A-Z]{2}$/.test(m[2]) ? m[1] + " / " + m[2] : m[1];
+    return v;
+  }
+
   function parseSuratJalan(text) {
     var t = String(text || ""), lines = cleanLines(t);
     var res = {
@@ -143,23 +177,30 @@ const factory = function () {
     };
     var m, li;
 
+    // Nomor: label bisa rusak ("Mosor") -> cari pola nomor itu sendiri (2 huruf + 6 digit, mis. BM-002096)
     m = /Nomo[rn]\s*[:=;.]?\s*([A-Za-z]{1,4})\s*[-–—~]?\s*(\d{3,8})/.exec(t);
-    if (m) res.no = m[1].toUpperCase() + "-" + m[2];
-    else if ((m = /Nomo[rn]\s*[:=;.]?\s*([A-Za-z0-9\-]{4,})/.exec(t))) res.no = m[1].toUpperCase();
+    if (!m) m = /\b([A-Z8]{2})\s*[-–—~=]?\s*(0\d{5})/.exec(t);
+    if (m) {
+      var pre = m[1].toUpperCase();
+      if (/^(BN|BH|8M|RM|EM|BW)$/.test(pre)) pre = "BM";
+      res.no = pre + "-" + m[2];
+    } else if ((m = /Nomo[rn]\s*[:=;.]?\s*([A-Za-z0-9\-]{4,})/.exec(t))) res.no = m[1].toUpperCase();
 
-    m = /Tanggal\s*[:=;.]?\s*(\d{1,2}\s*[\/\-.]\s*\d{1,2}\s*[\/\-.]\s*\d{2,4})/i.exec(t);
+    m = /Tan\w{2,5}\s*[:=;.&]?\s*(\d{1,2}\s*[\/\-.]\s*\d{1,2}\s*[\/\-.]\s*\d{2,4})/i.exec(t);
     res.tanggal = m ? findDate(m[1]) : findDate(t);
 
     m = /Jam\s*[:;.]?\s*(\d{1,2})\s*[:.]\s*(\d{2})(?:\s*[:.]\s*(\d{2}))?/.exec(t);
     if (m) res.jam = pad2(+m[1]) + ":" + m[2] + (m[3] ? ":" + m[3] : "");
 
+    // Label dicocokkan longgar (OCR sering salah huruf): "A/P Dari", "Pen...", "Tuj...", "Jenis Brg"
+    var SEP = "[\\s:=;.&|]*(?:[8$]\\s+)?";
     for (li = 0; li < lines.length; li++) {
       var ln = lines[li];
-      if (!res.dari && (m = /A\s*\/\s*P\s*Dari\s*[:=;.]?\s*(.+)/i.exec(ln))) res.dari = cleanField(m[1]);
-      if (!res.penerima && (m = /Penerima\s*[:=;.]?\s*(.+)/i.exec(ln))) res.penerima = cleanField(m[1]);
-      if (!res.tujuan && (m = /Tujuan\s*[:=;.]?\s*(.+)/i.exec(ln))) res.tujuan = cleanField(m[1]);
-      if (!res.jenisBarang && (m = /[Jj]enis\s*[Bb][rn]g[^A-Z]{0,5}([A-Z][A-Z0-9 \/.\-]{2,})/.exec(ln))) {
-        res.jenisBarang = cleanField(m[1]);
+      if (!res.dari && (m = new RegExp("A\\s*\\/\\s*P\\s*Da\\w{0,3}" + SEP + "(.+)", "i").exec(ln))) res.dari = cleanField(m[1]);
+      else if (!res.penerima && (m = new RegExp("^\\W*Pen\\w{3,7}\\b" + SEP + "(.+)", "i").exec(ln))) res.penerima = cleanField(m[1]);
+      else if (!res.tujuan && (m = new RegExp("Tuj\\w{2,4}\\b" + SEP + "(.+)", "i").exec(ln))) res.tujuan = cleanField(m[1]);
+      if (!res.jenisBarang && (m = /[JjdD]en\w{1,3}\s*[Bb]\w{1,2}[^A-Z]{0,5}([A-Z][A-Z0-9 \/.\-]{2,})/.exec(ln))) {
+        res.jenisBarang = cleanJenis(m[1]);
       }
     }
 
@@ -448,6 +489,27 @@ const factory = function () {
     return inv;
   }
 
+  // Nilai kualitas hasil baca (dipakai memilih percobaan OCR terbaik). Makin tinggi makin lengkap.
+  function scoreResult(tipe, r) {
+    var n = 0;
+    if (tipe === "SJ") {
+      if (r.no) n += 2;
+      if (r.tanggal) n += 1;
+      if (r.dari || r.penerima) n += 1;
+      if (r.tujuan) n += 1;
+      if (r.jenisBarang) n += 1;
+      if (r.panjang && r.lebar && r.tinggi) n += 2;
+      if (r.m3Terbaca && Math.abs(r.m3Terbaca - r.m3) <= 0.002) n += 2;
+      return n;
+    }
+    if (r.no) n += 2;
+    if (r.tanggal) n += 1;
+    if (r.namaCustomer || r.kodeCustomer) n += 1;
+    n += Math.min(r.rows.length, 10) * 2;
+    if (r.totalCocok) n += 6;
+    return n;
+  }
+
   // ------------------------------------------------------ cocokkan customer
   // list: [{id, kode, nama}]; q: {kode, nama}. Return {id, score, nama} atau null.
   function matchCustomer(list, q) {
@@ -466,7 +528,7 @@ const factory = function () {
     binarize: binarize, quality: quality,
     parseSuratJalan: parseSuratJalan, parseInvoice: parseInvoice, fromAi: fromAi,
     finalizeRow: finalizeRow, sumInvoice: sumInvoice, reconcileHarga: reconcileHarga,
-    matchCustomer: matchCustomer, hitungM3: hitungM3, similarity: similarity, fmt: fmt
+    matchCustomer: matchCustomer, scoreResult: scoreResult, hitungM3: hitungM3, similarity: similarity, fmt: fmt
   };
 };
 

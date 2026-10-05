@@ -56,71 +56,103 @@ const PROMPT_INV = `Ini foto kertas INVOICE (cetak dot-matrix, PT Bintang Muara 
 {"no":"No. Invoice","tanggal":"YYYY-MM-DD","halaman":1,"kodeCustomer":"","namaCustomer":"","alamat":"alamat customer di header","rows":[{"tglKirim":"YYYY-MM-DD","noSJ":"No SJ tanpa awalan, mis. 002096","kode":"kode setelah no SJ mis. BB atau BS, kosong jika tidak ada","alamat":"Alamat Kirim","panjang":0,"lebar":0,"tinggi":0,"m3":0,"harga":0,"jumlah":0}],"totalM3":0,"totalTagihan":0}
 Aturan: satu objek per baris tabel (No 1,2,3,...). Angka berupa number tanpa pemisah ribuan (harga 445000, jumlah 2285965; P/L/T/m3 pakai titik desimal). totalTagihan dari "Jumlah Total Tagihan". Abaikan tulisan tangan, coretan, lingkaran/kotak spidol, dan stempel. Jika tidak terbaca jelas, isi "" atau 0 -- JANGAN menebak.`;
 
+let _kodeCache = { at: 0, txt: "" };
 async function daftarKodeBarang() {
+  // di-cache 60 detik supaya tiap foto tidak perlu query DB lagi
+  if (Date.now() - _kodeCache.at < 60000) return _kodeCache.txt;
   try {
     const list = await prisma.stockMaster.findMany({ where: { aktif: true }, orderBy: { kode: "asc" } });
-    if (!list.length) return "";
-    return `\nDaftar kode barang resmi (KODE=NAMA): ${list.map((x) => `${x.kode}=${x.nama}`).join("; ")}. Untuk "jenisBarang"/"kode", salin nama dan kode persis seperti tercetak di kertas; daftar ini hanya untuk membantu membaca huruf yang kabur.`;
+    const txt = !list.length
+      ? ""
+      : `\nDaftar kode barang resmi (KODE=NAMA): ${list.map((x) => `${x.kode}=${x.nama}`).join("; ")}. Untuk "jenisBarang"/"kode", salin nama dan kode persis seperti tercetak di kertas; daftar ini hanya untuk membantu membaca huruf yang kabur.`;
+    _kodeCache = { at: Date.now(), txt };
+    return txt;
   } catch {
     return "";
+  }
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Urutan model yang dicoba. Kalau model pertama sibuk (503) / kuotanya habis (429),
+// otomatis pindah ke model berikutnya -- ini penyebab utama popup "AI gagal" sebelumnya.
+function daftarModel() {
+  const utama = process.env.GEMINI_MODEL || "gemini-flash-latest";
+  const cadangan = (process.env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash,gemini-2.5-flash-lite")
+    .split(",").map((x) => x.trim()).filter(Boolean);
+  return [...new Set([utama, ...cadangan])];
+}
+
+// Satu panggilan ke satu model. Mengembalikan { ok, status, json, detail }.
+async function panggilGemini(model, key, parts, tanpaThinking) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 45000);
+  try {
+    const generationConfig = { temperature: 0, responseMimeType: "application/json" };
+    // Matikan "thinking" supaya jauh lebih cepat (baca dokumen tidak perlu berpikir panjang)
+    if (!tanpaThinking && /2\.5-flash/.test(model)) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig }),
+      }
+    );
+    if (r.ok) return { ok: true, status: 200, json: await r.json() };
+    let detail = "";
+    try { detail = (await r.json())?.error?.message || ""; } catch { /* abaikan */ }
+    return { ok: false, status: r.status, detail };
+  } catch (e) {
+    return { ok: false, status: e.name === "AbortError" ? 504 : 0, detail: e.name === "AbortError" ? "timeout" : e.message };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 async function geminiExtract(tipe, dataUrl) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw httpError(501, "AI belum diaktifkan di server (GEMINI_API_KEY belum diisi)");
-  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
   const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(String(dataUrl || ""));
   if (!m) throw httpError(400, "Format gambar tidak valid");
 
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 60000);
-  let r;
-  try {
-    r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-      {
-        method: "POST",
-        signal: ctrl.signal,
-        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                { text: (tipe === "INVOICE" ? PROMPT_INV : PROMPT_SJ) + (await daftarKodeBarang()) },
-                { inline_data: { mime_type: m[1], data: m[2] } },
-              ],
-            },
-          ],
-          generationConfig: { temperature: 0, responseMimeType: "application/json" },
-        }),
+  const parts = [
+    { text: (tipe === "INVOICE" ? PROMPT_INV : PROMPT_SJ) + (await daftarKodeBarang()) },
+    { inline_data: { mime_type: m[1], data: m[2] } },
+  ];
+
+  let terakhir = null;
+  for (const model of daftarModel()) {
+    // tiap model: maksimal 2 kali coba untuk error sementara (429/5xx/timeout)
+    for (let coba = 0; coba < 2; coba++) {
+      let r = await panggilGemini(model, key, parts, false);
+      // beberapa model menolak thinkingConfig -> ulangi tanpa itu
+      if (!r.ok && r.status === 400 && /thinking/i.test(r.detail || "")) r = await panggilGemini(model, key, parts, true);
+      if (r.ok) {
+        const text = (r.json?.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("");
+        try {
+          return JSON.parse(text.replace(/^```json\s*|```\s*$/g, "").trim());
+        } catch {
+          terakhir = { status: 502, detail: "jawaban AI tidak bisa dibaca" };
+          break; // ganti model
+        }
       }
-    );
-  } catch (e) {
-    throw httpError(504, e.name === "AbortError" ? "AI terlalu lama merespons, coba lagi" : "Gagal menghubungi AI: " + e.message);
-  } finally {
-    clearTimeout(timer);
-  }
-
-  if (!r.ok) {
-    let detail = "";
-    try { detail = (await r.json())?.error?.message || ""; } catch { /* abaikan */ }
-    if (r.status === 429) throw httpError(429, "Kuota gratis AI sedang habis, coba lagi nanti atau matikan opsi AI (pakai pembaca bawaan).");
-    if (r.status === 400 || r.status === 404) {
-      throw httpError(502, `AI menolak permintaan (${r.status}). Cek GEMINI_MODEL / GEMINI_API_KEY. ${detail}`.trim());
+      terakhir = r;
+      console.error(`[scan/ai] model=${model} status=${r.status} ${r.detail || ""}`.slice(0, 300));
+      const sementara = r.status === 429 || r.status === 0 || r.status === 504 || r.status >= 500;
+      if (!sementara) break;          // 400/403/404: percuma diulang di model yang sama
+      if (r.status === 429) break;    // kuota model ini habis -> langsung model berikutnya
+      await sleep(700 * (coba + 1));
     }
-    throw httpError(502, `AI error ${r.status}. ${detail}`.trim());
   }
 
-  const j = await r.json();
-  const text = (j?.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("");
-  try {
-    return JSON.parse(text.replace(/^```json\s*|```\s*$/g, "").trim());
-  } catch {
-    throw httpError(502, "Jawaban AI tidak bisa dibaca, coba foto ulang");
-  }
+  const st = terakhir?.status;
+  if (st === 429) throw httpError(429, "Kuota gratis AI sedang habis, coba lagi sebentar lagi.");
+  if (st === 400 || st === 403 || st === 404) throw httpError(502, `AI menolak permintaan (${st}). Cek GEMINI_MODEL / GEMINI_API_KEY. ${terakhir.detail || ""}`.trim());
+  if (st === 504) throw httpError(504, "AI terlalu lama merespons");
+  throw httpError(502, `AI sedang sibuk (${st || "tidak terhubung"}). ${terakhir?.detail || ""}`.trim());
 }
 
 router.post("/ai-extract", async (req, res, next) => {

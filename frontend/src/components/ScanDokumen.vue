@@ -34,14 +34,28 @@ const TESS_JS = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.
 const TESS_LANG = "https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int";
 
 // ------------------------------------------------------------------ state
-const step = ref("capture"); // capture | proses | review
+const step = ref("capture"); // capture | putar | daftar | review
+
+// --- antrian multi-foto ---
+// Pengguna memilih dulu berapa foto yang mau diambil. Tiap foto langsung dibaca di
+// latar belakang (paralel), jadi tidak perlu menunggu satu per satu.
+const target = ref(1);          // jumlah foto yang mau diambil di putaran ini
+const diambil = ref(0);         // sudah berapa foto di putaran ini
+const jobs = ref([]);           // {id,status,label,pct,photoUrl,hasil,snapshot,catatan,error}
+const curJob = ref(null);       // job yang sedang dibuka di layar cek
+const pending = ref([]);        // canvas dari file yang menunggu diputar
+const praUrl = ref("");
+const praPotret = ref(false);
+const flash = ref(false);
+const MAKS_FOTO = 10;
+const canvasMap = new Map();    // id job -> canvas asli (untuk OCR cadangan), dibuang setelah selesai
+let jobSeq = 0;
 const customers = ref([]);
 const config = reactive({ ai: false, model: null });
 const pakaiAi = ref(localStorage.getItem("bms.scan.ai") !== "0");
 
 const photoUrl = ref("");
 const rawText = ref("");
-const progress = ref({ label: "", pct: 0 });
 const errMsg = ref("");
 const zoomFoto = ref(false);
 
@@ -74,6 +88,26 @@ let skipWatch = false;
 const customerOptions = computed(() =>
   customers.value.map((c) => ({ value: c.id, label: `${c.kode} — ${c.nama}` }))
 );
+
+const master = ref([]);
+// Opsi dropdown jenis barang, format sama dengan hasil rapikan: "BATU SPLIT / BB"
+const jenisOptions = computed(() => {
+  const seen = new Set();
+  const out = [];
+  for (const x of master.value) {
+    if (x.aktif === false) continue;
+    const kode = String(x.kode || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!kode || !x.nama || seen.has(kode)) continue;
+    seen.add(kode);
+    const v = `${P.spasiNama(String(x.nama).toUpperCase().replace(/\s+/g, " ").trim())} / ${kode}`;
+    out.push({ value: v, label: v });
+  }
+  const cur = sj.jenisBarang;
+  if (out.length && cur && !out.some((o) => o.value === cur)) {
+    out.unshift({ value: cur, label: `${cur} (hasil baca — belum ada di master)` });
+  }
+  return out;
+});
 
 // ------------------------------------------------------------------ util
 const fmtRp = (n) => "Rp " + Math.round(n || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -215,59 +249,182 @@ function ambilFoto() {
   const c = document.createElement("canvas");
   c.width = outW; c.height = outH;
   c.getContext("2d").drawImage(v, sx, sy, sw, sh, 0, 0, outW, outH);
-  prosesCanvas(c);
+  flash.value = true;
+  setTimeout(() => (flash.value = false), 150);
+  antrikan(c);
+  // kamera tetap menyala untuk foto berikutnya; kalau jumlah foto sudah terpenuhi -> lihat hasil
+  if (diambil.value >= target.value) selesaiMengambil();
 }
 
-function dariFile(e) {
-  const file = e.target.files && e.target.files[0];
+function muatFile(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const w = Math.min(3200, img.naturalWidth);
+      const h = Math.round((w * img.naturalHeight) / img.naturalWidth);
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      c.getContext("2d").drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(c);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
+
+// Pilih banyak foto sekaligus dari galeri -> masing-masing bisa diputar dulu
+async function dariFile(e) {
+  const files = Array.from(e.target.files || []).slice(0, MAKS_FOTO);
   e.target.value = "";
-  if (!file) return;
-  const url = URL.createObjectURL(file);
-  const img = new Image();
-  img.onload = () => {
-    const w = Math.min(3200, img.naturalWidth);
-    const h = Math.round((w * img.naturalHeight) / img.naturalWidth);
-    const c = document.createElement("canvas");
-    c.width = w; c.height = h;
-    c.getContext("2d").drawImage(img, 0, 0, w, h);
-    URL.revokeObjectURL(url);
-    prosesCanvas(c);
-  };
-  img.onerror = () => { errMsg.value = "Foto tidak bisa dibuka."; };
-  img.src = url;
+  if (!files.length) return;
+  errMsg.value = "";
+  const cs = await Promise.all(files.map(muatFile));
+  const ok = cs.filter(Boolean);
+  if (ok.length !== cs.length) errMsg.value = "Ada foto yang tidak bisa dibuka.";
+  if (!ok.length) return;
+  stopCamera();
+  target.value = Math.min(MAKS_FOTO, Math.max(target.value, diambil.value + pending.value.length + ok.length));
+  pending.value.push(...ok);
+  tampilPutar();
 }
 
-// ------------------------------------------------------------------ proses
-async function prosesCanvas(canvas) {
+// ------------------------------------------------------------------ putar foto (sebelum diproses)
+function putarCanvas(c, deg) {
+  const swap = deg % 180 !== 0;
+  const o = document.createElement("canvas");
+  o.width = swap ? c.height : c.width;
+  o.height = swap ? c.width : c.height;
+  const x = o.getContext("2d");
+  x.translate(o.width / 2, o.height / 2);
+  x.rotate((deg * Math.PI) / 180);
+  x.drawImage(c, -c.width / 2, -c.height / 2);
+  return o;
+}
+function previewUrl(c) {
+  const w = Math.min(1100, c.width), h = Math.round((w * c.height) / c.width);
+  const t = document.createElement("canvas");
+  t.width = w; t.height = h;
+  t.getContext("2d").drawImage(c, 0, 0, w, h);
+  return t.toDataURL("image/jpeg", 0.75);
+}
+function tampilPutar() {
+  const c = pending.value[0];
+  if (!c) return selesaiPutar();
+  praUrl.value = previewUrl(c);
+  praPotret.value = c.height > c.width;
+  step.value = "putar";
+}
+function putarFoto(deg) {
+  pending.value[0] = putarCanvas(pending.value[0], deg);
+  tampilPutar();
+}
+function pakaiFotoPutar() {
+  const c = pending.value.shift();
+  if (c) antrikan(c);
+  tampilPutar();
+}
+function lewatiFotoPutar() {
+  pending.value.shift();
+  tampilPutar();
+}
+function selesaiPutar() {
+  if (jobs.value.length && diambil.value >= target.value) return selesaiMengambil();
+  step.value = "capture";
+  startCamera();
+}
+
+function selesaiMengambil() {
   stopCamera();
+  step.value = jobs.value.length ? "daftar" : "capture";
+  if (!jobs.value.length) startCamera();
+}
+function tambahFotoLagi() {
+  target.value = 1;
+  diambil.value = 0;
   errMsg.value = "";
+  step.value = "capture";
+  startCamera();
+}
+
+// ------------------------------------------------------------------ antrian & proses
+function bikinSem(n) {
+  let aktif = 0;
+  const q = [];
+  const next = () => {
+    if (aktif < n && q.length) {
+      aktif++;
+      const { fn, res, rej } = q.shift();
+      fn().then(res, rej).finally(() => { aktif--; next(); });
+    }
+  };
+  return { run: (fn) => new Promise((res, rej) => { q.push({ fn, res, rej }); next(); }) };
+}
+const semAi = bikinSem(3);   // sampai 3 foto dikirim ke AI bersamaan
+const semOcr = bikinSem(1);  // OCR bawaan berat -> satu per satu
+
+// Thumbnail kecil khusus untuk daftar hasil (ringan di layar); foto penuh tetap dipakai AI & layar cek
+function bikinThumb(c) {
+  const w = 220, h = Math.max(1, Math.round((w * c.height) / c.width));
+  const t = document.createElement("canvas");
+  t.width = w; t.height = h;
+  t.getContext("2d").drawImage(c, 0, 0, w, h);
+  return t.toDataURL("image/jpeg", 0.7);
+}
+
+function antrikan(canvas) {
+  // Foto untuk AI & layar cek: kualitas SAMA seperti sebelumnya (2200px, JPEG 0.9) supaya
+  // titik-titik cetakan dot-matrix tetap terbaca jelas. Kecepatan dicari dari proses paralel,
+  // bukan dari menurunkan kualitas foto.
   const pw = Math.min(2200, canvas.width), ph = Math.round((pw * canvas.height) / canvas.width);
   const pc = document.createElement("canvas");
   pc.width = pw; pc.height = ph;
   pc.getContext("2d").drawImage(canvas, 0, 0, pw, ph);
-  photoUrl.value = pc.toDataURL("image/jpeg", 0.9);
-  step.value = "proses";
+  jobs.value.push({
+    id: ++jobSeq, status: "antri", label: "Menunggu giliran…", pct: 0, dasar: 0,
+    photoUrl: pc.toDataURL("image/jpeg", 0.9),
+    thumb: bikinThumb(pc),
+    hasil: null, rawText: "", snapshot: "", catatan: "", error: "",
+  });
+  const job = jobs.value[jobs.value.length - 1];
+  canvasMap.set(job.id, canvas);
+  diambil.value++;
+  prosesJob(job);
+}
 
-  let hasil = null;
+async function prosesJob(job) {
+  job.error = "";
+  job.catatan = "";
+  job.status = "antri";
+  job.pct = 0;
   try {
+    let hasil = null;
     if (config.ai && pakaiAi.value) {
-      progress.value = { label: "AI membaca dokumen…", pct: 30 };
-      try {
-        const j = await api.post("/scan/ai-extract", { tipe: props.tipe, image: photoUrl.value });
-        hasil = P.fromAi(props.tipe, j);
-      } catch (e) {
-        toast("AI gagal: " + e.message + " — pakai pembaca bawaan");
-      }
+      await semAi.run(async () => {
+        job.status = "baca"; job.label = "AI membaca dokumen…"; job.pct = 40;
+        try {
+          const j = await api.post("/scan/ai-extract", { tipe: props.tipe, image: job.photoUrl });
+          hasil = P.fromAi(props.tipe, j);
+        } catch (e) {
+          // Tanpa popup: cukup dicatat di kartu dokumen, lalu otomatis pakai pembaca bawaan
+          job.catatan = `AI belum berhasil (${e.message}). Dibaca dengan pembaca bawaan — lebih lambat, cek hasilnya lebih teliti.`;
+        }
+      });
     }
-    if (!hasil) hasil = await bacaOcr(canvas);
-    rawText.value = hasil.rawText || "";
-    terapkanHasil(hasil);
-    step.value = "review";
-    if (!isSJ.value && inv.customerId) cekSjDiSistem();
+    if (!hasil) {
+      const canvas = canvasMap.get(job.id);
+      if (!canvas) throw new Error("Foto sudah tidak ada di memori, ambil ulang.");
+      hasil = await semOcr.run(() => bacaOcr(canvas, job));
+    }
+    job.hasil = hasil;
+    job.rawText = hasil.rawText || "";
+    job.status = "siap";
+    job.pct = 100;
+    canvasMap.delete(job.id);
   } catch (e) {
-    errMsg.value = e.message || "Gagal membaca dokumen";
-    step.value = "capture";
-    startCamera();
+    job.status = "error";
+    job.error = e.message || "Gagal membaca dokumen";
   }
 }
 
@@ -280,31 +437,45 @@ const VARIAN = [
   { W: 3600, channel: "r", dilate: 1, blur: false, C: 10 },
 ];
 
-async function bacaOcr(canvas) {
-  progress.value = { label: "Menyiapkan pembaca teks (pertama kali ±3 MB)…", pct: 3 };
+// Worker Tesseract dipakai ulang antar dokumen (tidak dibuat ulang tiap foto)
+let ocrWorker = null;
+let ocrJob = null;
+async function getWorker() {
+  if (ocrWorker) return ocrWorker;
   await loadScript(TESS_JS);
-  let aktif = 0;
-  const worker = await window.Tesseract.createWorker("eng", 1, {
+  const w = await window.Tesseract.createWorker("eng", 1, {
     langPath: TESS_LANG,
     logger: (m) => {
-      const dasar = 10 + aktif * 22;
-      if (m.status === "recognizing text") progress.value = { label: `Membaca teks (percobaan ${aktif + 1}/${VARIAN.length})…`, pct: dasar + Math.round(m.progress * 20) };
-      else if (m.status && m.status.indexOf("loading") === 0) progress.value = { label: "Memuat data bahasa…", pct: 8 };
+      const j = ocrJob;
+      if (!j) return;
+      if (m.status === "recognizing text") j.pct = j.dasar + Math.round(m.progress * 20);
+      else if (m.status && m.status.indexOf("loading") === 0) { j.label = "Memuat data bahasa…"; j.pct = 8; }
     },
   });
-  let best = null, bestScore = -1;
+  await w.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
+  ocrWorker = w;
+  return w;
+}
+
+async function bacaOcr(canvas, job) {
+  ocrJob = job;
+  job.status = "baca";
+  job.label = "Menyiapkan pembaca teks (pertama kali ±3 MB)…";
+  job.pct = 3;
   try {
-    await worker.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
+    const worker = await getWorker();
+    let best = null, bestScore = -1;
     for (let k = 0; k < VARIAN.length; k++) {
-      aktif = k;
       const { W, channel, dilate, blur, C } = VARIAN[k];
+      job.dasar = 10 + k * 22;
       const H = Math.round((W * canvas.height) / canvas.width);
       const c = document.createElement("canvas");
       c.width = W; c.height = H;
       const ctx = c.getContext("2d", { willReadFrequently: true });
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(canvas, 0, 0, W, H);
-      progress.value = { label: `Membersihkan foto (percobaan ${k + 1}/${VARIAN.length})…`, pct: 8 + k * 22 };
+      job.label = `Membersihkan foto (percobaan ${k + 1}/${VARIAN.length})…`;
+      job.pct = 8 + k * 22;
       await new Promise((r) => setTimeout(r, 30));
       const id = ctx.getImageData(0, 0, W, H);
       const bin = P.binarize(id, { channel, dilate, blur, C });
@@ -313,6 +484,7 @@ async function bacaOcr(canvas) {
         id.data[p + 3] = 255;
       }
       ctx.putImageData(id, 0, 0);
+      job.label = `Membaca teks (percobaan ${k + 1}/${VARIAN.length})…`;
       const { data } = await worker.recognize(c);
       const hasil = isSJ.value ? P.parseSuratJalan(data.text) : P.parseInvoice(data.text);
       const sc = P.scoreResult(props.tipe, hasil);
@@ -320,10 +492,64 @@ async function bacaOcr(canvas) {
       // sudah lengkap & cocok -> tidak perlu percobaan lagi
       if (isSJ.value ? sc >= 10 : hasil.totalCocok) break;
     }
+    return best;
   } finally {
-    worker.terminate();
+    ocrJob = null;
   }
-  return best;
+}
+
+// ------------------------------------------------------------------ daftar & buka hasil
+const jumlahSiap = computed(() => jobs.value.filter((j) => j.status === "siap").length);
+const jumlahBaca = computed(() => jobs.value.filter((j) => j.status === "antri" || j.status === "baca").length);
+const jumlahBelumSimpan = computed(() => jobs.value.filter((j) => j.status !== "tersimpan").length);
+const STATUS_TEKS = { antri: "Menunggu", baca: "Dibaca…", siap: "Siap dicek", error: "Gagal dibaca", tersimpan: "Tersimpan ✔" };
+
+function ringkasJob(j) {
+  if (!j.hasil) return "";
+  const h = j.hasil;
+  if (isSJ.value) return (h.no || "(nomor tidak terbaca)") + (h.tujuan ? " • " + h.tujuan : "");
+  return (h.no || "(nomor tidak terbaca)") + " • " + (h.rows ? h.rows.length : 0) + " baris" + (h.namaCustomer ? " • " + h.namaCustomer : "");
+}
+
+function bukaJob(job) {
+  curJob.value = job;
+  rawText.value = job.rawText || "";
+  photoUrl.value = job.photoUrl;
+  zoomFoto.value = false;
+  errSave.value = "";
+  const form = isSJ.value ? sj : inv;
+  if (job.snapshot) {
+    const snap = JSON.parse(job.snapshot);
+    if (!isSJ.value) skipWatch = inv.customerId !== snap.customerId;
+    Object.assign(form, snap);
+  } else {
+    terapkanHasil(job.hasil);
+  }
+  step.value = "review";
+  if (!isSJ.value && inv.customerId) cekSjDiSistem();
+}
+
+// kembali ke daftar tanpa kehilangan isian yang sudah diedit
+function kembaliDaftar() {
+  if (curJob.value) curJob.value.snapshot = JSON.stringify(isSJ.value ? sj : inv);
+  curJob.value = null;
+  step.value = "daftar";
+}
+
+function hapusJob(job) {
+  jobs.value = jobs.value.filter((j) => j.id !== job.id);
+  canvasMap.delete(job.id);
+  if (!jobs.value.length) tambahFotoLagi();
+}
+
+function fotoUlang() {
+  if (curJob.value) hapusJobTanpaKamera(curJob.value);
+  curJob.value = null;
+  tambahFotoLagi();
+}
+function hapusJobTanpaKamera(job) {
+  jobs.value = jobs.value.filter((j) => j.id !== job.id);
+  canvasMap.delete(job.id);
 }
 
 function isoDateOnly(v) { return v ? String(v).slice(0, 10) : ""; }
@@ -440,7 +666,7 @@ async function simpanSJ() {
     });
     toast(res.diperbarui ? `Surat jalan ${sj.no} diperbarui` : `Surat jalan ${sj.no} tersimpan`);
     emit("saved");
-    resetUntukBerikutnya();
+    setelahSimpan();
   } catch (e) {
     errSave.value = e.message || "Gagal menyimpan surat jalan";
     if (/sudah ada/i.test(errSave.value)) sj.timpa = true;
@@ -485,7 +711,7 @@ async function simpanInvoice() {
         (inv.buatRekap ? ` • rekap +${res.rekapBaru}` : "")
     );
     emit("saved");
-    resetUntukBerikutnya();
+    setelahSimpan();
   } catch (e) {
     errSave.value = e.message || "Gagal menyimpan invoice";
     toast(errSave.value);
@@ -494,21 +720,33 @@ async function simpanInvoice() {
   }
 }
 
-function resetUntukBerikutnya() {
-  step.value = "capture";
-  photoUrl.value = "";
-  errMsg.value = "";
-  startCamera();
+function setelahSimpan() {
+  if (curJob.value) { curJob.value.status = "tersimpan"; curJob.value.snapshot = ""; }
+  curJob.value = null;
+  if (jobs.value.some((j) => j.status !== "tersimpan")) {
+    step.value = "daftar";
+  } else {
+    jobs.value = [];
+    tambahFotoLagi();
+  }
 }
 
-function tutup() { stopCamera(); emit("close"); }
+function tutup() {
+  if (jumlahBelumSimpan.value && !confirm(`Masih ada ${jumlahBelumSimpan.value} dokumen yang belum disimpan. Tutup dan buang?`)) return;
+  stopCamera();
+  emit("close");
+}
 function simpanPilihanAi() { localStorage.setItem("bms.scan.ai", pakaiAi.value ? "1" : "0"); }
 
 onMounted(async () => {
   document.body.style.overflow = "hidden";
   try { customers.value = await api.get("/customers"); } catch (e) { toast("Gagal memuat customer: " + e.message); }
   try { Object.assign(config, await api.get("/scan/config")); } catch { /* AI tidak tersedia */ }
-  try { P.setMaster(await api.get("/stock-master")); } catch { /* tanpa master: hanya rapikan spasi */ }
+  try {
+    const m = await api.get("/stock-master");
+    master.value = m;
+    P.setMaster(m);
+  } catch { /* tanpa master: jenis barang jadi kolom ketik biasa */ }
   await nextTick();
   updateFrameStyle();
   window.addEventListener("resize", updateFrameStyle);
@@ -518,6 +756,7 @@ onBeforeUnmount(() => {
   document.body.style.overflow = "";
   window.removeEventListener("resize", updateFrameStyle);
   stopCamera();
+  if (ocrWorker) { ocrWorker.terminate(); ocrWorker = null; }
 });
 </script>
 
@@ -528,14 +767,22 @@ onBeforeUnmount(() => {
       <button class="scan-x" @click="tutup" aria-label="Tutup">✕</button>
       <div class="scan-title">📷 {{ judul }}</div>
       <div class="scan-steps">
-        <span :class="{ on: step === 'capture' }">1 Foto</span>›
-        <span :class="{ on: step === 'proses' }">2 Baca</span>›
+        <span :class="{ on: step === 'capture' || step === 'putar' }">1 Foto</span>›
+        <span :class="{ on: step === 'daftar' }">2 Hasil<template v-if="jumlahBaca"> ({{ jumlahBaca }}…)</template></span>›
         <span :class="{ on: step === 'review' }">3 Cek &amp; Simpan</span>
       </div>
     </div>
 
     <!-- ============ 1. KAMERA ============ -->
     <div v-show="step === 'capture'" class="scan-cam">
+      <div class="cam-count">
+        <span>Jumlah foto:</span>
+        <button class="btn btn-sm" :disabled="target <= diambil + 1" @click="target--">−</button>
+        <b>{{ target }}</b>
+        <button class="btn btn-sm" :disabled="target >= MAKS_FOTO" @click="target++">＋</button>
+        <span class="cam-count-n">Foto ke {{ Math.min(diambil + 1, target) }} dari {{ target }}</span>
+        <button v-if="jobs.length" class="btn btn-sm" @click="selesaiMengambil">Lihat hasil ({{ jobs.length }})</button>
+      </div>
       <div ref="boxEl" class="cam-box">
         <video ref="videoEl" playsinline muted autoplay @loadedmetadata="updateFrameStyle"></video>
         <div v-if="camReady" class="cam-frame" :style="frameStyle">
@@ -544,6 +791,7 @@ onBeforeUnmount(() => {
         </div>
         <div v-if="camReady" class="cam-q" :class="kualitas.level">{{ kualitas.text }}</div>
         <div v-if="camError" class="cam-err">{{ camError }}</div>
+        <div v-if="flash" class="cam-flash"></div>
       </div>
 
       <ul class="cam-tips">
@@ -564,19 +812,57 @@ onBeforeUnmount(() => {
         <button v-if="torchOk" class="btn" @click="toggleTorch">{{ torchOn ? "🔦 Senter ON" : "🔦 Senter" }}</button>
         <button class="btn btn-primary shutter" :disabled="!camReady" @click="ambilFoto">⬤ Ambil Foto</button>
         <label class="btn">
-          🖼 Ambil/Pilih Foto
-          <input type="file" accept="image/*" hidden @change="dariFile" />
+          🖼 Pilih Foto (bisa banyak)
+          <input type="file" accept="image/*" multiple hidden @change="dariFile" />
         </label>
         <button v-if="camReady" class="btn" @click="switchCamera">🔄</button>
       </div>
     </div>
 
-    <!-- ============ 2. PROSES ============ -->
-    <div v-if="step === 'proses'" class="scan-proc">
-      <img v-if="photoUrl" :src="photoUrl" class="proc-img" alt="" />
-      <div class="proc-label">{{ progress.label }}</div>
-      <div class="proc-bar"><i :style="{ width: progress.pct + '%' }"></i></div>
-      <div class="proc-sub">Jangan tutup halaman ini. Biasanya 10–40 detik.</div>
+    <!-- ============ 1b. PUTAR FOTO (untuk foto yang diupload) ============ -->
+    <div v-if="step === 'putar'" class="scan-putar">
+      <div class="pt-info">Foto {{ diambil + 1 }} dari {{ target }} — putar sampai tulisan terbaca tegak.</div>
+      <div v-if="praPotret" class="pt-tip">Foto ini berdiri (potret). Kertas biasanya mendatar, jadi kemungkinan perlu diputar 90°.</div>
+      <div class="pt-img"><img :src="praUrl" alt="pratinjau" /></div>
+      <div class="pt-act">
+        <button class="btn" @click="putarFoto(-90)">↺ Putar kiri</button>
+        <button class="btn" @click="putarFoto(90)">↻ Putar kanan</button>
+        <button class="btn" @click="putarFoto(180)">⇅ 180°</button>
+      </div>
+      <div class="pt-act">
+        <button class="btn" @click="lewatiFotoPutar">Lewati foto ini</button>
+        <button class="btn btn-primary" @click="pakaiFotoPutar">✔ Pakai foto ini ({{ pending.length }} tersisa)</button>
+      </div>
+    </div>
+
+    <!-- ============ 2. DAFTAR HASIL (dibaca di latar belakang) ============ -->
+    <div v-if="step === 'daftar'" class="scan-list">
+      <div class="ls-head">
+        <b>{{ jobs.length }} dokumen</b>
+        <span v-if="jumlahBaca"> — {{ jumlahBaca }} masih dibaca, boleh ditinggal</span>
+        <span v-else> — semua sudah dibaca</span>
+      </div>
+      <div v-for="(j, i) in jobs" :key="j.id" class="ls-item" :class="j.status">
+        <img :src="j.thumb" alt="" />
+        <div class="ls-info">
+          <div class="ls-t">Dokumen {{ i + 1 }} <span class="ls-badge" :class="j.status">{{ STATUS_TEKS[j.status] }}</span></div>
+          <div v-if="j.status === 'antri' || j.status === 'baca'" class="ls-prog">
+            <div class="proc-bar"><i :style="{ width: j.pct + '%' }"></i></div>
+            <small>{{ j.label }}</small>
+          </div>
+          <div v-else-if="j.hasil" class="ls-sub">{{ ringkasJob(j) }}</div>
+          <div v-if="j.catatan" class="ls-note">{{ j.catatan }}</div>
+          <div v-if="j.error" class="ls-err">{{ j.error }}</div>
+        </div>
+        <div class="ls-act">
+          <button v-if="j.status === 'siap'" class="btn btn-primary btn-sm" @click="bukaJob(j)">Cek &amp; simpan</button>
+          <button v-if="j.status === 'error'" class="btn btn-sm" @click="prosesJob(j)">Coba lagi</button>
+          <button v-if="j.status !== 'tersimpan'" class="btn btn-sm" @click="hapusJob(j)">🗑</button>
+        </div>
+      </div>
+      <div class="ls-foot">
+        <button class="btn" @click="tambahFotoLagi">＋ Foto lagi</button>
+      </div>
     </div>
 
     <!-- ============ 3. REVIEW ============ -->
@@ -585,7 +871,8 @@ onBeforeUnmount(() => {
         <div class="rv-photo">
           <img :src="photoUrl" alt="foto" :class="{ zoom: zoomFoto }" @click="zoomFoto = !zoomFoto" />
           <div class="rv-photo-note">Ketuk foto untuk memperbesar — cocokkan dengan isian di samping.</div>
-          <button class="btn btn-sm" @click="resetUntukBerikutnya">↺ Foto ulang</button>
+          <button class="btn btn-sm" @click="kembaliDaftar">← Kembali ke daftar</button>
+          <button class="btn btn-sm" @click="fotoUlang">↺ Foto ulang</button>
         </div>
 
         <div class="rv-form">
@@ -617,9 +904,10 @@ onBeforeUnmount(() => {
             </label>
             <label class="fl">Penerima<input v-model="sj.penerima" /></label>
             <label class="fl">Tujuan<input v-model="sj.tujuan" /></label>
-            <label class="fl">Jenis barang / kode
-              <input v-model="sj.jenisBarang" placeholder="mis. BATU SPLIT / BB" @change="rapikanJenis" />
-              <small>Spasi &amp; kode dirapikan otomatis dari master barang. Boleh dikosongkan.</small>
+            <label class="fl">Jenis barang
+              <SearchableSelect v-if="jenisOptions.length" v-model="sj.jenisBarang" :options="jenisOptions" placeholder="Pilih jenis barang…" />
+              <input v-else v-model="sj.jenisBarang" placeholder="mis. BATU SPLIT / BB" @change="rapikanJenis" />
+              <small>Pilih dari master barang. Boleh dikosongkan.</small>
             </label>
             <label class="fl">No. Polisi (boleh kosong)<input v-model="sj.noPolisi" placeholder="B 1234 XYZ" /></label>
             <div class="f3">
@@ -754,9 +1042,40 @@ onBeforeUnmount(() => {
 .scan-proc { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px; text-align: center; }
 .proc-img { max-width: 80%; max-height: 38vh; border-radius: 8px; opacity: 0.85; }
 .proc-label { font-weight: 600; }
-.proc-bar { width: min(420px, 80%); height: 10px; background: #1f2a44; border-radius: 99px; overflow: hidden; }
+.proc-bar { width: min(420px, 100%); height: 10px; background: #1f2a44; border-radius: 99px; overflow: hidden; }
 .proc-bar i { display: block; height: 100%; background: #ffd166; transition: width 0.3s; }
 .proc-sub { font-size: 12px; opacity: 0.7; }
+
+.cam-count { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; background: #111a2e; font-size: 13px; }
+.cam-count b { min-width: 20px; text-align: center; font-size: 16px; color: #ffd166; }
+.cam-count-n { margin-left: auto; opacity: 0.85; }
+.cam-flash { position: absolute; inset: 0; background: #fff; opacity: 0.7; pointer-events: none; }
+
+.scan-putar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px; min-height: 0; }
+.pt-info { font-weight: 600; font-size: 14px; }
+.pt-tip { font-size: 12px; background: #fff4df; color: #7a4a00; padding: 6px 10px; border-radius: 8px; max-width: 520px; }
+.pt-img { flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
+.pt-img img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; background: #000; }
+.pt-act { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+.scan-list { flex: 1; overflow: auto; background: #f4f7fb; color: #172033; padding: 12px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
+.ls-head { font-size: 14px; max-width: 760px; width: 100%; margin: 0 auto; }
+.ls-item { display: flex; gap: 10px; align-items: center; background: #fff; border-radius: 12px; padding: 8px; box-shadow: 0 2px 8px rgba(23, 32, 51, 0.06); max-width: 760px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+.ls-item.tersimpan { opacity: 0.55; }
+.ls-item img { width: 84px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; flex: none; }
+.ls-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ls-t { font-weight: 700; font-size: 14px; }
+.ls-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; margin-left: 6px; background: #eef2f7; color: #475569; }
+.ls-badge.baca { background: #fff4df; color: #7a4a00; }
+.ls-badge.siap, .ls-badge.tersimpan { background: #e9f8ef; color: #0f6b34; }
+.ls-badge.error { background: #fdebec; color: #8a1118; }
+.ls-sub { font-size: 12px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ls-prog small { font-size: 11px; color: #64748b; }
+.ls-prog .proc-bar { background: #e2e8f0; height: 6px; }
+.ls-note { font-size: 11px; color: #a35a00; }
+.ls-err { font-size: 12px; color: #c91c22; font-weight: 600; }
+.ls-act { display: flex; flex-direction: column; gap: 6px; flex: none; }
+.ls-foot { max-width: 760px; width: 100%; margin: 0 auto; }
 
 .scan-review { flex: 1; overflow: auto; background: #f4f7fb; color: #172033; -webkit-overflow-scrolling: touch; }
 .rv-grid { display: grid; grid-template-columns: minmax(240px, 380px) 1fr; gap: 14px; padding: 12px; max-width: 1100px; margin: 0 auto; }

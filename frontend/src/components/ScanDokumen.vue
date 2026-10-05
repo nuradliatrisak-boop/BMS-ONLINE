@@ -16,6 +16,8 @@ import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { useAuthStore } from "../stores/auth.js";
 import SearchableSelect from "./SearchableSelect.vue";
+import DimInput from "./DimInput.vue";
+import { fmtM3 } from "../utils/format.js";
 import P from "../utils/scanParser.js";
 
 const props = defineProps({ tipe: { type: String, default: "SJ" } }); // "SJ" | "INVOICE"
@@ -911,11 +913,11 @@ onBeforeUnmount(() => {
             </label>
             <label class="fl">No. Polisi (boleh kosong)<input v-model="sj.noPolisi" placeholder="B 1234 XYZ" /></label>
             <div class="f3">
-              <label>Panjang<input type="number" step="0.01" inputmode="decimal" v-model.number="sj.panjang" /></label>
-              <label>Lebar<input type="number" step="0.01" inputmode="decimal" v-model.number="sj.lebar" /></label>
-              <label>Tinggi<input type="number" step="0.001" inputmode="decimal" v-model.number="sj.tinggi" /></label>
+              <label>Panjang<DimInput v-model="sj.panjang" /></label>
+              <label>Lebar<DimInput v-model="sj.lebar" /></label>
+              <label>Tinggi<DimInput v-model="sj.tinggi" /></label>
             </div>
-            <div class="rv-m3">M3 = P × L × T = <b>{{ m3Sj.toFixed(3) }}</b></div>
+            <div class="rv-m3">M3 = P × L × T = <b>{{ fmtM3(m3Sj) }}</b></div>
             <label class="chk"><input type="checkbox" v-model="sj.timpa" /> Timpa data lama bila nomor ini sudah ada di sistem</label>
             <button class="btn btn-primary btn-save" :disabled="saving" @click="simpanSJ">
               {{ saving ? "Menyimpan…" : "💾 Simpan Surat Jalan" }}
@@ -956,13 +958,13 @@ onBeforeUnmount(() => {
                   <button class="x" @click="hapusBaris(i)" title="Hapus baris">🗑</button>
                 </div>
                 <div class="inv-row-nums">
-                  <label>P<input type="number" step="0.01" inputmode="decimal" v-model.number="r.panjang" /></label>
-                  <label>L<input type="number" step="0.01" inputmode="decimal" v-model.number="r.lebar" /></label>
-                  <label>T<input type="number" step="0.01" inputmode="decimal" v-model.number="r.tinggi" /></label>
+                  <label>P<DimInput v-model="r.panjang" /></label>
+                  <label>L<DimInput v-model="r.lebar" /></label>
+                  <label>T<DimInput v-model="r.tinggi" /></label>
                   <label>Harga/m³<input type="number" step="500" inputmode="numeric" v-model.number="r.harga" /></label>
                 </div>
                 <div class="inv-row-sum">
-                  M3 <b>{{ rowM3(r).toFixed(3) }}</b> × {{ fmtRp(r.harga) }} = <b>{{ fmtRp(rowJumlah(r)) }}</b>
+                  M3 <b>{{ fmtM3(rowM3(r)) }}</b> × {{ fmtRp(r.harga) }} = <b>{{ fmtRp(rowJumlah(r)) }}</b>
                 </div>
                 <div v-if="r.sjStatus" class="sj-chip" :class="r.sjStatus">
                   <template v-if="r.sjStatus === 'ADA'">
@@ -985,7 +987,7 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="inv-total" :class="{ ok: selisihTotal !== null && Math.abs(selisihTotal) <= 1, bad: selisihTotal !== null && Math.abs(selisihTotal) > 1 }">
-              <div>Total M3: <b>{{ invTotalM3.toFixed(3) }}</b></div>
+              <div>Total M3: <b>{{ fmtM3(invTotalM3) }}</b></div>
               <div>Total tagihan (dihitung): <b>{{ fmtRp(invTotal) }}</b></div>
               <div v-if="inv.totalTagihanTerbaca">
                 Total di kertas: {{ fmtRp(inv.totalTagihanTerbaca) }}

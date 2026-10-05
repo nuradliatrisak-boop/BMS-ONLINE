@@ -5,7 +5,8 @@ import { toast } from "../services/toast.js";
 import DokumenAsetPanel from "../components/DokumenAsetPanel.vue";
 import SearchableSelect from "../components/SearchableSelect.vue";
 import MoneyInput from "../components/MoneyInput.vue";
-import { fmtM3 } from "../utils/format.js";
+import { fmtM3, fmtDim } from "../utils/format.js";
+import DimInput from "../components/DimInput.vue";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -190,7 +191,8 @@ async function remove(id) {
 
 function fmtUkuran(a) {
   if (!a.panjang && !a.lebar && !a.tinggi) return "-";
-  return `${a.panjang ?? "-"} x ${a.lebar ?? "-"} x ${a.tinggi ?? "-"} m`;
+  const f = (v) => (v === null || v === undefined || v === "" ? "-" : fmtDim(v));
+  return `${f(a.panjang)} x ${f(a.lebar)} x ${f(a.tinggi)} m`;
 }
 
 // --- Kartu per kendaraan: buka detail (khusus divisi "Armada", yang
@@ -533,13 +535,13 @@ onMounted(load);
       <div class="msub" style="margin-top:10px;">Index P-L-T (ukuran bak, meter) &amp; Volume — opsional</div>
 
       <div class="row">
-        <div class="field"><label>Panjang (m)</label><input v-model="form.panjang" type="number" step="0.01" /></div>
-        <div class="field"><label>Lebar (m)</label><input v-model="form.lebar" type="number" step="0.01" /></div>
-        <div class="field"><label>Tinggi (m)</label><input v-model="form.tinggi" type="number" step="0.01" /></div>
+        <div class="field"><label>Panjang (m)</label><DimInput v-model="form.panjang" /></div>
+        <div class="field"><label>Lebar (m)</label><DimInput v-model="form.lebar" /></div>
+        <div class="field"><label>Tinggi (m)</label><DimInput v-model="form.tinggi" /></div>
       </div>
 
       <div class="row">
-        <div class="field"><label>Volume (m³)</label><input v-model="form.volume" type="number" step="0.01" /></div>
+        <div class="field"><label>Volume (m³)</label><DimInput v-model="form.volume" /></div>
         <div class="field" style="justify-content:flex-end; display:flex; flex-direction:column;">
           <button v-if="volumeOtomatis !== null" type="button" class="btn btn-ghost btn-sm" @click="pakaiVolumeOtomatis">
             Pakai hasil P×L×T ({{ fmtM3(volumeOtomatis) }} m³)

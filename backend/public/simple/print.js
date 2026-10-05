@@ -17,6 +17,15 @@
 // FORMAT TANGGAL PENDEK
 // ============================================================
 
+// Angka ukuran / kubikasi: minimal 2 angka di belakang koma (3.60), maksimal 3 (0.953)
+function fd23(n) {
+  var v = Number(n);
+  if (!isFinite(v)) return "0.00";
+  var r = String(Math.round(v * 1000) / 1000).split(".");
+  var dec = r[1] ? r[1].length : 0;
+  return v.toFixed(Math.min(3, Math.max(2, dec)));
+}
+
 function fmtDateShortPrint(v) {
   if (!v) return "-";
 
@@ -695,15 +704,15 @@ function printSJ(sjOrList) {
 
           ? (
 
-              panjang.toFixed(2) +
+              fd23(panjang) +
 
               " - " +
 
-              lebar.toFixed(2) +
+              fd23(lebar) +
 
               " - " +
 
-              tinggi.toFixed(3)
+              fd23(tinggi)
 
             )
 
@@ -828,7 +837,7 @@ function printSJ(sjOrList) {
 
           Number(sj.m3 || 0) > 0
 
-            ? Number(sj.m3).toFixed(3)
+            ? fd23(Number(sj.m3))
 
             : ""
 
@@ -1158,21 +1167,15 @@ function printInvoice(inv) {
 
           ? (
 
-              Number(
-                sj.panjang || 0
-              ).toFixed(2) +
+              fd23(sj.panjang || 0) +
 
               " " +
 
-              Number(
-                sj.lebar || 0
-              ).toFixed(2) +
+              fd23(sj.lebar || 0) +
 
               " " +
 
-              Number(
-                sj.tinggi || 0
-              ).toFixed(2)
+              fd23(sj.tinggi || 0)
 
             )
 
@@ -1193,13 +1196,9 @@ function printInvoice(inv) {
 
         sj
 
-          ? Number(
-              sj.m3 || 0
-            ).toFixed(3)
+          ? fd23(sj.m3 || 0)
 
-          : Number(
-              it.qty
-            ).toFixed(3);
+          : fd23(it.qty);
 
 
       rowsHtml +=
@@ -2160,7 +2159,7 @@ function printInvoice(inv) {
       '<td></td>' +
 
       '<td><b>' +
-      totalM3.toFixed(3) +
+      fd23(totalM3) +
       '</b></td>' +
 
       '<td></td>' +

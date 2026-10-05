@@ -1,5 +1,13 @@
 import ExcelJS from "exceljs";
 
+// Ukuran P/L/T: minimal 2 angka di belakang koma (3.60), maksimal 3 (0.953)
+function fmtDim(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return "0.00";
+  const dec = (String(Math.round(v * 1000) / 1000).split(".")[1] || "").length;
+  return v.toFixed(Math.min(3, Math.max(2, dec)));
+}
+
 function fmtM3(n) {
   const v = Number(n);
   return (Number.isFinite(v) ? v : 0).toLocaleString("id-ID", {
@@ -131,9 +139,9 @@ export async function buildSJWorkbook(sjOrList, calib, signerName) {
       ? `${sj.customer.nama}${sj.customer.kode ? " / " + sj.customer.kode : ""}`
       : "-";
     const namaPenerima = sj.penerima || sj.customer?.nama || "-";
-    const ukuran = `${Number(sj.panjang ?? sj.p ?? 0).toFixed(2)} - ${Number(
+    const ukuran = `${fmtDim(sj.panjang ?? sj.p ?? 0)} - ${fmtDim(
       sj.lebar ?? sj.l ?? 0
-    ).toFixed(2)} - ${Number(sj.tinggi ?? sj.t ?? 0).toFixed(3)}`;
+    )} - ${fmtDim(sj.tinggi ?? sj.t ?? 0)}`;
 
     const VAL = {
       apDari: namaCustomer,

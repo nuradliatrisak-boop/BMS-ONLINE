@@ -28,3 +28,13 @@ export function ribuan(n) {
   const v = Math.round(Number(n) || 0);
   return v.toLocaleString("id-ID");
 }
+
+// Ukuran P / L / T (meter): selalu minimal 2 angka di belakang koma, jadi 3.6 tampil
+// "3.60" dan 1 tampil "1.00". Kalau datanya memang 3 desimal (mis. 0.953) tetap
+// tampil lengkap -- tidak dibulatkan. Pemisah titik, sama seperti tampilan ukuran sebelumnya.
+export function fmtDim(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return "0.00";
+  const dec = (String(Math.round(v * 1000) / 1000).split(".")[1] || "").length;
+  return v.toFixed(Math.min(3, Math.max(2, dec)));
+}

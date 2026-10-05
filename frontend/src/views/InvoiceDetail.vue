@@ -1282,7 +1282,7 @@ onMounted(load);
             </td>
 
             <td class="center">
-              {{ it.qty }}
+              {{ fmtQty(it.qty, it.satuan) }}
             </td>
 
             <td class="center">

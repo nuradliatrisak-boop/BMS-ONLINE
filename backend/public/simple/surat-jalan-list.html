@@ -28,7 +28,7 @@ function load(){
     var h='<table class="sj-table"><tr><th></th><th>No SJ</th><th>Tanggal</th><th>Customer</th><th>Barang</th><th>M3</th><th>Status</th><th>Aksi</th></tr>';
     for(var i=0;i<a.length;i++){
       var x=a[i];
-      h+='<tr><td><input type="checkbox" class="pilih" data-id="'+x.id+'"></td><td>'+x.no+'</td><td>'+fdate(x.tanggal)+'</td><td>'+((x.customer&&x.customer.nama)||'-')+'</td><td>'+(x.jenisBarang||'-')+'</td><td>'+Number(x.m3||0).toFixed(3)+'</td><td>'+(x.isDraft?'DRAFT':'FINAL')+'</td><td><button class="btn edit" data-id="'+x.id+'">Edit</button> <button class="btn secondary print" data-id="'+x.id+'">Print</button> <button class="btn secondary xlsx" data-id="'+x.id+'" data-no="'+x.no+'">Excel</button> <button class="btn danger del" data-id="'+x.id+'">Hapus</button></td></tr>';
+      h+='<tr><td><input type="checkbox" class="pilih" data-id="'+x.id+'"></td><td>'+x.no+'</td><td>'+fdate(x.tanggal)+'</td><td>'+((x.customer&&x.customer.nama)||'-')+'</td><td>'+(x.jenisBarang||'-')+'</td><td>'+fd23(x.m3||0)+'</td><td>'+(x.isDraft?'DRAFT':'FINAL')+'</td><td><button class="btn edit" data-id="'+x.id+'">Edit</button> <button class="btn secondary print" data-id="'+x.id+'">Print</button> <button class="btn secondary xlsx" data-id="'+x.id+'" data-no="'+x.no+'">Excel</button> <button class="btn danger del" data-id="'+x.id+'">Hapus</button></td></tr>';
     }
     h+='</table>';
     box.innerHTML=h;

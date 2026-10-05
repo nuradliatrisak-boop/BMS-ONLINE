@@ -5,6 +5,7 @@ import { toast } from "../services/toast.js";
 import SearchableSelect from "../components/SearchableSelect.vue";
 import MoneyInput from "../components/MoneyInput.vue";
 import { fmtM3 } from "../utils/format.js";
+import DimInput from "../components/DimInput.vue";
 
 // ---- Penyimpanan lokal: pilihan filter & orientasi tidak hilang saat refresh ----
 const FILTER_KEY = "bms.rekapPenjualan.ui";
@@ -551,6 +552,10 @@ async function exportExcel() {
     }));
     dataK.push({ No: "", Customer: "TOTAL", "Jumlah SJ": summary.value.count, "Total Volume": summary.value.jumlah, "Jumlah Tagihan": summary.value.total });
     const wsK = XLSX.utils.json_to_sheet(dataK);
+    for (let rr = 1; rr <= dataK.length; rr++) {
+      const cell = wsK["D" + (rr + 1)]; // kolom "Total Volume"
+      if (cell && typeof cell.v === "number") cell.z = "0.00#";
+    }
     const wbK = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wbK, wsK, "Rekap Keseluruhan");
     const nmK = selectedCustomer.value?.nama?.replace(/[^a-z0-9]+/gi, "-") || "semua-customer";
@@ -587,6 +592,13 @@ async function exportExcel() {
     Catatan: "",
   });
   const ws = XLSX.utils.json_to_sheet(data);
+  // P, L, T, Jumlah -> minimal 2 angka di belakang koma (3.60), maksimal 3
+  for (let rr = 1; rr <= data.length; rr++) {
+    for (const col of ["F", "G", "H", "I"]) {
+      const cell = ws[col + (rr + 1)];
+      if (cell && typeof cell.v === "number") cell.z = "0.00#";
+    }
+  }
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Rekap Penjualan");
   const namaCustomer = selectedCustomer.value?.nama?.replace(/[^a-z0-9]+/gi, "-") || "semua-customer";
@@ -986,9 +998,9 @@ onBeforeUnmount(() => {
       </div>
       <div class="field"><label>Jenis Barang</label><input v-model="form.jenisBarang" placeholder="Pasir Bangka / Split / Batu Belah" /></div>
       <div class="row row-4">
-        <div class="field"><label>P</label><input v-model.number="form.panjang" type="number" step="0.01" /></div>
-        <div class="field"><label>L</label><input v-model.number="form.lebar" type="number" step="0.01" /></div>
-        <div class="field"><label>T</label><input v-model.number="form.tinggi" type="number" step="0.01" /></div>
+        <div class="field"><label>P</label><DimInput v-model="form.panjang" /></div>
+        <div class="field"><label>L</label><DimInput v-model="form.lebar" /></div>
+        <div class="field"><label>T</label><DimInput v-model="form.tinggi" /></div>
         <div class="field"><label>Jumlah</label><input v-model.number="form.jumlah" type="number" step="0.001" /></div>
       </div>
       <div class="field"><label>Harga</label><MoneyInput v-model="form.harga" /></div>

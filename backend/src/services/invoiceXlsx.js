@@ -757,7 +757,10 @@ export async function buildInvoiceWorkbook(
         }
       );
 
-      // M3 -- minimal 2 angka di belakang koma (3,60), maksimal 3 (6,498)
+      // P, L, T dan M3 -- minimal 2 angka di belakang koma (3.60), maksimal 3
+      row.getCell(6).numFmt = '0.00#';
+      row.getCell(7).numFmt = '0.00#';
+      row.getCell(8).numFmt = '0.00#';
       row.getCell(9).numFmt = '0.00#';
 
       // Harga

@@ -7,6 +7,7 @@ import { printSJ } from "../services/print.js";
 import SearchableSelect from "../components/SearchableSelect.vue";
 import MoneyInput from "../components/MoneyInput.vue";
 import { fmtM3 } from "../utils/format.js";
+import DimInput from "../components/DimInput.vue";
 
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
 
@@ -879,15 +880,15 @@ const showScan = ref(false);
       <div class="row row-4">
         <div class="field">
           <label>Panjang (m)</label>
-          <input v-model.number="form.panjang" type="number" step="0.01" min="0" />
+          <DimInput v-model="form.panjang" />
         </div>
         <div class="field">
           <label>Lebar (m)</label>
-          <input v-model.number="form.lebar" type="number" step="0.01" min="0" />
+          <DimInput v-model="form.lebar" />
         </div>
         <div class="field">
           <label>Tinggi (m)</label>
-          <input v-model.number="form.tinggi" type="number" step="0.01" min="0" />
+          <DimInput v-model="form.tinggi" />
         </div>
         <div class="field">
           <label>Jam</label>

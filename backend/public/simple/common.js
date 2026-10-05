@@ -305,3 +305,12 @@ function makeSearchableSelect(select, opts) {
 
   input.value = currentLabel();
 }
+
+// Angka ukuran / kubikasi: minimal 2 angka di belakang koma (3.60), maksimal 3 (0.953)
+function fd23(n) {
+  var v = Number(n);
+  if (!isFinite(v)) return "0.00";
+  var r = String(Math.round(v * 1000) / 1000).split(".");
+  var dec = r[1] ? r[1].length : 0;
+  return v.toFixed(Math.min(3, Math.max(2, dec)));
+}

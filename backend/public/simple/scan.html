@@ -217,7 +217,7 @@ function apply(h){
   }
   show("review");window.scrollTo(0,0);
 }
-function f3(n){return (Math.round(n*1000)/1000).toFixed(3)}
+function f3(n){return fd23(n)}
 function sjM3(){$("sj_m3").textContent="M3 = P x L x T = "+f3(P.hitungM3($("sj_p").value,$("sj_l").value,$("sj_t").value))}
 ["sj_p","sj_l","sj_t"].forEach(function(id){$(id).oninput=sjM3});
 function rapikanJenis(){var rj=P.resolveJenis($("sj_jenis").value);if(rj.jenis)$("sj_jenis").value=rj.jenis;return rj}

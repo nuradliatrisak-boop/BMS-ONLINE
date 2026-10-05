@@ -1,5 +1,5 @@
 import { api } from "./api.js";
-import { fmtM3 } from "../utils/format.js";
+import { fmtM3, fmtDim } from "../utils/format.js";
 
 function esc(v) {
   return String(v ?? "")
@@ -172,9 +172,9 @@ export async function printSJ(sjOrList) {
         ? `${sj.customer.nama}${sj.customer.kode ? " / " + sj.customer.kode : ""}`
         : "-";
       const namaPenerima = sj.penerima || sj.customer?.nama || "-";
-      const ukuran = `${Number(sj.panjang ?? sj.p ?? 0).toFixed(2)} - ${Number(
+      const ukuran = `${fmtDim(sj.panjang ?? sj.p ?? 0)} - ${fmtDim(
         sj.lebar ?? sj.l ?? 0
-      ).toFixed(2)} - ${Number(sj.tinggi ?? sj.t ?? 0).toFixed(3)}`;
+      )} - ${fmtDim(sj.tinggi ?? sj.t ?? 0)}`;
       const last = i === list.length - 1;
 
       return `<div class="sheet"${last ? "" : ' style="page-break-after:always"'}>
@@ -267,9 +267,7 @@ export async function printInvoice(inv) {
     .map((it, i) => {
       const sj = it.suratJalan;
       const pltText = sj
-        ? `${Number(sj.panjang ?? 0).toFixed(2)} ${Number(sj.lebar ?? 0).toFixed(
-            2
-          )} ${Number(sj.tinggi ?? 0).toFixed(2)}`
+        ? `${fmtDim(sj.panjang ?? 0)} ${fmtDim(sj.lebar ?? 0)} ${fmtDim(sj.tinggi ?? 0)}`
         : `${it.qty} ${it.satuan || ""}`;
       const m3Text = sj ? fmtM3(sj.m3) : fmtM3(it.qty);
 

@@ -76,12 +76,15 @@ const kualitas = ref({ text: "Arahkan ke kertas", level: "idle" });
 // hasil & form
 const sj = reactive({
   no: "", tanggal: "", jam: "", divisi: "", customerId: "", penerima: "", tujuan: "",
-  jenisBarang: "", noPolisi: "", panjang: 0, lebar: 0, tinggi: 0, timpa: false, warnings: [], match: null,
+  jenisBarang: "", noPolisi: "", panjang: 0, lebar: 0, tinggi: 0, m3Manual: 0, timpa: false, warnings: [], match: null,
+  pertanyaan: [],
 });
 const inv = reactive({
   no: "", tanggal: "", halaman: 1, divisi: "", customerId: "", jenisDefault: "", buatRekap: true,
   rows: [], warnings: [], totalTagihanTerbaca: 0, totalM3Terbaca: 0, match: null, namaTerbaca: "",
+  pertanyaan: [],
 });
+const busyAi = ref(false);
 const saving = ref(false);
 const errSave = ref("");
 const cekSjBusy = ref(false);
@@ -113,8 +116,9 @@ const jenisOptions = computed(() => {
 
 // ------------------------------------------------------------------ util
 const fmtRp = (n) => "Rp " + Math.round(n || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-const m3Sj = computed(() => P.hitungM3(sj.panjang, sj.lebar, sj.tinggi));
-function rowM3(r) { return P.hitungM3(r.panjang, r.lebar, r.tinggi); }
+// Ukuran lengkap -> P x L x T. Kertas format lain yang hanya punya M3 -> pakai M3 yang diisi/dipilih.
+const m3Sj = computed(() => P.hitungM3(sj.panjang, sj.lebar, sj.tinggi) || Number(sj.m3Manual) || 0);
+function rowM3(r) { return P.hitungM3(r.panjang, r.lebar, r.tinggi) || Number(r.m3Manual) || 0; }
 function rowJumlah(r) { return Math.round(rowM3(r) * (Number(r.harga) || 0)); }
 const invTotal = computed(() => inv.rows.reduce((s, r) => s + rowJumlah(r), 0));
 const invTotalM3 = computed(() => inv.rows.reduce((s, r) => s + rowM3(r), 0));
@@ -563,12 +567,15 @@ function terapkanHasil(h) {
     Object.assign(sj, {
       no: h.no, tanggal: h.tanggal || new Date().toISOString().slice(0, 10), jam: h.jam, divisi: def,
       penerima: h.penerima || h.dari, tujuan: h.tujuan, jenisBarang: h.jenisBarang, noPolisi: h.noPolisi,
-      panjang: h.panjang, lebar: h.lebar, tinggi: h.tinggi, timpa: false, warnings: h.warnings.slice(),
+      panjang: h.panjang, lebar: h.lebar, tinggi: h.tinggi, m3Manual: 0, timpa: false, warnings: h.warnings.slice(),
+      pertanyaan: [],
     });
     const m = P.matchCustomer(customers.value, { nama: h.dari || h.penerima });
     sj.customerId = m ? m.id : "";
     sj.match = m;
     if (!m) sj.warnings.push("Customer belum cocok otomatis — boleh dipilih nanti, surat jalan tetap bisa disimpan.");
+    // Bingung / format tidak biasa -> tanya admin (pilihan ganda), jawaban langsung mengisi form
+    sj.pertanyaan = P.buatPertanyaan("SJ", h, { customers: customers.value, match: m, rawText: h.rawText, ai: config.ai });
   } else {
     errSave.value = "";
     const m = P.matchCustomer(customers.value, { kode: h.kodeCustomer, nama: h.namaCustomer });
@@ -584,10 +591,77 @@ function terapkanHasil(h) {
       totalTagihanTerbaca: h.totalTagihanTerbaca, totalM3Terbaca: h.totalM3Terbaca,
       match: m, namaTerbaca: h.namaCustomer,
       rows: h.rows.map((r) => ({
-        ...r, suratJalanId: "", sjStatus: "", sjInfo: null, key: Math.random().toString(36).slice(2),
+        ...r, tglKirim: r.tglKirim || h.tanggal, m3Manual: 0,
+        suratJalanId: "", sjStatus: "", sjInfo: null, key: Math.random().toString(36).slice(2),
       })),
+      pertanyaan: [],
     });
     if (!m) inv.warnings.push("Customer belum cocok otomatis — pilih manual.");
+    // Format baris tidak biasa / harga meragukan / total tidak cocok -> tanya admin
+    const qs = P.buatPertanyaan("INVOICE", h, {
+      customers: customers.value, match: m, ai: config.ai,
+      prices: cust && cust.prices ? cust.prices.map((p) => Number(p.hargaM3)).filter(Boolean) : [],
+    });
+    // baris dikenali lewat key (bukan nomor urut) supaya tetap benar kalau ada baris dihapus
+    const keyOf = (i) => (inv.rows[i] ? inv.rows[i].key : undefined);
+    qs.forEach((q) => q.pilihan.forEach((o) => {
+      if (o.row !== undefined) o.key = keyOf(o.row);
+      (o.set || []).forEach((st) => { if (st.scope === "row") st.key = keyOf(st.row); });
+    }));
+    inv.pertanyaan = qs;
+  }
+}
+
+// ------------------------------------------------------------------ pertanyaan pilihan ganda
+const pertanyaan = computed(() => (isSJ.value ? sj.pertanyaan : inv.pertanyaan) || []);
+const adaPertanyaan = computed(() => pertanyaan.value.length > 0);
+const belumDijawab = computed(() => pertanyaan.value.filter((q) => !q.jawab).length);
+
+function terapkanSet(st) {
+  if (st.scope === "row") {
+    const r = inv.rows.find((x) => x.key === st.key);
+    if (!r) return;
+    r[st.field] = st.value;
+    if (st.field === "kode") rapikanKodeBaris(r);
+    if (st.field === "harga") {
+      r.hargaKoreksi = false;
+      r.warn = (r.warn || []).filter((w) => !/^Harga dikoreksi otomatis/.test(w));
+    }
+  } else {
+    const form = isSJ.value ? sj : inv;
+    form[st.field] = st.value;
+    if (isSJ.value && st.field === "jenisBarang") rapikanJenis();
+  }
+}
+
+// Ketuk satu pilihan: isi form / jalankan aksi, lalu tandai pertanyaan terjawab
+function jawab(q, opt) {
+  if (opt.aksi === "ai") return bacaUlangAi();
+  if (opt.aksi === "foto") return fotoUlang();
+  if (opt.aksi === "tambah") tambahBaris();
+  if (opt.aksi === "hapusBaris") {
+    const idx = inv.rows.findIndex((r) => r.key === opt.key);
+    if (idx >= 0) hapusBaris(idx);
+  }
+  (opt.set || []).forEach(terapkanSet);
+  q.jawab = opt.label;
+}
+
+// Format kertas tidak terbaca pembaca bawaan -> minta AI membaca ulang foto yang sama
+async function bacaUlangAi() {
+  const j = curJob.value;
+  if (!j || !config.ai || busyAi.value) return;
+  busyAi.value = true;
+  try {
+    const x = await api.post("/scan/ai-extract", { tipe: props.tipe, image: j.photoUrl });
+    j.hasil = P.fromAi(props.tipe, x);
+    j.snapshot = "";
+    bukaJob(j);
+    toast("AI selesai membaca ulang");
+  } catch (e) {
+    toast("AI belum berhasil: " + e.message);
+  } finally {
+    busyAi.value = false;
   }
 }
 
@@ -644,7 +718,7 @@ function pakaiSaran(r) {
 
 function tambahBaris() {
   inv.rows.push({
-    tglKirim: inv.tanggal, noSJ: "", kode: "", alamat: "", panjang: 0, lebar: 0, tinggi: 0, harga: 0,
+    tglKirim: inv.tanggal, noSJ: "", kode: "", alamat: "", panjang: 0, lebar: 0, tinggi: 0, m3Manual: 0, harga: 0,
     warn: [], suratJalanId: "", sjStatus: "", sjInfo: null, key: Math.random().toString(36).slice(2),
   });
 }
@@ -664,7 +738,7 @@ async function simpanSJ() {
     const res = await api.post("/scan/surat-jalan", {
       no: String(sj.no).trim(), tanggal: sj.tanggal || undefined, jam: sj.jam, divisi: sj.divisi || "Supplier", customerId: sj.customerId || undefined,
       penerima: sj.penerima, tujuan: sj.tujuan, jenisBarang: sj.jenisBarang, noPolisi: sj.noPolisi,
-      panjang: Number(sj.panjang) || 0, lebar: Number(sj.lebar) || 0, tinggi: Number(sj.tinggi) || 0, timpa: sj.timpa,
+      panjang: Number(sj.panjang) || 0, lebar: Number(sj.lebar) || 0, tinggi: Number(sj.tinggi) || 0, m3: Number(sj.m3Manual) || 0, timpa: sj.timpa,
     });
     toast(res.diperbarui ? `Surat jalan ${sj.no} diperbarui` : `Surat jalan ${sj.no} tersimpan`);
     emit("saved");
@@ -704,7 +778,7 @@ async function simpanInvoice() {
       items: inv.rows.map((r) => ({
         suratJalanId: r.suratJalanId || undefined, noSJ: r.noSJ, tglKirim: r.tglKirim, kode: r.kode,
         jenisBarang: P.jenisDariKode(r.kode, inv.jenisDefault) || undefined,
-        alamat: r.alamat, panjang: r.panjang, lebar: r.lebar, tinggi: r.tinggi, harga: r.harga,
+        alamat: r.alamat, panjang: r.panjang, lebar: r.lebar, tinggi: r.tinggi, m3: Number(r.m3Manual) || 0, harga: r.harga,
       })),
     });
     toast(
@@ -888,6 +962,23 @@ onBeforeUnmount(() => {
             <ul><li v-for="(w, i) in (isSJ ? sj.warnings : inv.warnings)" :key="i">{{ w }}</li></ul>
           </div>
 
+          <!-- Pertanyaan: dokumen berformat tidak biasa / tulisan meragukan -> pilih jawaban, form terisi otomatis -->
+          <div v-if="adaPertanyaan" class="rv-q">
+            <b>❓ Perlu konfirmasi Anda<template v-if="belumDijawab"> ({{ belumDijawab }})</template></b>
+            <div v-for="q in pertanyaan" :key="q.id" class="rv-q-item" :class="{ done: q.jawab }">
+              <div v-if="q.jawab" class="q-done">✔ {{ q.teks }} → <b>{{ q.jawab }}</b></div>
+              <template v-else>
+                <div class="q-t">{{ q.teks }}</div>
+                <div class="q-opts">
+                  <button v-for="(o, oi) in q.pilihan" :key="oi" class="btn btn-sm" :disabled="busyAi" @click="jawab(q, o)">
+                    {{ busyAi && o.aksi === 'ai' ? 'AI membaca…' : o.label }}
+                  </button>
+                  <button class="btn btn-sm q-skip" @click="jawab(q, { label: 'Dilewati — saya isi sendiri' })">Lewati</button>
+                </div>
+              </template>
+            </div>
+          </div>
+
           <!-- ===== SURAT JALAN ===== -->
           <template v-if="isSJ">
             <div class="f2">
@@ -905,7 +996,7 @@ onBeforeUnmount(() => {
               <small v-if="sj.match">Terbaca “{{ sj.penerima }}” → cocok {{ Math.round(sj.match.score * 100) }}%</small>
             </label>
             <label class="fl">Penerima<input v-model="sj.penerima" /></label>
-            <label class="fl">Tujuan<input v-model="sj.tujuan" /></label>
+            <label class="fl">Tujuan / alamat (bisa 2 baris)<textarea v-model="sj.tujuan" rows="2"></textarea></label>
             <label class="fl">Jenis barang
               <SearchableSelect v-if="jenisOptions.length" v-model="sj.jenisBarang" :options="jenisOptions" placeholder="Pilih jenis barang…" />
               <input v-else v-model="sj.jenisBarang" placeholder="mis. BATU SPLIT / BB" @change="rapikanJenis" />
@@ -917,6 +1008,9 @@ onBeforeUnmount(() => {
               <label>Lebar<DimInput v-model="sj.lebar" /></label>
               <label>Tinggi<DimInput v-model="sj.tinggi" /></label>
             </div>
+            <label v-if="!(sj.panjang && sj.lebar && sj.tinggi)" class="fl">M3 langsung (bila kertas tidak punya ukuran P-L-T)
+              <input type="number" step="0.001" inputmode="decimal" v-model.number="sj.m3Manual" />
+            </label>
             <div class="rv-m3">M3 = P × L × T = <b>{{ fmtM3(m3Sj) }}</b></div>
             <label class="chk"><input type="checkbox" v-model="sj.timpa" /> Timpa data lama bila nomor ini sudah ada di sistem</label>
             <button class="btn btn-primary btn-save" :disabled="saving" @click="simpanSJ">
@@ -963,6 +1057,9 @@ onBeforeUnmount(() => {
                   <label>T<DimInput v-model="r.tinggi" /></label>
                   <label>Harga/m³<input type="number" step="500" inputmode="numeric" v-model.number="r.harga" /></label>
                 </div>
+                <label v-if="!(r.panjang && r.lebar && r.tinggi)" class="inv-row-m3">M3 langsung (kertas ini tanpa ukuran P-L-T)
+                  <input type="number" step="0.001" inputmode="decimal" v-model.number="r.m3Manual" />
+                </label>
                 <div class="inv-row-sum">
                   M3 <b>{{ fmtM3(rowM3(r)) }}</b> × {{ fmtRp(r.harga) }} = <b>{{ fmtRp(rowJumlah(r)) }}</b>
                 </div>
@@ -1089,7 +1186,16 @@ onBeforeUnmount(() => {
 .rv-photo-note { font-size: 11px; color: #64748b; margin: 4px 0 6px; }
 .rv-form { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(23, 32, 51, 0.06); display: flex; flex-direction: column; gap: 10px; }
 .rv-form label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; font-weight: 600; color: #475569; }
-.rv-form input, .rv-form select { font-size: 16px; padding: 8px 9px; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; box-sizing: border-box; font-weight: 400; color: #172033; background: #fff; }
+.rv-form input, .rv-form select, .rv-form textarea { font-size: 16px; padding: 8px 9px; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; box-sizing: border-box; font-weight: 400; color: #172033; background: #fff; }
+.rv-form textarea { font-family: inherit; resize: vertical; line-height: 1.35; }
+.rv-q { background: #eaf1fb; border: 1px solid #9db9e3; color: #173f7a; padding: 10px; border-radius: 10px; font-size: 13px; display: flex; flex-direction: column; gap: 10px; }
+.rv-q-item.done { opacity: 0.75; }
+.q-t { font-weight: 600; margin-bottom: 6px; line-height: 1.4; }
+.q-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.q-opts .btn { white-space: normal; text-align: left; }
+.q-skip { opacity: 0.7; }
+.q-done { font-size: 12px; color: #0f6b34; }
+.inv-row-m3 { margin-top: 6px; }
 .rv-form small { font-weight: 400; color: #64748b; }
 .f2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .f3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }

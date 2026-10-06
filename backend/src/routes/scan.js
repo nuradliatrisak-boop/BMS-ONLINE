@@ -48,13 +48,23 @@ router.get("/config", (req, res) => {
 // Aktif hanya kalau env GEMINI_API_KEY diisi. Catatan privasi: di paket
 // gratis, Google boleh memakai isi foto untuk memperbaiki produknya.
 // ---------------------------------------------------------------------------
-const PROMPT_SJ = `Ini foto kertas SURAT JALAN (cetak dot-matrix, PT Bintang Muara Sejati). Baca isinya dan balas HANYA JSON dengan kunci persis:
-{"no":"nomor di kanan atas, mis. BM-002096","tanggal":"YYYY-MM-DD","jam":"HH:MM:SS atau kosong","dari":"isi A/P Dari","penerima":"isi Penerima","tujuan":"isi Tujuan (tanpa nomor telepon)","jenisBarang":"isi Jenis Brg","noPolisi":"isi kolom Nomor Polisi, kosong jika tidak ada","panjang":0,"lebar":0,"tinggi":0,"m3":0}
-Aturan: panjang/lebar/tinggi diambil dari kolom Ukuran Bak (tiga angka dipisah tanda -), m3 dari kolom M3. Angka berupa number (titik desimal). Abaikan tulisan tangan, coretan, dan stempel. Jika tidak terbaca jelas, isi "" atau 0 -- JANGAN menebak.`;
+const ATURAN_RAGU = `
+Format kertas BISA BERBEDA-BEDA (nama label, urutan, posisi kolom, jumlah baris, ada/tidaknya kolom tertentu). Cari tiap data lewat LABEL / JUDUL KOLOM-nya, bukan lewat posisi tetap.
+Tambahkan dua kunci lagi di JSON:
+"catatanFormat": isi SINGKAT hanya bila tata letak/label kertas ini tidak seperti biasa atau ada informasi penting yang tidak punya tempat di skema (mis. kolom diskon, PPN, biaya lain, kolom tambahan). Kosongkan "" bila format biasa.
+"ragu": daftar hal yang kamu TIDAK YAKIN karena tulisan kabur/ambigu/ada dua kemungkinan. Tiap item: {"bidang":"...","baris":0,"alasan":"singkat","pilihan":["kemungkinan 1","kemungkinan 2"]}. "pilihan" berisi nilai final yang siap dipakai (tanggal YYYY-MM-DD, harga/ukuran berupa angka). Untuk bidang yang ragu, tetap isi tebakan terbaikmu di kunci aslinya. Maksimal 5 item; [] bila yakin. Jangan menebak asal dan jangan memasukkan hal yang sebenarnya jelas.`;
 
-const PROMPT_INV = `Ini foto kertas INVOICE (cetak dot-matrix, PT Bintang Muara Sejati). Baca isinya dan balas HANYA JSON dengan kunci persis:
-{"no":"No. Invoice","tanggal":"YYYY-MM-DD","halaman":1,"kodeCustomer":"","namaCustomer":"","alamat":"alamat customer di header","rows":[{"tglKirim":"YYYY-MM-DD","noSJ":"No SJ tanpa awalan, mis. 002096","kode":"kode setelah no SJ mis. BB atau BS, kosong jika tidak ada","alamat":"Alamat Kirim","panjang":0,"lebar":0,"tinggi":0,"m3":0,"harga":0,"jumlah":0}],"totalM3":0,"totalTagihan":0}
-Aturan: satu objek per baris tabel (No 1,2,3,...). Angka berupa number tanpa pemisah ribuan (harga 445000, jumlah 2285965; P/L/T/m3 pakai titik desimal). totalTagihan dari "Jumlah Total Tagihan". Abaikan tulisan tangan, coretan, lingkaran/kotak spidol, dan stempel. Jika tidak terbaca jelas, isi "" atau 0 -- JANGAN menebak.`;
+const PROMPT_SJ = `Ini foto kertas SURAT JALAN (biasanya cetak dot-matrix PT Bintang Muara Sejati, tapi bisa juga format lain). Baca isinya dan balas HANYA JSON dengan kunci persis:
+{"no":"nomor surat jalan, mis. BM-002096","tanggal":"YYYY-MM-DD","jam":"HH:MM:SS atau kosong","dari":"isi A/P Dari","penerima":"isi Penerima","tujuan":"isi Tujuan / alamat (tanpa nomor telepon)","jenisBarang":"isi Jenis Brg","noPolisi":"isi kolom Nomor Polisi, kosong jika tidak ada","panjang":0,"lebar":0,"tinggi":0,"m3":0,"catatanFormat":"","ragu":[]}
+Aturan: panjang/lebar/tinggi diambil dari kolom Ukuran Bak (tiga angka dipisah tanda -), m3 dari kolom M3. Bila kertas tidak punya ukuran tapi punya M3/volume, isi m3 saja dan biarkan panjang/lebar/tinggi 0. Angka berupa number (titik desimal). Abaikan tulisan tangan, coretan, dan stempel. Jika tidak terbaca jelas, isi "" atau 0 -- JANGAN menebak.
+PENTING untuk "tujuan": alamat sering PANJANG dan turun ke 2 baris (baris ke-2 biasanya sejajar dengan kolom Nomor di kanan). Gabungkan SEMUA baris alamat itu menjadi satu teks dipisah spasi; jangan ikutkan Nomor, Tanggal, Jam, atau nomor telepon.
+Untuk "ragu", "bidang" salah satu dari: no, tanggal, jam, penerima, tujuan, jenisBarang, noPolisi, panjang, lebar, tinggi (kolom "baris" isi 0).${ATURAN_RAGU}`;
+
+const PROMPT_INV = `Ini foto kertas INVOICE (biasanya cetak dot-matrix PT Bintang Muara Sejati, tapi bisa juga format lain). Baca isinya dan balas HANYA JSON dengan kunci persis:
+{"no":"No. Invoice","tanggal":"YYYY-MM-DD","halaman":1,"kodeCustomer":"","namaCustomer":"","alamat":"alamat customer di header","rows":[{"tglKirim":"YYYY-MM-DD","noSJ":"No SJ tanpa awalan, mis. 002096","kode":"kode setelah no SJ mis. BB atau BS, kosong jika tidak ada","alamat":"Alamat Kirim","panjang":0,"lebar":0,"tinggi":0,"m3":0,"harga":0,"jumlah":0}],"totalM3":0,"totalTagihan":0,"catatanFormat":"","ragu":[]}
+Aturan: satu objek per baris tabel (No 1,2,3,...). Angka berupa number tanpa pemisah ribuan (harga 445000, jumlah 2285965; P/L/T/m3 pakai titik desimal). totalTagihan dari "Jumlah Total Tagihan" / total akhir. Abaikan tulisan tangan, coretan, lingkaran/kotak spidol, dan stempel. Jika tidak terbaca jelas, isi "" atau 0 -- JANGAN menebak.
+Kolom tabel bisa berbeda urutan/judul: petakan lewat judul kolom. Bila tabel tidak punya kolom P/L/T tapi punya M3/Qty/Volume, isi m3 dan biarkan panjang/lebar/tinggi 0. Bila tidak ada kolom tanggal per baris, isi tglKirim dengan tanggal invoice. "alamat" per baris yang turun ke 2 baris digabung jadi satu teks. Abaikan baris subtotal/total sebagai baris data; bila ada diskon/PPN/biaya lain yang memengaruhi total, sebutkan di "catatanFormat".
+Untuk "ragu", "bidang" salah satu dari: no, tanggal (header, "baris" isi 0) atau noSJ, tglKirim, kode, alamat, panjang, lebar, tinggi, harga (isi "baris" dengan nomor baris tabel mulai dari 1).${ATURAN_RAGU}`;
 
 let _kodeCache = { at: 0, txt: "" };
 async function daftarKodeBarang() {
@@ -262,7 +272,8 @@ router.post("/surat-jalan", async (req, res, next) => {
     const tujuan = String(b.tujuan || b.penerima || customer?.nama || "").trim() || "-";
 
     const p = Number(b.panjang) || 0, l = Number(b.lebar) || 0, t = Number(b.tinggi) || 0;
-    const m3 = r3(p * l * t);
+    // Kertas tanpa kolom ukuran: pakai M3 yang dikirim (boleh), kalau ukuran lengkap tetap P x L x T
+    const m3 = p && l && t ? r3(p * l * t) : r3(b.m3);
 
     // Cocokkan no. polisi ke master Armada (kalau ada) supaya laporan armada ikut terisi
     let armadaId = null, sopirId = null, sopirNama = b.sopir || null;
@@ -311,7 +322,7 @@ router.post("/surat-jalan", async (req, res, next) => {
         const kosong = v === null || v === "" || v === "-" || v === 0;
         if (!kosong) upd[k] = v;
       }
-      if (!(p && l && t)) { delete upd.panjang; delete upd.lebar; delete upd.tinggi; delete upd.m3; }
+      if (!(p && l && t)) { delete upd.panjang; delete upd.lebar; delete upd.tinggi; if (!(m3 > 0)) delete upd.m3; }
       const hasil = await prisma.suratJalan.update({ where: { id: ada.id }, data: upd });
       return res.json({ ok: true, diperbarui: true, sj: hasil });
     }
@@ -366,9 +377,10 @@ router.post("/invoice", async (req, res, next) => {
         for (const it of items) {
           const p = Number(it.panjang) || 0, l = Number(it.lebar) || 0, t = Number(it.tinggi) || 0;
           const harga = Number(it.harga) || 0;
-          const m3 = r3(p * l * t);
+          // ukuran lengkap -> P x L x T; kertas tanpa ukuran -> pakai M3 langsung dari kertas
+          const m3 = p && l && t ? r3(p * l * t) : r3(it.m3);
           if (!(m3 > 0) || !(harga > 0)) {
-            throw httpError(400, `Baris SJ ${it.noSJ || "?"}: ukuran (P-L-T) dan harga wajib terisi`);
+            throw httpError(400, `Baris SJ ${it.noSJ || "?"}: ukuran (P-L-T) atau M3, dan harga wajib terisi`);
           }
 
           // 1) pakai SJ yang dipilih UI; 2) kalau tidak ada, cari sendiri (hanya yang nomornya sama)
@@ -391,6 +403,7 @@ router.post("/invoice", async (req, res, next) => {
             const lengkapi = {};
             if (!sj.customerId) lengkapi.customerId = b.customerId;
             if (!(sj.panjang && sj.lebar && sj.tinggi) && p && l && t) Object.assign(lengkapi, { panjang: p, lebar: l, tinggi: t, m3 });
+            else if (!(sj.m3 > 0) && !(p && l && t) && m3 > 0) lengkapi.m3 = m3;
             if (!sj.jenisBarang && it.jenisBarang) lengkapi.jenisBarang = String(it.jenisBarang).trim();
             if (Object.keys(lengkapi).length) sj = await tx.suratJalan.update({ where: { id: sj.id }, data: lengkapi });
             sjTertaut++;
@@ -415,6 +428,7 @@ router.post("/invoice", async (req, res, next) => {
                 data: {
                   customerId: b.customerId,
                   ...(p && l && t && !(bentrok.panjang && bentrok.lebar && bentrok.tinggi) ? { panjang: p, lebar: l, tinggi: t, m3 } : {}),
+                  ...(!(p && l && t) && !(bentrok.m3 > 0) && m3 > 0 ? { m3 } : {}),
                   ...(!bentrok.jenisBarang && jenis ? { jenisBarang: jenis } : {}),
                 },
               });

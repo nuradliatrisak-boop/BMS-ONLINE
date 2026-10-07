@@ -58,8 +58,10 @@
             <input
                 id="penerima"
                 type="text"
+                list="dlPenerima"
                 placeholder="Nama penerima / PT (bisa diketik/diedit manual)"
             >
+            <datalist id="dlPenerima"></datalist>
 
 
             <!-- TUJUAN -->
@@ -78,6 +80,14 @@
             <select id="stockId">
                 <option value="">-- Pilih jenis barang --</option>
             </select>
+
+            <input
+                id="jenisManual"
+                type="text"
+                list="dlJenis"
+                placeholder="Atau ketik jenis barang manual (kalau tidak ada di daftar)"
+            >
+            <datalist id="dlJenis"></datalist>
 
 
             <!-- TANGGAL DAN JAM -->
@@ -424,33 +434,76 @@
            LOAD DAFTAR PENERIMA CUSTOMER
         ========================================================= */
 
-        function loadRecipients(c){
+        var riwayatPenerima = [];
+        var riwayatJenis = [];
+
+        function renderPilihPenerima(c){
 
             var s = $('penerimaPilih');
+            var dl = $('dlPenerima');
 
             s.innerHTML =
                 '<option value="">-- Pilih dari daftar tersimpan (opsional) --</option>';
+            dl.innerHTML = '';
 
-
+            var seen = {};
+            var daftar = [];
             var r = (c && c.recipients) || [];
 
+            if(c){ daftar.push({nama: c.nama, alamat: c.alamat || '', tag: 'customer ini'}); }
+            for(var i = 0; i < r.length; i++){ daftar.push({nama: r[i].nama, alamat: r[i].alamat || '', tag: 'daftar penerima'}); }
+            for(var j = 0; j < riwayatPenerima.length; j++){ daftar.push({nama: riwayatPenerima[j].nama, alamat: riwayatPenerima[j].alamat || '', tag: riwayatPenerima[j].sumber === 'master' ? 'daftar penerima' : 'pernah dipakai'}); }
 
-            for(var i = 0; i < r.length; i++){
+            var namaSeen = {};
+            for(var k = 0; k < daftar.length; k++){
+                var d = daftar[k];
+                var key = (d.nama + '|' + d.alamat).toLowerCase().replace(/\s+/g, ' ');
+                if(seen[key] || (!d.nama && !d.alamat)){ continue; }
+                seen[key] = true;
 
                 var o = document.createElement('option');
-
-                o.value = r[i].nama;
-
-                o.setAttribute(
-                    'data-address',
-                    r[i].alamat || ''
-                );
-
-                o.textContent = r[i].nama;
-
+                o.value = d.nama;
+                o.setAttribute('data-address', d.alamat);
+                o.textContent = d.nama + (d.alamat ? ' \u2014 ' + d.alamat : '') + ' (' + d.tag + ')';
                 s.appendChild(o);
 
+                if(d.nama && !namaSeen[d.nama.toLowerCase()]){
+                    namaSeen[d.nama.toLowerCase()] = true;
+                    var x = document.createElement('option');
+                    x.value = d.nama;
+                    $('dlPenerima').appendChild(x);
+                }
             }
+
+        }
+
+        function renderJenisList(){
+            var dl = $('dlJenis');
+            dl.innerHTML = '';
+            for(var i = 0; i < riwayatJenis.length; i++){
+                var o = document.createElement('option');
+                o.value = riwayatJenis[i];
+                dl.appendChild(o);
+            }
+        }
+
+        /* Daftar penerima = bawaan customer + daftar Penerima customer +
+           penerima/tujuan yang pernah dipakai di surat jalan lama (riwayat
+           input manual, disimpan otomatis oleh server). */
+        function loadRecipients(c){
+
+            renderPilihPenerima(c);
+
+            apiRequest(
+                '/surat-jalan/riwayat-input?customerId=' +
+                encodeURIComponent((c && c.id) || ''),
+                'GET'
+            ).then(function(r){
+                riwayatPenerima = (r && r.penerima) || [];
+                riwayatJenis = (r && r.jenisBarang) || [];
+                renderPilihPenerima(c);
+                renderJenisList();
+            }).catch(function(){});
 
         }
 
@@ -527,6 +580,8 @@
 
         $('penerimaPilih').onchange =
             fillFromPilih;
+
+        loadRecipients(null);
 
 
         /* =========================================================
@@ -793,9 +848,8 @@
 
                 jenisBarang:
 
-                    so && so.value
-                    ? so.textContent
-                    : '',
+                    $('jenisManual').value.trim()
+                    || (so && so.value ? so.textContent : ''),
 
 
                 armadaId:
@@ -1615,6 +1669,11 @@
                 /*
                     Armada
                 */
+
+                $('jenisManual').value = '';
+                if(!$('stockId').value && x.jenisBarang){
+                    $('jenisManual').value = x.jenisBarang;
+                }
 
                 $('armadaId').value =
                     x.armadaId || '';

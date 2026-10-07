@@ -1,5 +1,6 @@
 <script setup>
 import ScanDokumen from "../components/ScanDokumen.vue";
+import ImportInvoiceModal from "../components/ImportInvoiceModal.vue";
 import { ref, onMounted, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { api } from "../services/api.js";
@@ -263,6 +264,9 @@ onMounted(load);
 
 // ---- Scan kamera (HP): foto Invoice kertas -> masuk sistem ----
 const showScan = ref(false);
+
+// ---- Import dari Excel (1 sheet = 1 invoice) ----
+const showImport = ref(false);
 </script>
 
 <template>
@@ -274,6 +278,7 @@ const showScan = ref(false);
 
     <div style="display: flex; gap: 8px; flex-wrap: wrap">
       <button class="btn" @click="showScan = true">📷 Scan Invoice</button>
+      <button class="btn" @click="showImport = true">📥 Import Excel</button>
       <button class="btn btn-primary" @click="openModal">+ Buat Invoice</button>
     </div>
   </div>
@@ -487,6 +492,14 @@ const showScan = ref(false);
   </div>
 
   <ScanDokumen v-if="showScan" tipe="INVOICE" @close="showScan = false" @saved="load" />
+
+  <!-- MODAL IMPORT EXCEL -->
+  <ImportInvoiceModal
+    v-if="showImport"
+    :customers="customers"
+    @close="showImport = false"
+    @done="load"
+  />
 </template>
 
 <style scoped>

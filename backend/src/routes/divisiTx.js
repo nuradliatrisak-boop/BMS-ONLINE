@@ -507,7 +507,7 @@ router.get("/rincian", async (req, res, next) => {
 // Import massal dari Excel (dipakai oleh parser di frontend, lihat
 // frontend/src/utils/excelImport.js). Body: { items: [{ divisi, tipe,
 // kelompok, kategori, subKategori, qty, hargaSatuan, nominal, tanggal,
-// sumber }, ...] }
+// keterangan, sumber, sinkronMirror }, ...] }
 //
 // Duplikat (kombinasi divisi+kelompok+kategori+subKategori+tanggal+nominal
 // yang sama persis) dilewati otomatis, supaya file yang sama aman
@@ -562,9 +562,14 @@ router.post("/import", async (req, res, next) => {
           hargaSatuan: raw.hargaSatuan != null && raw.hargaSatuan !== "" ? Number(raw.hargaSatuan) : null,
           nominal,
           tanggal,
+          keterangan: raw.keterangan ? String(raw.keterangan).slice(0, 500) : null,
           sumber: raw.sumber ? String(raw.sumber).slice(0, 255) : null,
         },
       });
+      // Template flat BMS mengirim sinkronMirror=true supaya pendapatan
+      // Armada/Alat Berat ikut tercermin di "Sewa Armada & Excavator" Supplier,
+      // sama seperti input manual. Importer format lama TIDAK mengirim flag ini.
+      if (raw.sinkronMirror) await syncMirrorTx(tx);
       dibuat++;
       dibuatList.push(tx);
     }

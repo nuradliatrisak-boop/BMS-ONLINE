@@ -430,30 +430,56 @@ async function updateItemHarga(item) {
   }
 }
 
-// --- TAMBAH ITEM MANUAL (khusus sewa alat berat / item non-Surat Jalan) ---
+// --- TAMBAH ITEM MANUAL (per customer, lintas divisi) ---
+// Dropdown Divisi menentukan bentuk formnya: "Alat Berat" = baris sewa alat
+// (jam kerja / mobilisasi, tanpa Surat Jalan); divisi lain = baris barang/jasa
+// biasa -- Surat Jalan-nya DIBUATKAN OTOMATIS oleh server (atau ditautkan kalau
+// No SJ yang diisi sudah ada di sistem & belum tertagih).
 const showManualItemModal = ref(false);
 const savingManualItem = ref(false);
 const KATEGORI_ALAT_OPSI = ["Bucket", "Breker", "Longarm", "Diatas Air", "Mobilisasi"];
-const manualItem = ref({
-  tanggal: new Date().toISOString().slice(0, 10),
-  unitAlat: "",
-  kategoriAlat: "Bucket",
-  qty: 1,
-  satuan: "jam",
-  hargaSatuan: 0,
-  lokasi: "",
-});
+const DIVISI_MANUAL = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
+const SATUAN_DIVISI = { Supplier: "m3", Armada: "rit", "Alat Berat": "jam", Kontraktor: "ls", Kapal: "trip" };
+const SATUAN_OPSI = ["m3", "rit", "trip", "ton", "zak", "unit", "set", "ls", "hari", "jam"];
 
-function resetManualItemForm() {
-  manualItem.value = {
+function formManualBaru(divisi) {
+  const d = divisi || invoice.value?.divisi || "Supplier";
+  return {
+    divisi: d,
     tanggal: new Date().toISOString().slice(0, 10),
     unitAlat: "",
     kategoriAlat: "Bucket",
+    jenisBarang: "",
+    noSJ: "",
+    noPolisi: "",
+    panjang: "",
+    lebar: "",
+    tinggi: "",
+    tujuan: "",
     qty: 1,
-    satuan: "jam",
+    satuan: SATUAN_DIVISI[d] || "ls",
     hargaSatuan: 0,
     lokasi: "",
   };
+}
+const manualItem = ref(formManualBaru());
+const manualIsAlat = computed(() => manualItem.value.divisi === "Alat Berat");
+
+// volume dari P x L x T (kalau lengkap)
+const manualVolume = computed(() => {
+  const m = manualItem.value;
+  const v = Number(m.panjang) * Number(m.lebar) * Number(m.tinggi);
+  return v > 0 ? Math.round(v * 1000) / 1000 : 0;
+});
+
+function onManualDivisiChange() {
+  const m = manualItem.value;
+  m.satuan = SATUAN_DIVISI[m.divisi] || m.satuan;
+  if (m.divisi === "Alat Berat" && !KATEGORI_ALAT_OPSI.includes(m.kategoriAlat)) m.kategoriAlat = "Bucket";
+}
+
+function resetManualItemForm() {
+  manualItem.value = formManualBaru();
 }
 
 function openAddManualItemModal() {
@@ -499,31 +525,75 @@ function manualItemKeterangan() {
 }
 
 async function submitManualItem() {
-  if (manualItem.value.kategoriAlat !== "Mobilisasi" && !manualItem.value.unitAlat) {
-    return toast("Isi nama unit alatnya dulu (mis. PC 200, SANY PC-075)");
-  }
-  if (!manualItem.value.hargaSatuan) {
-    return toast("Isi harga satuannya dulu");
+  const m = manualItem.value;
+  let body;
+  if (manualIsAlat.value) {
+    if (m.kategoriAlat !== "Mobilisasi" && !m.unitAlat) {
+      return toast("Isi nama unit alatnya dulu (mis. PC 200, SANY PC-075)");
+    }
+    if (!m.hargaSatuan) return toast("Isi harga satuannya dulu");
+    body = {
+      divisi: m.divisi,
+      keterangan: manualItemKeterangan(),
+      qty: Number(m.qty) || 0,
+      satuan: m.kategoriAlat === "Mobilisasi" ? "ls" : m.satuan,
+      hargaSatuan: Number(m.hargaSatuan) || 0,
+      kategoriAlat: m.kategoriAlat,
+      unitAlat: m.unitAlat || null,
+      tglPakai: m.tanggal || null,
+      lokasi: m.lokasi || null,
+    };
+  } else {
+    if (!m.jenisBarang.trim()) return toast("Isi jenis barang / uraian dulu");
+    const qty = Number(m.qty) || manualVolume.value;
+    if (!(qty > 0)) return toast("Isi jumlah dulu (atau ukuran P-L-T)");
+    if (!m.hargaSatuan) return toast("Isi harga satuannya dulu");
+    body = {
+      divisi: m.divisi,
+      keterangan: m.jenisBarang.trim(),
+      qty,
+      satuan: m.satuan || null,
+      hargaSatuan: Number(m.hargaSatuan) || 0,
+      tanggal: m.tanggal || null,
+      noSJ: m.noSJ || null,
+      noPolisi: m.noPolisi || null,
+      panjang: Number(m.panjang) || 0,
+      lebar: Number(m.lebar) || 0,
+      tinggi: Number(m.tinggi) || 0,
+      tujuan: m.tujuan || null,
+    };
   }
   savingManualItem.value = true;
   try {
-    invoice.value = await api.post(`/invoices/${route.params.id}/items`, {
-      keterangan: manualItemKeterangan(),
-      qty: Number(manualItem.value.qty) || 0,
-      satuan: manualItem.value.kategoriAlat === "Mobilisasi" ? "ls" : manualItem.value.satuan,
-      hargaSatuan: Number(manualItem.value.hargaSatuan) || 0,
-      kategoriAlat: manualItem.value.kategoriAlat,
-      unitAlat: manualItem.value.unitAlat || null,
-      tglPakai: manualItem.value.tanggal || null,
-      lokasi: manualItem.value.lokasi || null,
-    });
-    toast("Item berhasil ditambahkan");
+    invoice.value = await api.post(`/invoices/${route.params.id}/items`, body);
+    toast(manualIsAlat.value ? "Item berhasil ditambahkan" : "Item ditambahkan & Surat Jalan dibuat/ditautkan otomatis");
     showManualItemModal.value = false;
     await load();
   } catch (e) {
     toast(e?.message || "Gagal menambahkan item");
   } finally {
     savingManualItem.value = false;
+  }
+}
+
+// Invoice lama / input sebelumnya: baris yang belum punya Surat Jalan
+// (bukan sewa alat) dibuatkan SJ-nya sekaligus.
+const itemTanpaSJ = computed(() =>
+  (invoice.value?.items || []).filter((it) => !it.suratJalanId && !it.tensivId && !it.kategoriAlat && !it.unitAlat)
+);
+const savingBuatSJ = ref(false);
+async function buatSJOtomatis() {
+  if (!itemTanpaSJ.value.length) return;
+  if (!confirm(`Buatkan Surat Jalan untuk ${itemTanpaSJ.value.length} baris yang belum punya SJ?`)) return;
+  savingBuatSJ.value = true;
+  try {
+    const res = await api.post(`/invoices/${route.params.id}/buat-sj-otomatis`, {});
+    toast(`${res.dibuat} Surat Jalan dibuat`);
+    await load();
+  } catch (e) {
+    toast(e?.message || "Gagal membuat Surat Jalan");
+  } finally {
+    savingBuatSJ.value = false;
   }
 }
 
@@ -661,6 +731,16 @@ onMounted(load);
                    mobilisasi) atau item lain yang tidak berasal dari Surat Jalan. -->
               <button class="btn btn-sm btn-ghost" @click="openAddManualItemModal">
                 + Tambah Manual
+              </button>
+              <!-- Baris tanpa Surat Jalan (non-alat berat) -> dibuatkan SJ-nya -->
+              <button
+                v-if="itemTanpaSJ.length"
+                class="btn btn-sm btn-ghost"
+                :disabled="savingBuatSJ"
+                :title="`${itemTanpaSJ.length} baris belum punya Surat Jalan`"
+                @click="buatSJOtomatis"
+              >
+                {{ savingBuatSJ ? "Membuat SJ…" : `Buat SJ Otomatis (${itemTanpaSJ.length})` }}
               </button>
             </div>
           </div>
@@ -1023,80 +1103,161 @@ onMounted(load);
       </div>
     </div>
 
-    <!-- MODAL TAMBAH ITEM MANUAL (sewa alat berat, dll) -->
+    <!-- MODAL TAMBAH ITEM MANUAL (per customer, lintas divisi) -->
     <div v-if="showManualItemModal" class="modal-bg" @click.self="showManualItemModal = false">
-      <div class="modal" style="max-width:520px">
+      <div class="modal" style="max-width:560px">
         <button class="modal-close" @click="showManualItemModal = false">×</button>
         <h2>Tambah Item Manual</h2>
         <div class="msub">
-          Untuk baris sewa alat berat (jam kerja / mobilisasi) atau item lain
-          yang bukan dari Surat Jalan.
-        </div>
-
-        <div class="row">
-          <div class="field">
-            <label>Tanggal Pakai</label>
-            <input v-model="manualItem.tanggal" type="date" />
-          </div>
-          <div class="field">
-            <label>Kategori Alat</label>
-            <select v-model="manualItem.kategoriAlat">
-              <option v-for="k in KATEGORI_ALAT_OPSI" :key="k" :value="k">{{ k }}</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="field" v-if="manualItem.kategoriAlat !== 'Mobilisasi'">
-          <label>Unit Alat</label>
-          <input
-            v-model="manualItem.unitAlat"
-            list="invoice-manual-unit-list"
-            placeholder="mis. PC 200, SANY PC-075"
-          />
-          <datalist id="invoice-manual-unit-list">
-            <option v-for="u in unitAlatList" :key="u.id" :value="u.nama" />
-          </datalist>
-          <div v-if="tensivHintUntukUnit.length" class="msub tensiv-hint">
-            Ada {{ tensivHintUntukUnit.length }} Tensiv (Daftar Kerja Harian) unit ini yang
-            belum ditagih customer ini —
-            <button type="button" class="link-btn" @click="pakaiTensivDariHint">
-              pakai dari Tensiv saja
-            </button>
-            biar jam kerjanya otomatis kebawa, gak perlu ketik ulang.
-          </div>
-        </div>
-        <div class="field" v-else>
-          <label>Keterangan Mobilisasi <span class="optional">(opsional)</span></label>
-          <input v-model="manualItem.unitAlat" placeholder="mis. Mobilisasi PC 200 ke lokasi" />
-        </div>
-
-        <div class="row row-3" v-if="manualItem.kategoriAlat !== 'Mobilisasi'">
-          <div class="field">
-            <label>Jam Kerja</label>
-            <input v-model.number="manualItem.qty" type="number" min="0" step="0.5" />
-          </div>
-          <div class="field">
-            <label>Harga / Jam</label>
-            <MoneyInput v-model="manualItem.hargaSatuan" />
-          </div>
-          <div class="field">
-            <label>Subtotal</label>
-            <div class="mono" style="padding-top:8px">
-              {{ rupiah((Number(manualItem.qty)||0) * (Number(manualItem.hargaSatuan)||0)) }}
-            </div>
-          </div>
-        </div>
-        <div class="row" v-else>
-          <div class="field">
-            <label>Biaya Mobilisasi</label>
-            <MoneyInput v-model="manualItem.hargaSatuan" />
-          </div>
+          Pilih divisi baris ini. Sewa alat berat (jam kerja / mobilisasi) tanpa Surat Jalan;
+          divisi lain otomatis dibuatkan Surat Jalan-nya.
         </div>
 
         <div class="field">
-          <label>Lokasi <span class="optional">(opsional — titiknya otomatis muncul di peta)</span></label>
-          <input v-model="manualItem.lokasi" placeholder="mis. Cimanggis 2, Kp. Rambutan" />
+          <label>Divisi</label>
+          <select v-model="manualItem.divisi" @change="onManualDivisiChange">
+            <option v-for="d in DIVISI_MANUAL" :key="d" :value="d">{{ d }}</option>
+          </select>
         </div>
+
+        <!-- ===== ALAT BERAT (sewa alat) ===== -->
+        <template v-if="manualIsAlat">
+          <div class="row">
+            <div class="field">
+              <label>Tanggal Pakai</label>
+              <input v-model="manualItem.tanggal" type="date" />
+            </div>
+            <div class="field">
+              <label>Kategori Alat</label>
+              <select v-model="manualItem.kategoriAlat">
+                <option v-for="k in KATEGORI_ALAT_OPSI" :key="k" :value="k">{{ k }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field" v-if="manualItem.kategoriAlat !== 'Mobilisasi'">
+            <label>Unit Alat</label>
+            <input
+              v-model="manualItem.unitAlat"
+              list="invoice-manual-unit-list"
+              placeholder="mis. PC 200, SANY PC-075"
+            />
+            <datalist id="invoice-manual-unit-list">
+              <option v-for="u in unitAlatList" :key="u.id" :value="u.nama" />
+            </datalist>
+            <div v-if="tensivHintUntukUnit.length" class="msub tensiv-hint">
+              Ada {{ tensivHintUntukUnit.length }} Tensiv (Daftar Kerja Harian) unit ini yang
+              belum ditagih customer ini —
+              <button type="button" class="link-btn" @click="pakaiTensivDariHint">
+                pakai dari Tensiv saja
+              </button>
+              biar jam kerjanya otomatis kebawa, gak perlu ketik ulang.
+            </div>
+          </div>
+          <div class="field" v-else>
+            <label>Keterangan Mobilisasi <span class="optional">(opsional)</span></label>
+            <input v-model="manualItem.unitAlat" placeholder="mis. Mobilisasi PC 200 ke lokasi" />
+          </div>
+
+          <div class="row row-3" v-if="manualItem.kategoriAlat !== 'Mobilisasi'">
+            <div class="field">
+              <label>Jam Kerja</label>
+              <input v-model.number="manualItem.qty" type="number" min="0" step="0.5" />
+            </div>
+            <div class="field">
+              <label>Harga / Jam</label>
+              <MoneyInput v-model="manualItem.hargaSatuan" />
+            </div>
+            <div class="field">
+              <label>Subtotal</label>
+              <div class="mono" style="padding-top:8px">
+                {{ rupiah((Number(manualItem.qty)||0) * (Number(manualItem.hargaSatuan)||0)) }}
+              </div>
+            </div>
+          </div>
+          <div class="row" v-else>
+            <div class="field">
+              <label>Biaya Mobilisasi</label>
+              <MoneyInput v-model="manualItem.hargaSatuan" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Lokasi <span class="optional">(opsional — titiknya otomatis muncul di peta)</span></label>
+            <input v-model="manualItem.lokasi" placeholder="mis. Cimanggis 2, Kp. Rambutan" />
+          </div>
+        </template>
+
+        <!-- ===== DIVISI LAIN (barang / jasa + Surat Jalan otomatis) ===== -->
+        <template v-else>
+          <div class="row">
+            <div class="field">
+              <label>Tanggal</label>
+              <input v-model="manualItem.tanggal" type="date" />
+            </div>
+            <div class="field">
+              <label>No Surat Jalan <span class="optional">(opsional)</span></label>
+              <input v-model="manualItem.noSJ" placeholder="kosong = dibuatkan otomatis" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Jenis Barang / Uraian</label>
+            <input
+              v-model="manualItem.jenisBarang"
+              :placeholder="manualItem.divisi === 'Armada' ? 'mis. Angkut tanah Cimanggis - Bekasi' : 'mis. Pasir Pasang, Semen Padang 40 kg'"
+            />
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>No Polisi <span class="optional">(opsional)</span></label>
+              <input v-model="manualItem.noPolisi" placeholder="mis. B 9069 UIS" />
+            </div>
+            <div class="field">
+              <label>Tujuan / Lokasi <span class="optional">(opsional)</span></label>
+              <input v-model="manualItem.tujuan" placeholder="default: alamat customer" />
+            </div>
+          </div>
+
+          <div class="row row-3">
+            <div class="field">
+              <label>P <span class="optional">(m)</span></label>
+              <input v-model="manualItem.panjang" type="number" min="0" step="0.01" />
+            </div>
+            <div class="field">
+              <label>L <span class="optional">(m)</span></label>
+              <input v-model="manualItem.lebar" type="number" min="0" step="0.01" />
+            </div>
+            <div class="field">
+              <label>T <span class="optional">(m)</span></label>
+              <input v-model="manualItem.tinggi" type="number" min="0" step="0.01" />
+            </div>
+          </div>
+          <div v-if="manualVolume" class="msub" style="margin-top:-6px">
+            Volume P×L×T = {{ manualVolume }} m³ (dipakai sebagai Jumlah kalau Jumlah dikosongkan)
+          </div>
+
+          <div class="row row-3">
+            <div class="field">
+              <label>Jumlah</label>
+              <input v-model.number="manualItem.qty" type="number" min="0" step="0.001" />
+            </div>
+            <div class="field">
+              <label>Satuan</label>
+              <select v-model="manualItem.satuan">
+                <option v-for="u in SATUAN_OPSI" :key="u" :value="u">{{ u }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Harga Satuan</label>
+              <MoneyInput v-model="manualItem.hargaSatuan" />
+            </div>
+          </div>
+          <div class="msub" style="margin-top:-6px">
+            Subtotal: <b class="mono">{{ rupiah((Number(manualItem.qty) || manualVolume || 0) * (Number(manualItem.hargaSatuan) || 0)) }}</b>
+          </div>
+        </template>
 
         <div class="modal-actions">
           <button class="btn btn-ghost" :disabled="savingManualItem" @click="showManualItemModal = false">

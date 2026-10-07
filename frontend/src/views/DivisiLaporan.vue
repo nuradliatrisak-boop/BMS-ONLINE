@@ -4,6 +4,7 @@ import { useRoute } from "vue-router";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { parseDivisiExcel } from "../utils/excelImport.js";
+import { parseDivisiTemplate, unduhTemplateDivisi } from "../utils/divisiTemplateImport.js";
 import { exportLaporanDivisiExcel, exportSolarStokExcel } from "../utils/excelExport.js";
 import { exportLaporanDivisiPdf, exportSolarStokPdf } from "../utils/pdfExport.js";
 import { exportSolarStokWord } from "../utils/wordExport.js";
@@ -68,6 +69,7 @@ const importResult = ref(null); // hasil parseDivisiExcel
 const importParsing = ref(false);
 const importSaving = ref(false);
 const importError = ref("");
+const importMode = ref("template"); // "template" (format BMS) | "laporan" (file Pengeluaran <Bulan>.xlsx)
 
 function rupiah(n) {
   return "Rp " + Math.round(n || 0).toLocaleString("id-ID");
@@ -320,6 +322,7 @@ function openImportModal() {
   importResult.value = null;
   importError.value = "";
   importBulan.value = bulan.value || new Date().toISOString().slice(0, 7);
+  importMode.value = "template";
   showImportModal.value = true;
 }
 
@@ -335,10 +338,20 @@ async function previewImport() {
   importParsing.value = true;
   importError.value = "";
   try {
-    const result = await parseDivisiExcel(importFile.value, importBulan.value);
-    if (!result.items.length) {
-      importError.value =
-        "Tidak ada data yang berhasil dibaca. Pastikan file punya sheet SUPPLIER / ARMADA / ALAT BERAT dengan format seperti laporan bulanan biasa.";
+    let result;
+    if (importMode.value === "template") {
+      result = await parseDivisiTemplate(importFile.value, config.value);
+      if (!result.items.length) {
+        importError.value = result.sheetDibaca
+          ? "Tidak ada baris valid. Lihat daftar masalah di bawah."
+          : 'Judul kolom template tidak ditemukan. Pakai tombol "Unduh Template" (kolom Divisi, Tanggal, Kelompok, Kategori, ... ).';
+      }
+    } else {
+      result = await parseDivisiExcel(importFile.value, importBulan.value);
+      if (!result.items.length) {
+        importError.value =
+          "Tidak ada data yang berhasil dibaca. Pastikan file punya sheet SUPPLIER / ARMADA / ALAT BERAT dengan format seperti laporan bulanan biasa.";
+      }
     }
     importResult.value = result;
   } catch (err) {
@@ -1621,13 +1634,26 @@ onMounted(async () => {
     <div class="modal" style="max-width: 640px; width: 92%">
       <button class="modal-close" @click="showImportModal = false">×</button>
       <h2>Import Laporan dari Excel</h2>
-      <div class="desc" style="margin-bottom: 14px">
+      <div class="field" style="margin-bottom: 10px">
+        <label>Format file</label>
+        <select v-model="importMode" @change="importResult = null; importError = ''">
+          <option value="template">Template BMS (1 baris = 1 transaksi, semua divisi & bulan)</option>
+          <option value="laporan">Laporan bulanan "Pengeluaran &lt;Bulan&gt; &lt;Tahun&gt;.xlsx"</option>
+        </select>
+      </div>
+      <div v-if="importMode === 'template'" class="desc" style="margin-bottom: 14px">
+        Kolom: Divisi, Tanggal, Kelompok, Kategori, Rincian, Qty, Harga Satuan, Nominal, Keterangan.
+        Transaksi masuk ke bulan sesuai kolom Tanggal. Pendapatan Armada &amp; Alat Berat otomatis
+        tercermin ke "Sewa Armada &amp; Excavator" Supplier.
+        <button class="btn btn-ghost btn-sm" type="button" @click="unduhTemplateDivisi(config)">⬇ Unduh Template</button>
+      </div>
+      <div v-else class="desc" style="margin-bottom: 14px">
         Untuk file "Pengeluaran &lt;Bulan&gt; &lt;Tahun&gt;.xlsx" dengan sheet SUPPLIER, ARMADA,
         dan ALAT BERAT. Semua divisi di sheet-sheet itu akan diimport sekaligus.
       </div>
 
       <div class="row" style="margin-bottom: 12px">
-        <div class="field">
+        <div v-if="importMode === 'laporan'" class="field">
           <label>Bulan data ini</label>
           <input v-model="importBulan" type="month" />
         </div>
@@ -1643,9 +1669,20 @@ onMounted(async () => {
 
       <div v-if="importError" class="empty" style="color: #b91c1c; margin-top: 12px">{{ importError }}</div>
 
+      <div v-if="importResult?.errors?.length" class="desc" style="color: #b91c1c; margin-top: 8px; max-height: 140px; overflow: auto">
+        <div><b>{{ importResult.errors.length }} baris ditolak:</b></div>
+        <div v-for="(e, i) in importResult.errors.slice(0, 50)" :key="i">✖ {{ e.sheet }} baris {{ e.baris }}: {{ e.pesan }}</div>
+      </div>
+      <div v-if="importResult?.warnings?.length" class="desc" style="color: #b45309; margin-top: 8px; max-height: 100px; overflow: auto">
+        <div v-for="(w, i) in importResult.warnings.slice(0, 30)" :key="i">⚠ {{ w }}</div>
+      </div>
+
       <div v-if="importResult?.items?.length" style="margin-top: 16px">
-        <div v-if="importResult.sheetsMissing.length" class="desc" style="margin-bottom: 8px">
+        <div v-if="importResult.sheetsMissing?.length" class="desc" style="margin-bottom: 8px">
           Sheet tidak ditemukan di file ini (dilewati): {{ importResult.sheetsMissing.join(", ") }}
+        </div>
+        <div v-if="importMode === 'template'" class="desc" style="margin-bottom: 8px">
+          Periode data: {{ [...new Set(importResult.items.map((x) => String(x.tanggal).slice(0, 7)))].sort().join(", ") }}
         </div>
         <div v-for="(d, div) in importResult.perDivisi" :key="div" class="card" style="margin-bottom: 10px; padding: 10px 14px">
           <b>{{ div }}</b> &mdash; {{ d.items.length }} baris data

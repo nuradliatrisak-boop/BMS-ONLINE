@@ -3,6 +3,7 @@ import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
 import { buildSJWorkbook } from "../services/suratJalanXlsx.js";
 import { DEFAULTS as PRINT_CALIB_DEFAULTS } from "./printCalib.js";
+import { simpanPenerimaBaru, riwayatInput, sinkronPenerimaLama } from "../services/penerimaTersimpan.js";
 
 const router = Router();
 
@@ -200,6 +201,27 @@ router.get("/", async (req, res, next) => {
 // Daftar Surat Jalan milik seorang customer yang BELUM dipakai di invoice
 // manapun (belum ada InvoiceItem yang menunjuk ke SJ ini). Dipakai di form
 // "Buat Invoice Baru" supaya user tinggal centang, bukan ketik manual.
+// Saran input: daftar penerima+tujuan (master customer + riwayat SJ lama) dan
+// jenis barang yang pernah diketik manual. ?customerId= (kosong = SJ tanpa customer).
+router.get("/riwayat-input", async (req, res, next) => {
+  try {
+    res.json(await riwayatInput(req.query.customerId || null, scopeDivisi(req)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Sekali jalan (ADMIN): masukkan semua penerima/tujuan dari SJ lama ke daftar
+// Penerima customer supaya yang pernah diketik manual bisa dipilih lagi.
+router.post("/sinkron-penerima", async (req, res, next) => {
+  try {
+    if (req.user?.role !== "ADMIN") return res.status(403).json({ error: "Hanya admin" });
+    res.json(await sinkronPenerimaLama());
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get("/belum-ditagih", async (req, res, next) => {
   try {
     const { customerId, divisi } = req.query;
@@ -303,6 +325,11 @@ router.post("/", async (req, res, next) => {
       hasil.push(sj);
     }
 
+    // Penerima/tujuan yang diketik manual ikut disimpan ke daftar Penerima customer
+    if (req.body.simpanPenerima !== false) {
+      try { await simpanPenerimaBaru(req.body.customerId, req.body.penerima, req.body.tujuan); } catch (err) { console.error("simpanPenerimaBaru", err); }
+    }
+
     // Tetap mempertahankan respons lama untuk pembuatan 1 Surat Jalan agar
     // integrasi yang sudah ada tidak berubah. Jika jumlah > 1, kirim semua SJ.
     res.status(201).json(jumlahSuratJalan === 1 ? hasil[0] : hasil);
@@ -355,6 +382,10 @@ router.put("/:id", async (req, res, next) => {
         data: dataTanpaDetail,
       });
       updatedBatchCount = result.count;
+    }
+
+    if (req.body.simpanPenerima !== false) {
+      try { await simpanPenerimaBaru(sj.customerId, sj.penerima, sj.tujuan); } catch (err) { console.error("simpanPenerimaBaru", err); }
     }
 
     res.json({ ...sj, updatedBatchCount });

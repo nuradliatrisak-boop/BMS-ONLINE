@@ -146,6 +146,7 @@ const formCustomer = computed(() => customers.value.find((c) => c.id === form.va
 const recipientOptions = computed(() => formCustomer.value?.recipients || []);
 
 function onCustomerChange() {
+  muatRiwayat(form.value.customerId);
   form.value.recipientId = "";
   if (recipientOptions.value.length) {
     // Customer distributor dengan banyak penerima - biarkan dipilih dulu.
@@ -155,6 +156,66 @@ function onCustomerChange() {
     // Customer biasa - penerima = customer itu sendiri.
     form.value.penerima = formCustomer.value?.nama || "";
     form.value.tujuan = formCustomer.value?.alamat || "";
+  }
+}
+
+// ---- Riwayat input manual (penerima/tujuan/jenis barang yang pernah dipakai) ----
+// Daftar saran = bawaan customer sendiri + daftar Penerima customer + pasangan
+// penerima/tujuan di Surat Jalan lama (dari server). Apa pun yang diketik
+// manual otomatis disimpan server ke daftar Penerima customer (kalau kotak
+// "Simpan ke daftar" dicentang), jadi besok bisa dipilih lagi.
+const riwayat = ref({ penerima: [], jenisBarang: [] });
+const simpanPenerima = ref(true);
+const jenisManual = ref(false);
+const pilihPenerimaIdx = ref("");
+
+const normT = (v) => String(v ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+const pilihanPenerima = computed(() => {
+  const out = [];
+  const lihat = new Set();
+  const tambah = (nama, alamat, label) => {
+    const k = `${normT(nama)}|${normT(alamat)}`;
+    if (lihat.has(k) || (!normT(nama) && !normT(alamat))) return;
+    lihat.add(k);
+    out.push({ nama, alamat, label });
+  };
+  const c = formCustomer.value;
+  if (c) tambah(c.nama, c.alamat || "", "Customer ini sendiri");
+  for (const r of recipientOptions.value) tambah(r.nama, r.alamat, "Daftar penerima");
+  for (const r of riwayat.value.penerima) tambah(r.nama, r.alamat, r.sumber === "master" ? "Daftar penerima" : "Pernah dipakai");
+  return out;
+});
+const penerimaBaru = computed(() => {
+  const k = `${normT(form.value.penerima)}|${normT(form.value.tujuan)}`;
+  return !!form.value.customerId && !!normT(form.value.penerima) && !!normT(form.value.tujuan) &&
+    !pilihanPenerima.value.some((x) => `${normT(x.nama)}|${normT(x.alamat)}` === k);
+});
+
+async function muatRiwayat(customerId) {
+  try {
+    riwayat.value = await api.get(`/surat-jalan/riwayat-input?customerId=${encodeURIComponent(customerId || "")}`);
+  } catch (e) {
+    riwayat.value = { penerima: [], jenisBarang: [] };
+  }
+}
+function pakaiPenerimaTersimpan() {
+  const x = pilihanPenerima.value[Number(pilihPenerimaIdx.value)];
+  if (x) { form.value.penerima = x.nama; form.value.tujuan = x.alamat; }
+  pilihPenerimaIdx.value = "";
+}
+const opsiJenisManual = computed(() => riwayat.value.jenisBarang || []);
+
+const isAdmin = (() => {
+  try { return JSON.parse(localStorage.getItem("bms_user") || "null")?.role === "ADMIN"; } catch (e) { return false; }
+})();
+async function sinkronPenerimaLama() {
+  if (!confirm("Masukkan semua penerima & tujuan dari surat jalan lama ke daftar Penerima customer?")) return;
+  try {
+    const r = await api.post("/surat-jalan/sinkron-penerima", {});
+    toast(`${r.ditambah} penerima baru disimpan (dari ${r.diperiksa} kombinasi di surat jalan lama)`);
+    await load();
+  } catch (e) {
+    toast(e?.message || "Gagal menyinkronkan penerima");
   }
 }
 
@@ -226,6 +287,9 @@ function openModal() {
   komisiManual.value = false;
   form.value = emptyForm();
   customerSearch.value = "";
+  jenisManual.value = false;
+  simpanPenerima.value = true;
+  muatRiwayat("");
   showModal.value = true;
 }
 
@@ -240,6 +304,9 @@ function openEdit(sj) {
     ? list.value.filter((x) => x.batchId === sj.batchId && x.id !== sj.id).length
     : 0;
   applyToBatch.value = true;
+  simpanPenerima.value = true;
+  muatRiwayat(sj.customerId || "");
+  jenisManual.value = !!sj.jenisBarang && !stockMasterList.value.some((x) => x.nama === sj.jenisBarang);
   form.value = {
     divisi: sj.divisi,
     customerId: sj.customerId || "",
@@ -428,6 +495,7 @@ async function submit() {
       armadaId: form.value.armadaId || null,
       penerima: form.value.penerima?.trim() || null,
       tujuan: form.value.tujuan?.trim() || "",
+      simpanPenerima: simpanPenerima.value,
       jenisBarang: form.value.jenisBarang?.trim() || null,
       noPolisi: form.value.noPolisi?.trim() || null,
       sopir: form.value.sopir?.trim() || null,
@@ -574,7 +642,8 @@ const showScan = ref(false);
     </div>
 
     <div style="display: flex; gap: 8px; flex-wrap: wrap">
-      <button class="btn" @click="showScan = true">📷 Scan Surat Jalan</button>
+      <button v-if="isAdmin" class="btn btn-ghost" title="Simpan penerima & tujuan dari surat jalan lama ke daftar Penerima customer" @click="sinkronPenerimaLama">↻ Simpan Penerima Lama</button>
+            <button class="btn" @click="showScan = true">📷 Scan Surat Jalan</button>
       <button class="btn btn-primary" @click="openModal">+ Buat Surat Jalan</button>
     </div>
   </div>
@@ -763,34 +832,59 @@ const showScan = ref(false);
         </div>
       </div>
 
-      <div class="row" v-if="recipientOptions.length">
+      <div v-if="pilihanPenerima.length" class="field">
+        <label>Pilih penerima / tujuan tersimpan <span class="optional">(opsional)</span></label>
+        <select v-model="pilihPenerimaIdx" @change="pakaiPenerimaTersimpan">
+          <option value="">— Pilih dari daftar tersimpan, atau ketik manual di bawah —</option>
+          <option v-for="(x, i) in pilihanPenerima" :key="i" :value="i">
+            {{ x.nama }}{{ x.alamat ? " — " + x.alamat : "" }} ({{ x.label }})
+          </option>
+        </select>
+      </div>
+      <div class="row">
         <div class="field">
-          <label>Penerima</label>
-          <select v-model="form.recipientId" @change="onRecipientChange">
-            <option value="" disabled>Pilih PT / penerima...</option>
-            <option v-for="r in recipientOptions" :key="r.id" :value="r.id">{{ r.nama }} — {{ r.alamat }}</option>
-          </select>
+          <label>Penerima <span class="optional">(boleh ketik manual)</span></label>
+          <input v-model="form.penerima" list="sj-penerima-list" placeholder="Nama penerima / PT" />
+          <datalist id="sj-penerima-list">
+            <option v-for="(x, i) in pilihanPenerima" :key="i" :value="x.nama" />
+          </datalist>
         </div>
         <div class="field">
-          <label>Tujuan</label>
-          <select v-model="form.tujuan" @change="onTujuanChange">
-            <option value="" disabled>Pilih alamat tujuan...</option>
-            <option v-for="r in recipientOptions" :key="r.id" :value="r.alamat">{{ r.alamat }}</option>
-          </select>
+          <label>Tujuan <span class="optional">(boleh ketik manual)</span></label>
+          <input v-model="form.tujuan" list="sj-tujuan-list" placeholder="Alamat tujuan pengiriman" />
+          <datalist id="sj-tujuan-list">
+            <option v-for="(x, i) in pilihanPenerima.filter((y) => y.alamat)" :key="i" :value="x.alamat" />
+          </datalist>
         </div>
       </div>
-      <div class="row" v-else>
-        <div class="field"><label>Penerima</label><input v-model="form.penerima" placeholder="Nama penerima" /></div>
-        <div class="field"><label>Tujuan</label><input v-model="form.tujuan" placeholder="Alamat tujuan pengiriman" /></div>
-      </div>
+      <label v-if="penerimaBaru" class="draft-check">
+        <input v-model="simpanPenerima" type="checkbox" />
+        <div>
+          <div>Simpan penerima &amp; tujuan ini ke daftar Penerima customer</div>
+          <div class="draft-check-sub">Kombinasi ini belum ada di daftar. Kalau dicentang, besok bisa dipilih lagi tanpa mengetik ulang.</div>
+        </div>
+      </label>
 
       <div class="field">
-        <label>Jenis Barang / Stock</label>
+        <label>
+          Jenis Barang / Stock
+          <button type="button" class="link-btn" @click="jenisManual = !jenisManual">
+            {{ jenisManual ? "← pilih dari daftar stock" : "✍ ketik manual (tidak ada di daftar)" }}
+          </button>
+        </label>
         <SearchableSelect
+          v-if="!jenisManual"
           v-model="form.jenisBarang"
           :options="stockMasterList.map(s => ({ value: s.nama, label: `${s.kode} — ${s.nama}` }))"
           placeholder="Pilih jenis barang..."
         />
+        <template v-else>
+          <input v-model="form.jenisBarang" list="sj-jenis-list" placeholder="Ketik jenis barang" />
+          <datalist id="sj-jenis-list">
+            <option v-for="j in opsiJenisManual" :key="j" :value="j" />
+          </datalist>
+          <div class="field-hint">Yang pernah diketik manual tersimpan di Surat Jalan dan muncul lagi sebagai saran.</div>
+        </template>
       </div>
 
       <div class="row">
@@ -986,4 +1080,5 @@ const showScan = ref(false);
   .sj-summary { grid-template-columns: 1fr; }
   .row-4 { grid-template-columns: 1fr 1fr; }
 }
+.link-btn { background: none; border: 0; color: #2563eb; cursor: pointer; padding: 0 4px; text-decoration: underline; font: inherit; font-size: 11px; font-weight: 400; }
 </style>

@@ -134,13 +134,18 @@ function applyPrice() {
 
 async function loadCustomers() {
   customers.value = await api.get("/customers");
-  if (!customers.value.some((c) => c.id === filter.value.customerId)) {
-    filter.value.customerId = customers.value[0]?.id || "";
+  // "" = Semua Customer (pilihan sah). Hanya kalau customer yang tersimpan sudah
+  // tidak ada lagi, kembali ke "Semua Customer" -- JANGAN dipaksa ke customer
+  // pertama (dulu bikin rekap kosong karena customer pertama belum punya data).
+  if (filter.value.customerId && !customers.value.some((c) => c.id === filter.value.customerId)) {
+    filter.value.customerId = "";
   }
   if (!form.value.customerId && customers.value.length) form.value.customerId = customers.value[0].id;
 }
 
+let loadSeq = 0;
 async function load() {
+  const seq = ++loadSeq;
   loading.value = true;
   try {
     const params = new URLSearchParams();
@@ -156,6 +161,7 @@ async function load() {
       params.delete("view");
       if (filter.value.belumLunas) params.set("belumLunas", "1");
       const d = await api.get(`/rekap-penjualan/invoice-rekap?${params.toString()}`);
+      if (seq !== loadSeq) return; // sudah ada permintaan yang lebih baru
       invRows.value = d.rows || [];
       penerimaList.value = d.penerimaList || [];
       const pn = filter.value.penerima;
@@ -164,14 +170,49 @@ async function load() {
       return;
     }
     const data = await api.get(`/rekap-penjualan?${params.toString()}`);
+    if (seq !== loadSeq) return;
     rows.value = data.rows || [];
     groups.value = data.groups || [];
     summary.value = data.summary || { count: 0, jumlah: 0, total: 0 };
   } catch (e) {
+    if (seq !== loadSeq) return;
     console.error(e);
-    toast("Gagal memuat rekap penjualan");
+    rows.value = [];
+    groups.value = [];
+    invRows.value = [];
+    toast(e?.message ? `Gagal memuat rekap penjualan: ${e.message}` : "Gagal memuat rekap penjualan");
   } finally {
-    loading.value = false;
+    if (seq === loadSeq) loading.value = false;
+  }
+}
+
+// Rekap Penjualan hanya terisi otomatis saat invoice dibuat/diimpor. Tombol ini
+// menarik Surat Jalan (non-draft) pada filter yang aktif yang belum punya baris
+// rekap -> tidak menimpa / menghapus baris yang sudah ada.
+const syncing = ref(false);
+async function sinkronDariSJ() {
+  if (syncing.value) return;
+  const nama = selectedCustomer.value?.nama || "semua customer";
+  if (!confirm(`Tarik Surat Jalan yang belum masuk rekap (${nama}, sesuai filter durasi) ke Rekap Penjualan?`)) return;
+  syncing.value = true;
+  try {
+    const body = { customerId: filter.value.customerId || undefined };
+    if (filter.value.mode === "bulan" && filter.value.bulan) body.bulan = filter.value.bulan;
+    else if (filter.value.mode === "rentang") {
+      if (filter.value.dari) body.from = filter.value.dari;
+      if (filter.value.sampai) body.to = filter.value.sampai;
+    }
+    const r = await api.post("/rekap-penjualan/sinkron", body);
+    toast(
+      r.dibuat
+        ? `${r.dibuat} surat jalan ditambahkan ke rekap${r.tanpaHarga ? ` (${r.tanpaHarga} belum ada harga di master customer)` : ""}`
+        : "Semua surat jalan pada filter ini sudah ada di rekap"
+    );
+    await load();
+  } catch (e) {
+    toast(e?.message || "Gagal sinkron dari surat jalan");
+  } finally {
+    syncing.value = false;
   }
 }
 
@@ -688,6 +729,7 @@ onBeforeUnmount(() => {
       </div>
       <button class="btn btn-ghost" @click="printReport">🖨 Cetak Rekap / PDF</button>
       <button class="btn btn-ghost" @click="exportExcel">⬇ Export Excel</button>
+      <button class="btn btn-ghost" :disabled="syncing" @click="sinkronDariSJ">{{ syncing ? "Menarik..." : "⟳ Tarik dari Surat Jalan" }}</button>
       <button class="btn btn-primary" @click="openModal">＋ Tambah Baris</button>
     </div>
   </div>
@@ -790,8 +832,11 @@ onBeforeUnmount(() => {
       <div v-else-if="filter.view === 'invoice' ? !displayRows.length : !rows.length" class="empty">
         <div class="big">🧾</div>
         <strong>Belum ada data rekap</strong>
-        <div class="empty-desc">Tambahkan baris dari surat jalan yang sudah selesai untuk membentuk rekap tagihan customer.</div>
-        <button class="btn btn-primary" style="margin-top:14px" @click="openModal">＋ Tambah Baris</button>
+        <div class="empty-desc">Tidak ada baris rekap untuk filter ini (cek customer &amp; bulan). Rekap terisi otomatis dari invoice; surat jalan yang belum masuk invoice bisa ditarik lewat tombol di bawah.</div>
+        <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-ghost" :disabled="syncing" @click="sinkronDariSJ">⟳ Tarik dari Surat Jalan</button>
+          <button class="btn btn-primary" @click="openModal">＋ Tambah Baris</button>
+        </div>
       </div>
       <div v-else-if="filter.view === 'invoice'" class="table-wrap rekap-table-wrap">
         <table class="rekap-table">
@@ -857,9 +902,9 @@ onBeforeUnmount(() => {
               <td class="mono">{{ r.noSuratJalan }}</td>
               <td class="mono">{{ r.noPolisi }}</td>
               <td>{{ r.jenisBarang }}</td>
-              <td class="num">{{ r.panjang.toFixed(2) }}</td>
-              <td class="num">{{ r.lebar.toFixed(2) }}</td>
-              <td class="num">{{ r.tinggi.toFixed(2) }}</td>
+              <td class="num">{{ Number(r.panjang || 0).toFixed(2) }}</td>
+              <td class="num">{{ Number(r.lebar || 0).toFixed(2) }}</td>
+              <td class="num">{{ Number(r.tinggi || 0).toFixed(2) }}</td>
               <td class="num">{{ fmtM3(r.jumlah) }}</td>
               <td class="num">{{ Math.round(r.harga).toLocaleString("id-ID") }}</td>
               <td class="num">{{ Math.round(r.total).toLocaleString("id-ID") }}</td>
@@ -943,7 +988,7 @@ onBeforeUnmount(() => {
         <tbody>
           <tr v-for="(r, idx) in rows" :key="r.id">
             <td>{{ idx + 1 }}</td><td>{{ formatTanggal(r.tanggal) }}</td><td>{{ r.noSuratJalan }}</td><td>{{ r.noPolisi }}</td><td>{{ r.jenisBarang }}</td>
-            <td>{{ r.panjang.toFixed(2) }}</td><td>{{ r.lebar.toFixed(2) }}</td><td>{{ r.tinggi.toFixed(2) }}</td><td>{{ fmtM3(r.jumlah) }}</td><td>{{ Math.round(r.harga).toLocaleString("id-ID") }}</td><td>{{ Math.round(r.total).toLocaleString("id-ID") }}</td>
+            <td>{{ Number(r.panjang || 0).toFixed(2) }}</td><td>{{ Number(r.lebar || 0).toFixed(2) }}</td><td>{{ Number(r.tinggi || 0).toFixed(2) }}</td><td>{{ fmtM3(r.jumlah) }}</td><td>{{ Math.round(r.harga).toLocaleString("id-ID") }}</td><td>{{ Math.round(r.total).toLocaleString("id-ID") }}</td>
           </tr>
         </tbody>
         <tfoot>

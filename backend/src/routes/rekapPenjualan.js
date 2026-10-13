@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
+import { cariHargaCustomer } from "../services/hargaCustomer.js";
 
 const router = Router();
 
@@ -238,6 +239,333 @@ router.put("/header", async (req, res, next) => {
       create: { key, value: JSON.stringify(clean) },
     });
     res.json({ ok: true, header: clean });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// REKAP RITASE (dari Surat Jalan)
+// Format: per No. Polisi -> per tanggal -> Ritase (jumlah SJ), Kubikasi per
+// ritase, Total Kubikasi. 1 Surat Jalan = 1 ritase.
+//   GET /api/rekap-penjualan/ritase?customerId=&from=YYYY-MM-DD&to=YYYY-MM-DD
+//       &q=<cari tujuan/penerima/jenis barang>&kubikasiDefault=5.5
+// Sumber data = tabel Surat Jalan (bukan tabel Rekap Penjualan), jadi langsung
+// ikut berubah kalau SJ ditambah / diedit / dihapus. SJ draft tidak dihitung.
+// Kubikasi diambil dari m3 SJ (atau P x L x T); kalau kosong dipakai
+// kubikasiDefault. Kalau dalam 1 hari + 1 nopol kubikasinya beda-beda, baris
+// dipecah per kubikasi supaya Ritase x Kubikasi = Total selalu cocok.
+// ---------------------------------------------------------------------------
+const r3 = (n) => Math.round(Number(n || 0) * 1000) / 1000;
+
+// "b9305uyx" / "B 9305  UYX" -> "B 9305 UYX"
+function normNopol(v) {
+  const raw = String(v || "").toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
+  if (!raw) return "";
+  const m = raw.replace(/\s+/g, "").match(/^([A-Z]{1,2})(\d{1,4})([A-Z]{1,3})$/);
+  return m ? `${m[1]} ${m[2]} ${m[3]}` : raw;
+}
+
+const WIB = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" });
+const tglKey = (d) => WIB.format(new Date(d)); // YYYY-MM-DD (hari kalender WIB)
+
+// ---------------------------------------------------------------------------
+// Input manual ritase (untuk ritase yang tidak ada / belum ada Surat Jalannya).
+// Disimpan di tabel Setting (key "ritaseManual", JSON array) -> tanpa migrasi.
+// Entri: { id, customerId ("" = umum), tanggal YYYY-MM-DD, noPolisi, ritase,
+//          kubikasi, catatan }
+// ---------------------------------------------------------------------------
+const MANUAL_KEY = "ritaseManual";
+async function bacaManual() {
+  const s = await prisma.setting.findUnique({ where: { key: MANUAL_KEY } });
+  try {
+    const arr = JSON.parse(s?.value || "[]");
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+async function simpanManual(list) {
+  const value = JSON.stringify(list);
+  await prisma.setting.upsert({ where: { key: MANUAL_KEY }, update: { value }, create: { key: MANUAL_KEY, value } });
+}
+function bersihManual(b = {}, id) {
+  const tanggal = String(b.tanggal || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) throw Object.assign(new Error("Tanggal wajib diisi"), { status: 400 });
+  const noPolisi = normNopol(b.noPolisi);
+  if (!noPolisi) throw Object.assign(new Error("No. Polisi wajib diisi"), { status: 400 });
+  const ritase = Math.round(Number(String(b.ritase ?? "").replace(",", ".")));
+  if (!(ritase > 0)) throw Object.assign(new Error("Ritase harus lebih dari 0"), { status: 400 });
+  const kubikasi = Number(String(b.kubikasi ?? "").replace(",", ".")) || 0;
+  if (kubikasi < 0) throw Object.assign(new Error("Kubikasi tidak boleh negatif"), { status: 400 });
+  return {
+    id,
+    customerId: String(b.customerId || ""),
+    tanggal,
+    noPolisi,
+    ritase,
+    kubikasi: r3(kubikasi),
+    catatan: String(b.catatan || "").slice(0, 200),
+  };
+}
+async function manualBolehAkses(req, entry) {
+  return !entry.customerId || (await allowedSet(req)).has(entry.customerId);
+}
+function manualFilter(list, { customerId, from, to }) {
+  return list.filter(
+    (e) =>
+      (!customerId || e.customerId === customerId) &&
+      (!from || e.tanggal >= from) &&
+      (!to || e.tanggal <= to)
+  );
+}
+
+router.get("/ritase-manual", async (req, res, next) => {
+  try {
+    const { customerId, from, to } = req.query;
+    const allowed = await allowedSet(req);
+    let list = (await bacaManual()).filter((e) => !e.customerId || allowed.has(e.customerId));
+    list = manualFilter(list, { customerId: customerId ? String(customerId) : "", from, to });
+    list.sort((a, b) => a.tanggal.localeCompare(b.tanggal) || a.noPolisi.localeCompare(b.noPolisi));
+    res.json({ rows: list });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/ritase-manual", async (req, res, next) => {
+  try {
+    const entry = bersihManual(req.body, `m${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`);
+    if (!(await manualBolehAkses(req, entry))) return res.status(403).json({ error: "Customer tidak dapat diakses" });
+    const list = await bacaManual();
+    list.push(entry);
+    await simpanManual(list);
+    res.status(201).json(entry);
+  } catch (e) {
+    if (e.status) return res.status(e.status).json({ error: e.message });
+    next(e);
+  }
+});
+
+router.put("/ritase-manual/:id", async (req, res, next) => {
+  try {
+    const list = await bacaManual();
+    const i = list.findIndex((e) => e.id === req.params.id);
+    if (i < 0) return res.status(404).json({ error: "Data tidak ditemukan" });
+    if (!(await manualBolehAkses(req, list[i]))) return res.status(403).json({ error: "Data tidak dapat diakses" });
+    const entry = bersihManual(req.body, list[i].id);
+    if (!(await manualBolehAkses(req, entry))) return res.status(403).json({ error: "Customer tidak dapat diakses" });
+    list[i] = entry;
+    await simpanManual(list);
+    res.json(entry);
+  } catch (e) {
+    if (e.status) return res.status(e.status).json({ error: e.message });
+    next(e);
+  }
+});
+
+router.delete("/ritase-manual/:id", async (req, res, next) => {
+  try {
+    const list = await bacaManual();
+    const cur = list.find((e) => e.id === req.params.id);
+    if (!cur) return res.status(404).json({ error: "Data tidak ditemukan" });
+    if (!(await manualBolehAkses(req, cur))) return res.status(403).json({ error: "Data tidak dapat diakses" });
+    await simpanManual(list.filter((e) => e.id !== req.params.id));
+    res.status(204).end();
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.get("/ritase", async (req, res, next) => {
+  try {
+    const { customerId, from, to, q } = req.query;
+    const kubDefault = Number(String(req.query.kubikasiDefault ?? "").replace(",", ".")) || 0;
+    // sumber: "sj" (Surat Jalan saja, default) | "gabung" (SJ + input manual) | "manual" (input manual saja)
+    const sumber = ["sj", "gabung", "manual"].includes(String(req.query.sumber)) ? String(req.query.sumber) : "sj";
+    const allowed = await allowedSet(req);
+    if (customerId && !allowed.has(String(customerId))) {
+      return res.status(403).json({ error: "Customer tidak dapat diakses" });
+    }
+
+    const where = { ...scopeDivisi(req), isDraft: false };
+    if (customerId) where.customerId = String(customerId);
+    if (from || to) {
+      where.tanggal = {};
+      if (from) where.tanggal.gte = new Date(`${from}T00:00:00+07:00`);
+      if (to) {
+        const d = new Date(`${to}T00:00:00+07:00`);
+        d.setUTCDate(d.getUTCDate() + 1);
+        where.tanggal.lt = d;
+      }
+    }
+    const kata = String(q || "").trim();
+    if (kata) {
+      where.OR = [
+        { tujuan: { contains: kata, mode: "insensitive" } },
+        { penerima: { contains: kata, mode: "insensitive" } },
+        { jenisBarang: { contains: kata, mode: "insensitive" } },
+        { customer: { nama: { contains: kata, mode: "insensitive" } } },
+      ];
+    }
+
+    const sjs =
+      sumber === "manual"
+        ? []
+        : await prisma.suratJalan.findMany({
+            where,
+            select: { id: true, no: true, tanggal: true, noPolisi: true, m3: true, panjang: true, lebar: true, tinggi: true },
+            orderBy: [{ tanggal: "asc" }, { no: "asc" }],
+          });
+
+    const byNopol = new Map(); // nopol -> Map("tgl|kub" -> baris)
+    let tanpaKubikasi = 0;
+    for (const sj of sjs) {
+      const nopol = normNopol(sj.noPolisi) || "(Tanpa No. Polisi)";
+      let kub = Number(sj.m3) || 0;
+      if (!(kub > 0)) kub = r3((Number(sj.panjang) || 0) * (Number(sj.lebar) || 0) * (Number(sj.tinggi) || 0));
+      let pakaiDefault = false;
+      if (!(kub > 0)) {
+        kub = kubDefault;
+        pakaiDefault = true;
+        tanpaKubikasi++;
+      }
+      kub = r3(kub);
+      const tgl = tglKey(sj.tanggal);
+      const rows = byNopol.get(nopol) || new Map();
+      const key = `${tgl}|${kub}`;
+      const row = rows.get(key) || { tanggal: tgl, ritase: 0, kubikasi: kub, total: 0, noSJ: [], pakaiDefault: false };
+      row.ritase += 1;
+      row.total = r3(row.total + kub);
+      row.noSJ.push(sj.no);
+      if (pakaiDefault) row.pakaiDefault = true;
+      rows.set(key, row);
+      byNopol.set(nopol, rows);
+    }
+
+    // Ritase input manual (digabung ke baris yang tanggal + kubikasinya sama)
+    let jumlahManual = 0;
+    if (sumber !== "sj") {
+      const manual = manualFilter((await bacaManual()).filter((e) => !e.customerId || allowed.has(e.customerId)), {
+        customerId: customerId ? String(customerId) : "",
+        from,
+        to,
+      });
+      for (const e of manual) {
+        let kub = Number(e.kubikasi) || 0;
+        let pakaiDefault = false;
+        if (!(kub > 0)) {
+          kub = kubDefault;
+          pakaiDefault = true;
+          tanpaKubikasi += e.ritase;
+        }
+        kub = r3(kub);
+        const rows = byNopol.get(e.noPolisi) || new Map();
+        const key = `${e.tanggal}|${kub}`;
+        const row = rows.get(key) || { tanggal: e.tanggal, ritase: 0, kubikasi: kub, total: 0, noSJ: [], pakaiDefault: false };
+        row.ritase += e.ritase;
+        row.total = r3(row.total + kub * e.ritase);
+        row.manualRitase = (row.manualRitase || 0) + e.ritase;
+        if (pakaiDefault) row.pakaiDefault = true;
+        rows.set(key, row);
+        byNopol.set(e.noPolisi, rows);
+        jumlahManual += e.ritase;
+      }
+    }
+
+    const groups = [...byNopol.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([noPolisi, rows]) => {
+        const list = [...rows.values()].sort((a, b) => a.tanggal.localeCompare(b.tanggal) || a.kubikasi - b.kubikasi);
+        return {
+          noPolisi,
+          rows: list,
+          totalRitase: list.reduce((s, r) => s + r.ritase, 0),
+          totalKubikasi: r3(list.reduce((s, r) => s + r.total, 0)),
+        };
+      });
+
+    res.json({
+      groups,
+      summary: {
+        jumlahNopol: groups.length,
+        totalRitase: groups.reduce((s, g) => s + g.totalRitase, 0),
+        totalKubikasi: r3(groups.reduce((s, g) => s + g.totalKubikasi, 0)),
+        tanpaKubikasi,
+        ritaseManual: jumlahManual,
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Sinkron Rekap Penjualan dari Surat Jalan.
+// Rekap Penjualan sebelumnya hanya terisi saat invoice dibuat/diimpor, jadi SJ
+// yang belum masuk invoice (atau SJ yang dibuat manual) tidak pernah muncul.
+// Endpoint ini membuat baris rekap untuk SJ (non-draft, punya customer) yang
+// belum punya baris rekap (cek: customer + nomor SJ). Tidak menimpa / menghapus
+// baris yang sudah ada. Harga diambil dari master harga customer kalau ketemu.
+//   POST /api/rekap-penjualan/sinkron  { customerId?, bulan? | from?, to? }
+// ---------------------------------------------------------------------------
+router.post("/sinkron", async (req, res, next) => {
+  try {
+    const { customerId } = req.body || {};
+    const allowed = await allowedSet(req);
+    if (customerId && !allowed.has(String(customerId))) {
+      return res.status(403).json({ error: "Customer tidak dapat diakses" });
+    }
+    const tgl = tanggalWhere(req.body || {});
+    const sjs = await prisma.suratJalan.findMany({
+      where: {
+        ...scopeDivisi(req),
+        isDraft: false,
+        customerId: customerId ? String(customerId) : { in: [...allowed] },
+        ...(tgl ? { tanggal: tgl } : {}),
+      },
+      include: { armada: true, sopirRef: true },
+      orderBy: [{ tanggal: "asc" }, { no: "asc" }],
+    });
+    if (!sjs.length) return res.json({ ok: true, dibuat: 0, dilewati: 0, tanpaHarga: 0 });
+
+    const existing = await prisma.rekapPenjualan.findMany({
+      where: { customerId: { in: [...new Set(sjs.map((s) => s.customerId))] }, noSuratJalan: { in: sjs.map((s) => s.no) } },
+      select: { customerId: true, noSuratJalan: true },
+    });
+    const sudah = new Set(existing.map((r) => `${r.customerId}|${r.noSuratJalan}`));
+    const pricesCache = new Map();
+
+    let dibuat = 0, dilewati = 0, tanpaHarga = 0;
+    for (const sj of sjs) {
+      if (sudah.has(`${sj.customerId}|${sj.no}`)) { dilewati++; continue; }
+      if (!pricesCache.has(sj.customerId)) {
+        pricesCache.set(sj.customerId, await prisma.customerPrice.findMany({ where: { customerId: sj.customerId } }));
+      }
+      const hit = cariHargaCustomer(pricesCache.get(sj.customerId), sj);
+      const harga = hit ? Number(hit.harga) || 0 : 0;
+      if (!hit) tanpaHarga++;
+      const p = Number(sj.panjang) || 0, l = Number(sj.lebar) || 0, t = Number(sj.tinggi) || 0;
+      const m3 = Number(sj.m3) || r3(p * l * t);
+      await prisma.rekapPenjualan.create({
+        data: {
+          customerId: sj.customerId,
+          tanggal: sj.tanggal,
+          noSuratJalan: sj.no,
+          noPolisi: sj.noPolisi || "-",
+          jenisBarang: sj.jenisBarang || "-",
+          panjang: p,
+          lebar: l,
+          tinggi: t,
+          jumlah: m3,
+          harga,
+          total: r3(m3 * harga),
+        },
+      });
+      sudah.add(`${sj.customerId}|${sj.no}`);
+      dibuat++;
+    }
+    res.json({ ok: true, dibuat, dilewati, tanpaHarga });
   } catch (e) {
     next(e);
   }

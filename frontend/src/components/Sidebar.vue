@@ -143,6 +143,11 @@ function doLogout() {
         <span>Rekap Penjualan</span>
       </router-link>
 
+      <router-link to="/rekap-ritase" @click="closeSidebar">
+        <span class="ic">🚚</span>
+        <span>Rekap Ritase</span>
+      </router-link>
+
       <router-link to="/laporan-divisi" @click="closeSidebar">
         <span class="ic">📈</span>
         <span>Laporan Divisi</span>

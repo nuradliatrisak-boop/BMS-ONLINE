@@ -1,0 +1,947 @@
+[
+  {
+    "no": "14/CNB-INTAN VI/IX/2026",
+    "tanggal": "2026-09-18",
+    "namaCustomer": "PT Cahaya Nusantara Berkarya",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Saluran Jalan Intan VI Jakarta Pusat",
+    "lokasiProyek": "Jalan Intan VI Sumur Batu Kec Kemayoran Jakarta Pusat",
+    "kepalaProyek": "Tri Purwanto",
+    "penerimaBarang": "Roni 081287412211; Tri Purwanto 081297294699",
+    "ppnPersen": 0,
+    "catatan": "Request No. 05. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 35,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Split (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 35,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 27125000
+  },
+  {
+    "no": "12/ASS-PHB GANDUN/IX/2026",
+    "tanggal": "2026-09-16",
+    "namaCustomer": "PT Alko Saudara Sejati",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Saluran PHB Gandun",
+    "lokasiProyek": "Jalan Karang Asri - Lebak Bulus - Cilandak",
+    "kepalaProyek": "Onasis C R Sitanggang",
+    "penerimaBarang": "Poltak Nadeak 087791811570",
+    "ppnPersen": 0,
+    "catatan": "Request No. 12. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Sirdam (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 140,
+        "hargaSatuan": 350000
+      }
+    ],
+    "totalKertas": 49000000
+  },
+  {
+    "no": "01/BKP-PERBAIKAN RAWA BUAYA/IX/2026",
+    "tanggal": "2026-09-15",
+    "namaCustomer": "PT Bodiacs Karya Persada",
+    "divisi": "Supplier",
+    "proyek": "Revitalisasi Rumah Pompa Rw 09 Rawa Buaya Jakarta Barat",
+    "lokasiProyek": "Jl.Rama Rawa Buaya Kecamatan Cengkareng Jakarta Barat",
+    "kepalaProyek": "Daniel",
+    "penerimaBarang": "Bagol 085716619509; Daniel 081314783279",
+    "ppnPersen": 0,
+    "catatan": "Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Makadam Uk Sedang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 5,
+        "hargaSatuan": 350000
+      },
+      {
+        "uraian": "Abu Batu (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 5,
+        "hargaSatuan": 385000
+      }
+    ],
+    "totalKertas": 3675000
+  },
+  {
+    "no": "11/ASS-RUMAH POMPA KALI ITEM/IX/2026",
+    "tanggal": "2026-09-11",
+    "namaCustomer": "PT Alko Saudara Sejati",
+    "divisi": "Supplier",
+    "proyek": "Revitalisasi Rumah Pompa Kali Item Jakarta Pusat",
+    "lokasiProyek": "Jalan Serdang Baru VI Kec.Kemayoran Jakarta Pusat",
+    "kepalaProyek": "Ibnu Galih Ihtian",
+    "penerimaBarang": "Ibnu 085719323175; Memed 081227111244",
+    "ppnPersen": 0,
+    "catatan": "Request No. 05. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 5,
+        "hargaSatuan": 300000
+      }
+    ],
+    "totalKertas": 1500000
+  },
+  {
+    "no": "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "tanggal": "2026-09-15",
+    "namaCustomer": "PT Leotunggal Mandiri",
+    "divisi": "Supplier",
+    "proyek": "Peningkatan Sistem Pengairan,Inlet,Outlet di Waduk Cimanggis 1 dan 2",
+    "lokasiProyek": "Waduk Cimanggis 1 dan 2 Jakarta Timur",
+    "kepalaProyek": "Julius",
+    "penerimaBarang": "Umar 082260050495; Humam 081383573271",
+    "ppnPersen": 0,
+    "catatan": "Request No. 25. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+        "satuan": "m3",
+        "qty": 200,
+        "hargaSatuan": 280000
+      }
+    ],
+    "totalKertas": 56000000
+  },
+  {
+    "no": "09/ASS-PHB GANDUN/IX/2026",
+    "tanggal": "2026-09-10",
+    "namaCustomer": "PT Alko Saudara Sejati",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Saluran PHB Gandun",
+    "lokasiProyek": "Jalan Karang Asri - Lebak Bulus - Cilandak",
+    "kepalaProyek": "Onasis C R Sitanggang",
+    "penerimaBarang": "Poltak Nadeak 087791811570",
+    "ppnPersen": 0,
+    "catatan": "Request No. 05. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Abu Batu (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 14,
+        "hargaSatuan": 385000
+      },
+      {
+        "uraian": "Split (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 7,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 8715000
+  },
+  {
+    "no": "05/APM-SAL PASAR ENJO/VIII/2026",
+    "tanggal": "2026-08-27",
+    "namaCustomer": "PT Alko Putra Mahkota",
+    "divisi": "Alat Berat",
+    "proyek": "Pembangunan Saluran Jl.Pasar Enjo Rw 001 Jakarta Timur",
+    "lokasiProyek": "Jalan Pisangan Lama Kec Pulogadung Jakarta Timur",
+    "kepalaProyek": "Richard",
+    "penerimaBarang": "Richard 081316829662; Ocha 081284394399",
+    "ppnPersen": 0,
+    "catatan": "Request No. 02. Pengiriman konfirmasi lapangan. Pembayaran sesuai laporan time sheet",
+    "items": [
+      {
+        "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+        "satuan": "jam",
+        "qty": 50,
+        "hargaSatuan": 400000
+      },
+      {
+        "uraian": "MopDemop",
+        "satuan": "ls",
+        "qty": 1,
+        "hargaSatuan": 4000000
+      }
+    ],
+    "totalKertas": 24000000
+  },
+  {
+    "no": "12/LTM-CIRACAS/IX/2026",
+    "tanggal": "2026-09-07",
+    "namaCustomer": "PT Leotunggal Mandiri",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Saluran Jacking",
+    "lokasiProyek": "Jalan Raya PKP - Ciracas",
+    "kepalaProyek": "Onasis C R Sitanggang",
+    "penerimaBarang": "Poltak Nadeak 087791811570",
+    "ppnPersen": 0,
+    "catatan": "Request No. 05. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Abu Batu (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 7,
+        "hargaSatuan": 385000
+      }
+    ],
+    "totalKertas": 2695000
+  },
+  {
+    "no": "08/ASS-RUMAH POMPA KALI ITEM/IX/2026",
+    "tanggal": "2026-09-07",
+    "namaCustomer": "PT Alko Saudara Sejati",
+    "divisi": "Supplier",
+    "proyek": "Revitalisasi Rumah Pompa Kali Item Jakarta Pusat",
+    "lokasiProyek": "Jalan Serdang Baru VI Kec.Kemayoran Jakarta Pusat",
+    "kepalaProyek": "Ibnu Galih Ihtian",
+    "penerimaBarang": "Ibnu 085719323175; Memed 081227111244",
+    "ppnPersen": 0,
+    "catatan": "Request No. 03. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 5,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Split (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 5,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 3875000
+  },
+  {
+    "no": "04/APM-SAL PASAR ENJO/VIII/2026",
+    "tanggal": "2026-08-26",
+    "namaCustomer": "PT Alko Putra Mahkota",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Saluran Jl.Pasar Enjo Rw 001 Jakarta Timur",
+    "lokasiProyek": "Jalan Pisangan Lama Kec Pulogadung Jakarta Timur",
+    "kepalaProyek": "Richard",
+    "penerimaBarang": "Richard 081316829662; Ocha 081284394399",
+    "ppnPersen": 0,
+    "catatan": "Request No. 02. Pengiriman sesuai permintaan lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 21,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Pasir Urug (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 14,
+        "hargaSatuan": 240000
+      },
+      {
+        "uraian": "Split (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 14,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 16310000
+  },
+  {
+    "no": "25/BKP-SRENGSENG RAYA/VIII/2026",
+    "tanggal": "2026-08-26",
+    "namaCustomer": "PT Bodiacs Karya Persada",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Saluran Jalan Srengseng Raya Kec Kembangan SDA Jakarta Barat",
+    "lokasiProyek": "Jalan Srengseng Raya Kecamatan Kembangan Jakarta Barat",
+    "kepalaProyek": "Daniel",
+    "penerimaBarang": "Daniel 081314783279; Wahyudi 087889891965; Galang 087881866378",
+    "ppnPersen": 0,
+    "catatan": "Request No. 12. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 13,
+        "hargaSatuan": 300000
+      }
+    ],
+    "totalKertas": 3900000
+  },
+  {
+    "no": "21/APM-ALKAL/VII/2026",
+    "tanggal": "2026-07-21",
+    "namaCustomer": "PT Alko Putra Mahkota",
+    "divisi": "Supplier",
+    "proyek": "Rehabilitasi Workshop Unit Alkal",
+    "lokasiProyek": "UPT ALKAL DSDA Provinsi DKI Jakarta, Jl. Raya Pd. Gede, RT.15/RW.1, Pinang Ranti, Kec. Makasar, Kota Jakarta Timur",
+    "kepalaProyek": "Sutanto",
+    "penerimaBarang": "Alvian 081311398392; Abdul 082122044335",
+    "ppnPersen": 0,
+    "catatan": "Request No. 17. Pengiriman sesuai permintaan lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 14,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Split (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 7,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 7525000
+  },
+  {
+    "no": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+    "tanggal": "2026-08-12",
+    "namaCustomer": "PT Leotunggal Mandiri",
+    "divisi": "Alat Berat",
+    "proyek": "Peningkatan Sistem Pengairan,Inlet,Outlet di Waduk Cimanggis 1 dan 2",
+    "lokasiProyek": "Waduk Cimanggis 1 dan 2 Jakarta Timur",
+    "kepalaProyek": "Julius",
+    "penerimaBarang": "Edi 082113479272",
+    "ppnPersen": 0,
+    "catatan": "Request No. 16. Pengiriman konfirmasi lapangan. Pembayaran sesuai laporan time sheet",
+    "items": [
+      {
+        "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+        "satuan": "jam",
+        "qty": 50,
+        "hargaSatuan": 400000
+      },
+      {
+        "uraian": "MopDemop",
+        "satuan": "ls",
+        "qty": 1,
+        "hargaSatuan": 4000000
+      }
+    ],
+    "totalKertas": 24000000
+  },
+  {
+    "no": "05/CNB-INTAN VI/VIII/2026",
+    "tanggal": "2026-08-07",
+    "namaCustomer": "PT Cahaya Nusantara Berkarya",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Saluran Jalan Intan VI Jakarta Pusat",
+    "lokasiProyek": "Jalan Intan VI Sumur Batu Kec Kemayoran Jakarta Pusat",
+    "kepalaProyek": "Tri Purwanto",
+    "penerimaBarang": "Roni 081287412211; Tri Purwanto 081297294699",
+    "ppnPersen": 0,
+    "catatan": "Request No. 03. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 14,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Split (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 7,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 7525000
+  },
+  {
+    "no": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+    "tanggal": "2026-08-06",
+    "namaCustomer": "PT Pitaco Mitraperkasa",
+    "divisi": "Alat Berat",
+    "proyek": "Revitalisasi Waduk Kampung Rambutan 1 Beserta Sarana dan Prasarana Pendukung",
+    "lokasiProyek": "Waduk Kampung Rambutan Jakarta Timur",
+    "kepalaProyek": "Wahyudi",
+    "penerimaBarang": "Wahyudi 0895414223883; Achmat 08111022584",
+    "ppnPersen": 0,
+    "catatan": "Request No. 06. Pengiriman konfirmasi lapangan. Pembayaran sesuai laporan time sheet",
+    "items": [
+      {
+        "uraian": "Excavator PC 50 All In",
+        "satuan": "jam",
+        "qty": 100,
+        "hargaSatuan": 380000
+      },
+      {
+        "uraian": "Mopdemop",
+        "satuan": "ls",
+        "qty": 1,
+        "hargaSatuan": 4000000
+      }
+    ],
+    "totalKertas": 42000000
+  },
+  {
+    "no": "30/APM-ALKAL/VIII/2026",
+    "tanggal": "2026-08-06",
+    "namaCustomer": "PT Alko Putra Mahkota",
+    "divisi": "Supplier",
+    "proyek": "Rehabilitasi Workshop Unit Alkal",
+    "lokasiProyek": "UPT ALKAL DSDA Provinsi DKI Jakarta, Jl. Raya Pd. Gede, RT.15/RW.1, Pinang Ranti, Kec. Makasar, Kota Jakarta Timur",
+    "kepalaProyek": "Sutanto",
+    "penerimaBarang": "Alvian 081311398392; Abdul 082122044335",
+    "ppnPersen": 0,
+    "catatan": "Request No. 24. Pengiriman sesuai permintaan lapangan",
+    "items": [
+      {
+        "uraian": "Sirtu (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 90,
+        "hargaSatuan": 240000
+      }
+    ],
+    "totalKertas": 21600000
+  },
+  {
+    "no": "25/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+    "tanggal": "2026-08-05",
+    "namaCustomer": "PT Pitaco Mitraperkasa",
+    "divisi": "Supplier",
+    "proyek": "Revitalisasi Waduk Kampung Rambutan 1 Beserta Sarana dan Prasarana Pendukung",
+    "lokasiProyek": "Waduk Kampung Rambutan Jakarta Timur",
+    "kepalaProyek": "Wahyudi",
+    "penerimaBarang": "Wahyudi 0895414223883; Achmat 08111022584",
+    "ppnPersen": 0,
+    "catatan": "Request No. 13. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Sirtu (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 14,
+        "hargaSatuan": 240000
+      }
+    ],
+    "totalKertas": 3360000
+  },
+  {
+    "no": "21/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+    "tanggal": "2026-08-03",
+    "namaCustomer": "PT Pitaco Mitraperkasa",
+    "divisi": "Supplier",
+    "proyek": "Revitalisasi Waduk Kampung Rambutan 1 Beserta Sarana dan Prasarana Pendukung",
+    "lokasiProyek": "Waduk Kampung Rambutan Jakarta Timur",
+    "kepalaProyek": "Wahyudi",
+    "penerimaBarang": "Wahyudi 0895414223883; Achmat 08111022584",
+    "ppnPersen": 0,
+    "catatan": "Request No. 11. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Batu Belah Uk 20-30 cm",
+        "satuan": "m3",
+        "qty": 24,
+        "hargaSatuan": 280000
+      }
+    ],
+    "totalKertas": 6720000
+  },
+  {
+    "no": "19/LTM-WADUK CIMANGGIS/VIII/2026",
+    "tanggal": "2026-08-03",
+    "namaCustomer": "PT Leotunggal Mandiri",
+    "divisi": "Supplier",
+    "proyek": "Peningkatan Sistem Pengairan,Inlet,Outlet di Waduk Cimanggis 1 dan 2",
+    "lokasiProyek": "Waduk Cimanggis 1 dan 2 Jakarta Timur",
+    "kepalaProyek": "Julius",
+    "penerimaBarang": "Umar 082260050495; Humam 081383573271",
+    "ppnPersen": 0,
+    "catatan": "Request No. 12. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 26,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Pasir Urug (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 24,
+        "hargaSatuan": 240000
+      }
+    ],
+    "totalKertas": 13560000
+  },
+  {
+    "no": "06/LTM-CIRACAS/VIII/2026",
+    "tanggal": "2026-08-04",
+    "namaCustomer": "PT Leotunggal Mandiri",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Saluran Jacking",
+    "lokasiProyek": "Jalan Raya PKP - Ciracas",
+    "kepalaProyek": "Onasis C R Sitanggang",
+    "penerimaBarang": "Poltak Nadeak 087791811570",
+    "ppnPersen": 0,
+    "catatan": "Request No. 02. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 7,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Split (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 7,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 5425000
+  },
+  {
+    "no": "15/LTM-WADUK CIMANGGIS/VII/2026",
+    "tanggal": "2026-07-28",
+    "namaCustomer": "PT Leotunggal Mandiri",
+    "divisi": "Supplier",
+    "proyek": "Peningkatan Sistem Pengairan,Inlet,Outlet di Waduk Cimanggis 1 dan 2",
+    "lokasiProyek": "Waduk Cimanggis 1 dan 2 Jakarta Timur",
+    "kepalaProyek": "Julius",
+    "penerimaBarang": "Umar 082260050495; Humam 081383573271",
+    "ppnPersen": 0,
+    "catatan": "Request No. 10. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 8,
+        "hargaSatuan": 300000
+      }
+    ],
+    "totalKertas": 2400000
+  },
+  {
+    "no": "16/LTM-WADUK CIMANGGIS/VII/2026",
+    "tanggal": "2026-07-28",
+    "namaCustomer": "PT Leotunggal Mandiri",
+    "divisi": "Alat Berat",
+    "proyek": "Peningkatan Sistem Pengairan,Inlet,Outlet di Waduk Cimanggis 1 dan 2",
+    "lokasiProyek": "Waduk Cimanggis 1 dan 2 Jakarta Timur",
+    "kepalaProyek": "Julius",
+    "penerimaBarang": "Edi 082113479272",
+    "ppnPersen": 0,
+    "catatan": "Request No. 11. Pengiriman konfirmasi lapangan. Pembayaran sesuai laporan time sheet",
+    "items": [
+      {
+        "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+        "satuan": "jam",
+        "qty": 100,
+        "hargaSatuan": 650000
+      },
+      {
+        "uraian": "MopDemop",
+        "satuan": "ls",
+        "qty": 1,
+        "hargaSatuan": 6500000
+      }
+    ],
+    "totalKertas": 71500000
+  },
+  {
+    "no": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+    "tanggal": "2026-07-22",
+    "namaCustomer": "PT Pitaco Mitraperkasa",
+    "divisi": "Alat Berat",
+    "proyek": "Revitalisasi Waduk Kampung Rambutan 1 Beserta Sarana dan Prasarana Pendukung",
+    "lokasiProyek": "Waduk Kampung Rambutan Jakarta Timur",
+    "kepalaProyek": "Wahyudi",
+    "penerimaBarang": "Wahyudi 0895414223883; Achmat 08111022584",
+    "ppnPersen": 0,
+    "catatan": "Request No. 06. Pengiriman konfirmasi lapangan. Pembayaran sesuai laporan time sheet",
+    "items": [
+      {
+        "uraian": "Excavator PC200 Long Arm All In",
+        "satuan": "jam",
+        "qty": 100,
+        "hargaSatuan": 650000
+      },
+      {
+        "uraian": "Sewa Ponton",
+        "satuan": "bln",
+        "qty": 1,
+        "hargaSatuan": 40000000
+      },
+      {
+        "uraian": "Biaya Setting Ponton",
+        "satuan": "ls",
+        "qty": 1,
+        "hargaSatuan": 5000000
+      },
+      {
+        "uraian": "Mopdemop",
+        "satuan": "ls",
+        "qty": 1,
+        "hargaSatuan": 12000000
+      }
+    ],
+    "totalKertas": 122000000
+  },
+  {
+    "no": "08/LTM-WADUK CIMANGGIS/VII/2026",
+    "tanggal": "2026-07-20",
+    "namaCustomer": "PT Leotunggal Mandiri",
+    "divisi": "Supplier",
+    "proyek": "Peningkatan Sistem Pengairan,Inlet,Outlet di Waduk Cimanggis 1 dan 2",
+    "lokasiProyek": "Waduk Cimanggis 1 dan 2 Jakarta Timur",
+    "kepalaProyek": "Julius",
+    "penerimaBarang": "Umar 082260050495; Humam 081383573271",
+    "ppnPersen": 0,
+    "catatan": "Request No. 06. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Makadam 5-15 cm (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 120,
+        "hargaSatuan": 350000
+      },
+      {
+        "uraian": "Sirtu 2-5 cm (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 40,
+        "hargaSatuan": 240000
+      }
+    ],
+    "totalKertas": 51600000
+  },
+  {
+    "no": "05/ASS-BALEKAMBANG/VII/2026",
+    "tanggal": "2026-07-20",
+    "namaCustomer": "PT Alko Saudara Sejati",
+    "divisi": "Supplier",
+    "proyek": "Pekerjaan Konstruksi Saluran Air Peningkatan Prasarana,Sarana dan Utilitas (PSU) Di Kel Balekambang",
+    "lokasiProyek": "Kawasan Kelurahan Balekambang Jakarta Timur",
+    "kepalaProyek": "Daniel",
+    "penerimaBarang": "Daniel 081314783279; Sabar 081383327899; Occa 081284394399",
+    "ppnPersen": 0,
+    "catatan": "Request No. 03. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 12,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Split Uk Kecil (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 6,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 6450000
+  },
+  {
+    "no": "58/PMP-KALI KEMANGGISAN/VII/2026",
+    "tanggal": "2026-07-20",
+    "namaCustomer": "PT Pitaco Mitraperkasa",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Prasarana dan Sarana Kali/Sungai Kali Krogol (Segmen Kemanggisan)",
+    "lokasiProyek": "Jl. Anggrek Neli Murni XI Jakarta Barat",
+    "kepalaProyek": "Nelson Siahaan",
+    "penerimaBarang": "Nelson 081213693989; Rosidi 087880555564",
+    "ppnPersen": 0,
+    "catatan": "Request No. 36. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 100,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Sirdam (Tronton)",
+        "satuan": "m3",
+        "qty": 220,
+        "hargaSatuan": 270000
+      }
+    ],
+    "totalKertas": 89400000
+  },
+  {
+    "no": "03/APM-PAGAR PENGAMAN BALEKAMBANG/VII/2026",
+    "tanggal": "2026-07-16",
+    "namaCustomer": "PT Alko Putra Mahkota",
+    "divisi": "Supplier",
+    "proyek": "PSU di Kelurahan Balekambang Paket Pekerjaan Pagar Pengaman",
+    "lokasiProyek": "",
+    "kepalaProyek": "Rendi",
+    "penerimaBarang": "Anto 087877035808; Rendi 082111130587",
+    "ppnPersen": 0,
+    "catatan": "Request No. 01. Pengiriman sesuai permintaan lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 7,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Split (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 4,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 4000000
+  },
+  {
+    "no": "04/ASS-BALEKAMBANG/VII/2026",
+    "tanggal": "2026-07-14",
+    "namaCustomer": "PT Alko Saudara Sejati",
+    "divisi": "Supplier",
+    "proyek": "Pekerjaan Konstruksi Saluran Air Peningkatan Prasarana,Sarana dan Utilitas (PSU) Di Kel Balekambang",
+    "lokasiProyek": "Kawasan Kelurahan Balekambang Jakarta Timur",
+    "kepalaProyek": "Daniel",
+    "penerimaBarang": "Daniel 081314783279; Sabar 081383327899; Occa 081284394399",
+    "ppnPersen": 0,
+    "catatan": "Request No. 02. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Urug (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 20,
+        "hargaSatuan": 240000
+      }
+    ],
+    "totalKertas": 4800000
+  },
+  {
+    "no": "18/APM-ALKAL/VII/2026",
+    "tanggal": "2026-07-13",
+    "namaCustomer": "PT Alko Putra Mahkota",
+    "divisi": "Supplier",
+    "proyek": "Rehabilitasi Workshop Unit Alkal",
+    "lokasiProyek": "UPT ALKAL DSDA Provinsi DKI Jakarta, Jl. Raya Pd. Gede, RT.15/RW.1, Pinang Ranti, Kec. Makasar, Kota Jakarta Timur",
+    "kepalaProyek": "Sutanto",
+    "penerimaBarang": "Alvian 081311398392; Abdul 082122044335",
+    "ppnPersen": 0,
+    "catatan": "Request No. 12. Pengiriman sesuai permintaan lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 14,
+        "hargaSatuan": 300000
+      }
+    ],
+    "totalKertas": 4200000
+  },
+  {
+    "no": "02/LTM-WADUK CIMANGGIS/VII/2026",
+    "tanggal": "2026-07-09",
+    "namaCustomer": "PT Leotunggal Mandiri",
+    "divisi": "Supplier",
+    "proyek": "Peningkatan Sistem Pengairan,Inlet,Outlet di Waduk Cimanggis 1 dan 2",
+    "lokasiProyek": "Waduk Cimanggis 1 dan 2 Jakarta Timur",
+    "kepalaProyek": "Julius",
+    "penerimaBarang": "Umar 082260050495; Humam 081383573271",
+    "ppnPersen": 0,
+    "catatan": "Request No. 01. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 8,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Split (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 8,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 6200000
+  },
+  {
+    "no": "11/BKP-SRENGSENG RAYA/VII/2026",
+    "tanggal": "2026-07-07",
+    "namaCustomer": "PT Bodiacs Karya Persada",
+    "divisi": "Alat Berat",
+    "proyek": "Pembangunan Saluran Jalan Srengseng Raya Kec Kembangan SDA Jakarta Barat",
+    "lokasiProyek": "Jalan Srengseng Raya Kecamatan Kembangan Jakarta Barat",
+    "kepalaProyek": "Daniel",
+    "penerimaBarang": "Daniel 081314783279; Wahyudi 087889891965; Galang 087881866378",
+    "ppnPersen": 0,
+    "catatan": "Pengiriman konfirmasi lapangan. Pembayaran sesuai laporan time sheet",
+    "items": [
+      {
+        "uraian": "Perpanjang Excavator Breker PC 100 All in (50 jam x Rp 480.000/jam)",
+        "satuan": "jam",
+        "qty": 50,
+        "hargaSatuan": 480000
+      },
+      {
+        "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+        "satuan": "jam",
+        "qty": 150,
+        "hargaSatuan": 400000
+      }
+    ],
+    "totalKertas": 84000000
+  },
+  {
+    "no": "12/APM-ALKAL/VII/2026",
+    "tanggal": "2026-07-06",
+    "namaCustomer": "PT Alko Putra Mahkota",
+    "divisi": "Supplier",
+    "proyek": "Rehabilitasi Workshop Unit Alkal",
+    "lokasiProyek": "UPT ALKAL DSDA Provinsi DKI Jakarta, Jl. Raya Pd. Gede, RT.15/RW.1, Pinang Ranti, Kec. Makasar, Kota Jakarta Timur",
+    "kepalaProyek": "Sutanto",
+    "penerimaBarang": "Alvian 081311398392; Abdul 082122044335",
+    "ppnPersen": 0,
+    "catatan": "Request No. 09. Pengiriman sesuai permintaan lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 14,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Split (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 7,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 7525000
+  },
+  {
+    "no": "10/BKP-SRENGSENG RAYA/VI/2026",
+    "tanggal": "2026-06-23",
+    "namaCustomer": "PT Bodiacs Karya Persada",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Saluran Jalan Srengseng Raya Kec Kembangan SDA Jakarta Barat",
+    "lokasiProyek": "Jalan Srengseng Raya Kecamatan Kembangan Jakarta Barat",
+    "kepalaProyek": "Daniel",
+    "penerimaBarang": "Daniel 081314783279; Wahyudi 087889891965; Galang 087881866378",
+    "ppnPersen": 0,
+    "catatan": "Request No. 03. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Urug (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 55,
+        "hargaSatuan": 240000
+      },
+      {
+        "uraian": "Makadam Uk Sedang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 11,
+        "hargaSatuan": 350000
+      }
+    ],
+    "totalKertas": 17050000
+  },
+  {
+    "no": "08/BKP-SRENGSENG RAYA/VI/2026",
+    "tanggal": "2026-06-18",
+    "namaCustomer": "PT Bodiacs Karya Persada",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Saluran Jalan Srengseng Raya Kec Kembangan SDA Jakarta Barat",
+    "lokasiProyek": "Jalan Srengseng Raya Kecamatan Kembangan Jakarta Barat",
+    "kepalaProyek": "Daniel",
+    "penerimaBarang": "Daniel 081314783279; Wahyudi 087889891965; Galang 087881866378",
+    "ppnPersen": 0,
+    "catatan": "Request No. 02. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Pasir Pasang (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 60,
+        "hargaSatuan": 300000
+      },
+      {
+        "uraian": "Split (Colt Diesel)",
+        "satuan": "m3",
+        "qty": 18,
+        "hargaSatuan": 475000
+      }
+    ],
+    "totalKertas": 26550000
+  },
+  {
+    "no": "09/BKP-SRENGSENG RAYA/VI/2026",
+    "tanggal": "2026-06-18",
+    "namaCustomer": "PT Bodiacs Karya Persada",
+    "divisi": "Alat Berat",
+    "proyek": "Pembangunan Saluran Jalan Srengseng Raya Kec Kembangan SDA Jakarta Barat",
+    "lokasiProyek": "Jalan Srengseng Raya Kecamatan Kembangan Jakarta Barat",
+    "kepalaProyek": "Daniel",
+    "penerimaBarang": "Daniel 081314783279; Wahyudi 087889891965; Galang 087881866378",
+    "ppnPersen": 0,
+    "catatan": "Request No. 02. Pengiriman konfirmasi lapangan. Pembayaran sesuai laporan time sheet",
+    "items": [
+      {
+        "uraian": "Rental Excavator Breker PC 100 All in (100 jam x Rp 480.000/jam)",
+        "satuan": "jam",
+        "qty": 100,
+        "hargaSatuan": 480000
+      },
+      {
+        "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+        "satuan": "jam",
+        "qty": 100,
+        "hargaSatuan": 400000
+      },
+      {
+        "uraian": "MopDemop",
+        "satuan": "ls",
+        "qty": 1,
+        "hargaSatuan": 3400000
+      }
+    ],
+    "totalKertas": 91400000
+  },
+  {
+    "no": "46/PMP-KALI KEMANGGISAN/VI/2026",
+    "tanggal": "2026-06-08",
+    "namaCustomer": "PT Pitaco Mitraperkasa",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Prasarana dan Sarana Kali/Sungai Kali Krogol (Segmen Kemanggisan)",
+    "lokasiProyek": "Jl. Anggrek Neli Murni XI Jakarta Barat",
+    "kepalaProyek": "Nelson Siahaan",
+    "penerimaBarang": "Nelson 081213693989; Rosidi 087880555564",
+    "ppnPersen": 0,
+    "catatan": "Request No. 29. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Sirdam (Tronton)",
+        "satuan": "m3",
+        "qty": 220,
+        "hargaSatuan": 270000
+      }
+    ],
+    "totalKertas": 59400000
+  },
+  {
+    "no": "44/PMP-KALI KEMANGGISAN/VI/2026",
+    "tanggal": "2026-06-02",
+    "namaCustomer": "PT Pitaco Mitraperkasa",
+    "divisi": "Supplier",
+    "proyek": "Pembangunan Prasarana dan Sarana Kali/Sungai Kali Krogol (Segmen Kemanggisan)",
+    "lokasiProyek": "Jl. Anggrek Neli Murni XI Jakarta Barat",
+    "kepalaProyek": "Nelson Siahaan",
+    "penerimaBarang": "Nelson 081213693989; Rosidi 087880555564",
+    "ppnPersen": 0,
+    "catatan": "Request No. 27. Pengiriman konfirmasi lapangan",
+    "items": [
+      {
+        "uraian": "Sirdam (Tronton)",
+        "satuan": "m3",
+        "qty": 66,
+        "hargaSatuan": 270000
+      }
+    ],
+    "totalKertas": 17820000
+  }
+]

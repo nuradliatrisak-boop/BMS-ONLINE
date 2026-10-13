@@ -2,8 +2,10 @@ import { Router } from "express";
 import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
 import { DIVISI_LIST } from "../config/divisiConfig.js";
+import { ringkasPo } from "./po.js";
 
 const router = Router();
+const tglStrPo = (d) => new Date(d).toISOString().slice(0, 10);
 
 // Ringkasan angka untuk halaman Dashboard.
 // Selain angka lama (total invoice/tagihan/piutang/surat jalan), sekarang
@@ -209,6 +211,7 @@ router.get("/", async (req, res, next) => {
 //   - Invoice belum lunas yang jatuh temponya sudah lewat atau <= 7 hari lagi
 //   - Dokumen aset (STNK/KIR/dll) yang sudah/akan kadaluarsa dalam 30 hari
 //   - Jadwal Setor Solar hari ini yang belum direalisasi
+//   - PO (Purchase Order) yang belum selesai dikirim, lengkap dengan sisa barang & sudah berapa hari menunggu
 // Diurutkan dari yang paling mendesak (lewat/expired dulu).
 // ------------------------------------------------------------
 router.get("/reminder", async (req, res, next) => {
@@ -299,6 +302,40 @@ router.get("/reminder", async (req, res, next) => {
         detail: `${solarBelumDicek} solar masuk belum dicocokkan dengan catatan buku sopir`,
         tanggal: todayStr,
         link: "/laporan-divisi?tab=solar",
+      });
+    }
+
+    // --- PO yang belum selesai dikirim ---
+    // Semua PO berstatus BARU (belum ada pengiriman) / SEBAGIAN muncul di sini
+    // supaya tidak ada PO yang terlupa. Umur dihitung dari pengiriman terakhir
+    // (atau dari tanggal PO kalau belum pernah dikirim).
+    const poTerbuka = await prisma.purchaseOrder.findMany({
+      where: { ...where, batal: false },
+      include: {
+        customer: { select: { nama: true } },
+        items: { orderBy: [{ urut: "asc" }, { id: "asc" }] },
+        pengiriman: { orderBy: [{ tanggal: "desc" }, { createdAt: "desc" }] },
+      },
+      orderBy: { tanggal: "asc" },
+    });
+    for (const raw of poTerbuka) {
+      const po = ringkasPo(raw);
+      if (po.status !== "BARU" && po.status !== "SEBAGIAN") continue;
+      const sisaTeks = po.items
+        .filter((it) => it.sisa > 0)
+        .map((it) => `${it.uraian} ${it.sisa}${it.satuan ? " " + it.satuan : ""}`)
+        .join(", ");
+      const umur =
+        po.status === "BARU"
+          ? `belum ada pengiriman, ${po.hariTunggu} hari sejak PO`
+          : `pengiriman terakhir ${po.hariTunggu} hari lalu`;
+      reminder.push({
+        jenis: "po_belum_selesai",
+        tingkat: po.hariTunggu >= 7 ? "peringatan" : "info",
+        judul: `PO ${po.no} — ${po.namaCustomerTampil || "(tanpa customer)"}`,
+        detail: `Sisa belum dikirim: ${sisaTeks} (${umur})`,
+        tanggal: po.terakhirKirim || tglStrPo(po.tanggal),
+        link: "/purchase-order",
       });
     }
 

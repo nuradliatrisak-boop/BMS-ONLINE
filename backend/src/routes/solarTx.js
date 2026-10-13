@@ -219,6 +219,19 @@ router.get("/", async (req, res, next) => {
     const totalKeluarSemua = list.filter((t) => t.tipe === "KELUAR").reduce((s, t) => s + t.liter, 0);
     const belumDicekSemua = list.filter((t) => cek.get(t.id)?.statusCek === "BELUM_DICEK").length;
 
+    // Ringkasan HARI INI & 7 hari terakhir (WIB). Dihitung dari SELURUH data,
+    // tidak ikut filter periode, jadi "masuk hari ini" selalu tampil apa adanya.
+    const hariIniWib = hariIni();
+    const masukHariIniList = list.filter((t) => t.tipe === "MASUK" && tglStr(t.tanggal) === hariIniWib);
+    const masukHariIni = r2(masukHariIniList.reduce((s, t) => s + t.liter, 0));
+    const dasar = new Date(`${hariIniWib}T00:00:00.000Z`).getTime();
+    const masukHarian = [];
+    for (let i = 0; i < 7; i++) {
+      const tgl = new Date(dasar - i * 86400000).toISOString().slice(0, 10);
+      const harian = list.filter((t) => t.tipe === "MASUK" && tglStr(t.tanggal) === tgl);
+      masukHarian.push({ tanggal: tgl, liter: r2(harian.reduce((s, t) => s + t.liter, 0)), jumlah: harian.length });
+    }
+
     res.json({
       items,
       totalMasuk,
@@ -230,6 +243,10 @@ router.get("/", async (req, res, next) => {
       belumDicekSemua,
       saldoBulan: totalMasuk - totalKeluar,
       saldoSaatIni: totalMasukSemua - totalKeluarSemua,
+      hariIni: hariIniWib,
+      masukHariIni,
+      jumlahMasukHariIni: masukHariIniList.length,
+      masukHarian,
     });
   } catch (e) {
     next(e);

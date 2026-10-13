@@ -90,6 +90,7 @@ model Customer {
   suratJalan SuratJalan[]
   tensiv    Tensiv[]
   recipients CustomerRecipient[]
+  purchaseOrders PurchaseOrder[]
 }
 
 // Daftar "Penerima" pengiriman milik seorang Customer, beserta alamat
@@ -589,6 +590,73 @@ model SolarJadwalSetor {
   createdAt    DateTime    @default(now())
 
   @@index([tanggal, nama])
+}
+
+// Purchase Order (PO) dari customer ke BMS -- surat pesanan barang. PO itu cuma
+// PESANAN (komitmen), BELUM ada barang yang berjalan, jadi stok TIDAK berubah
+// saat PO dibuat. Barang baru keluar saat dikirim (ada Surat Jalan), dan
+// pengiriman biasanya nyicil sesuai permintaan lapangan -> 1 PO bisa punya
+// banyak pengiriman. Tiap pengiriman dicatat di PoPengiriman (input manual,
+// boleh diisi no. Surat Jalan-nya sebagai referensi). Qty terkirim & sisa
+// per barang dihitung otomatis dari PoPengiriman, status PO (BARU / SEBAGIAN /
+// SELESAI) juga dihitung otomatis -- tidak disimpan, jadi tidak bisa mismatch.
+// `batal` = PO dibatalkan (tidak ikut daftar "belum selesai" & pengingat).
+model PurchaseOrder {
+  id             String    @id @default(cuid())
+  no             String    @unique // nomor PO dari customer, diketik manual (mis. 04/PJS-RUSUN ROROTAN/X/2026)
+  divisi         String    @default("Supplier")
+  tanggal        DateTime
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  namaCustomer   String?   // nama pemesan (teks bebas) kalau belum ada di master Customer
+  proyek         String?
+  lokasiProyek   String?
+  kepalaProyek   String?
+  penerimaBarang String?
+  catatan        String?
+  ppnPersen      Float     @default(0)
+  batal          Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+
+  items      PurchaseOrderItem[]
+  pengiriman PoPengiriman[]
+
+  @@index([customerId])
+  @@index([tanggal])
+  @@index([divisi])
+}
+
+model PurchaseOrderItem {
+  id          String        @id @default(cuid())
+  poId        String
+  po          PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  urut        Int           @default(0)
+  uraian      String
+  satuan      String?
+  qty         Float
+  hargaSatuan Float         @default(0)
+
+  pengiriman PoPengiriman[]
+
+  @@index([poId])
+}
+
+// Satu kali pengiriman untuk satu barang di PO (input manual). noSuratJalan
+// cuma referensi teks ke Surat Jalan-nya, tidak mengubah data Surat Jalan.
+model PoPengiriman {
+  id           String            @id @default(cuid())
+  poId         String
+  po           PurchaseOrder     @relation(fields: [poId], references: [id], onDelete: Cascade)
+  itemId       String
+  item         PurchaseOrderItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tanggal      DateTime
+  qty          Float
+  noSuratJalan String?
+  catatan      String?
+  createdAt    DateTime          @default(now())
+
+  @@index([poId])
+  @@index([itemId])
 }
 
 model PrintCalib {

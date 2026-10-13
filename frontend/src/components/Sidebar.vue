@@ -123,6 +123,11 @@ function doLogout() {
         <span>Invoice</span>
       </router-link>
 
+      <router-link to="/purchase-order" @click="closeSidebar">
+        <span class="ic">📋</span>
+        <span>Purchase Order (PO)</span>
+      </router-link>
+
       <router-link to="/surat-jalan" @click="closeSidebar">
         <span class="ic">📄</span>
         <span>Surat Jalan</span>

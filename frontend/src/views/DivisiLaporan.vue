@@ -20,7 +20,7 @@ import SolarKeluarTable from "../components/SolarKeluarTable.vue";
 import WilayahSelect from "../components/WilayahSelect.vue";
 import RapikanNamaModal from "../components/RapikanNamaModal.vue";
 import SolarRekonsiliasi from "../components/SolarRekonsiliasi.vue";
-import { fmtL, fmtTgl, isoLokal } from "../utils/solarUtil.js";
+import { fmtL, fmtTgl, fmtTglPendek, isoLokal } from "../utils/solarUtil.js";
 import MoneyInput from "../components/MoneyInput.vue";
 
 const route = useRoute();
@@ -394,6 +394,10 @@ const solarData = ref({
   belumDicekSemua: 0,
   saldoBulan: 0,
   saldoSaatIni: 0,
+  hariIni: "", // tanggal hari ini (WIB), dari server
+  masukHariIni: 0, // total liter solar masuk hari ini (tidak ikut filter periode)
+  jumlahMasukHariIni: 0,
+  masukHarian: [], // 7 hari terakhir: [{ tanggal, liter, jumlah }]
 });
 const solarUtang = ref([]); // rekap saldo utang per sopir (semua waktu)
 const namaMasuk = ref([]); // daftar nama untuk dropdown
@@ -1229,6 +1233,11 @@ onMounted(async () => {
       </div>
 
       <div class="sol-kpis">
+        <div class="sol-kpi" style="--c: #0f8a8a">
+          <div class="sol-kpi-lbl">Solar Masuk Hari Ini</div>
+          <div class="sol-kpi-val">{{ fmtL(solarData.masukHariIni) }} <small>L</small></div>
+          <div class="sol-kpi-sub">{{ solarData.jumlahMasukHariIni }} setoran • sisa stok keseluruhan {{ fmtL(solarData.saldoSaatIni) }} L</div>
+        </div>
         <div class="sol-kpi" style="--c: #159447">
           <div class="sol-kpi-lbl">Solar Masuk</div>
           <div class="sol-kpi-val">{{ fmtL(solarData.totalMasuk) }} <small>L</small></div>
@@ -1258,6 +1267,23 @@ onMounted(async () => {
           <div class="sol-kpi-lbl">Belum Dicek</div>
           <div class="sol-kpi-val">{{ solarData.belumDicek }} <small>catatan</small></div>
           <div class="sol-kpi-sub">{{ solarData.belumDicekSemua }} di semua waktu</div>
+        </div>
+      </div>
+
+      <!-- Solar masuk per hari (7 hari terakhir), tidak ikut filter periode -->
+      <div class="sol-harian" v-if="solarData.masukHarian && solarData.masukHarian.length">
+        <div class="sol-harian-judul">Solar masuk per hari &mdash; 7 hari terakhir</div>
+        <div class="sol-harian-row">
+          <div
+            v-for="h in solarData.masukHarian"
+            :key="h.tanggal"
+            class="sol-harian-sel"
+            :class="{ 'sol-harian-hariini': h.tanggal === solarData.hariIni }"
+          >
+            <div class="sol-harian-tgl">{{ h.tanggal === solarData.hariIni ? "Hari ini" : fmtTglPendek(h.tanggal) }}</div>
+            <div class="sol-harian-val">{{ fmtL(h.liter) }} L</div>
+            <div class="sol-harian-sub">{{ h.jumlah }} setoran</div>
+          </div>
         </div>
       </div>
 
@@ -1831,6 +1857,48 @@ onMounted(async () => {
 }
 .sol-kpi-sub {
   font-size: 12px;
+  color: var(--ink-soft);
+}
+.sol-harian {
+  background: var(--card, #fff);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: -6px 0 20px;
+}
+.sol-harian-judul {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+.sol-harian-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+}
+.sol-harian-sel {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 10px;
+  text-align: center;
+}
+.sol-harian-hariini {
+  background: var(--bms-blue-soft, #eaf1fb);
+  border-color: #2459a6;
+}
+.sol-harian-tgl {
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.sol-harian-val {
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.sol-harian-sub {
+  font-size: 11px;
   color: var(--ink-soft);
 }
 .sol-rank {

@@ -4,6 +4,9 @@
 // (sesuai permintaan lapangan), tiap pengiriman dicatat manual di sini (boleh
 // diisi no. Surat Jalan sebagai referensi). Terkirim / sisa / status dihitung
 // otomatis oleh server, dan PO yang belum selesai muncul di Pengingat Dashboard.
+// Surat Jalan yang sudah dibuat ikut TERCATAT OTOMATIS di PO yang customer,
+// alamat, dan barangnya sama. Kalau penulisannya beda, muncul di "Perlu
+// Konfirmasi" dan user yang memutuskan (hubungkan / bukan PO ini).
 import { ref, computed, onMounted, watch } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
@@ -321,6 +324,62 @@ async function hapusPo(p) {
   }
 }
 
+// ---------- Surat Jalan otomatis: konfirmasi ----------
+const ALASAN = {
+  alamat_mirip: "Alamat tujuan mirip tapi penulisannya beda dari Lokasi Proyek PO",
+  barang_tidak_cocok: "Barang di Surat Jalan tidak ditemukan di daftar barang PO",
+  barang_ambigu: "Barang di Surat Jalan cocok dengan lebih dari satu barang PO",
+};
+const alasanTeks = (a) => ALASAN[a] || "Perlu dicek";
+const pilihItem = ref({}); // { [sjId]: itemId } pilihan barang di panel konfirmasi
+const sjSaving = ref("");
+const pilihanItem = (x) => pilihItem.value[x.sjId] ?? x.itemSaran ?? "";
+
+async function hubungkanSJ(x) {
+  const p = detail.value;
+  if (!p) return;
+  const itemId = pilihanItem(x);
+  if (!itemId) return toast("Pilih dulu barang PO yang dikirim lewat Surat Jalan ini");
+  sjSaving.value = x.sjId;
+  try {
+    simpanKeList(await api.post(`/po/${p.id}/sj/${x.sjId}/hubungkan`, { itemId }));
+    toast(`Surat Jalan ${x.no} dihubungkan ke PO ini`);
+  } catch (e) {
+    toast(e.message || "Gagal menghubungkan Surat Jalan");
+  } finally {
+    sjSaving.value = "";
+  }
+}
+
+async function tolakSJ(x, konfirmasi = false) {
+  const p = detail.value;
+  if (!p) return;
+  if (konfirmasi && !confirm(`Lepas Surat Jalan ${x.no} dari PO ini? Jumlahnya tidak akan dihitung lagi di PO ini.`)) return;
+  sjSaving.value = x.sjId;
+  try {
+    simpanKeList(await api.post(`/po/${p.id}/sj/${x.sjId}/tolak`, {}));
+    toast(`Surat Jalan ${x.no} bukan bagian dari PO ini`);
+  } catch (e) {
+    toast(e.message || "Gagal memproses Surat Jalan");
+  } finally {
+    sjSaving.value = "";
+  }
+}
+
+async function kembalikanSJ(x) {
+  const p = detail.value;
+  if (!p) return;
+  sjSaving.value = x.sjId;
+  try {
+    simpanKeList(await api.delete(`/po/${p.id}/sj/${x.sjId}`));
+    toast(`Surat Jalan ${x.no} dicocokkan ulang`);
+  } catch (e) {
+    toast(e.message || "Gagal mengembalikan Surat Jalan");
+  } finally {
+    sjSaving.value = "";
+  }
+}
+
 const namaItem = (p, itemId) => p.items.find((it) => it.id === itemId)?.uraian || "-";
 const satuanItem = (p, itemId) => p.items.find((it) => it.id === itemId)?.satuan || "";
 
@@ -335,7 +394,7 @@ onMounted(() => {
     <div>
       <h1>Purchase Order (PO)</h1>
       <div class="desc">
-        Pesanan dari customer. Stok baru berkurang saat barang dikirim (Surat Jalan), bukan saat PO dibuat.
+        Pesanan dari customer. Surat Jalan yang alamat &amp; barangnya cocok otomatis tercatat di PO, sisa yang belum dikirim dihitung sendiri.
       </div>
     </div>
     <button class="btn btn-primary" @click="openForm">+ Input PO</button>
@@ -410,6 +469,9 @@ onMounted(() => {
               </td>
               <td>
                 <span :class="statusCls(p.status)">{{ statusLabel(p.status) }}</span>
+                <div v-if="p.perluKonfirmasi?.length" class="po-cek" title="Ada Surat Jalan yang mungkin milik PO ini, tapi perlu dikonfirmasi">
+                  ⚠ {{ p.perluKonfirmasi.length }} SJ perlu dicek
+                </div>
               </td>
               <td style="min-width: 150px">
                 <div class="po-bar"><div class="po-bar-isi" :style="{ width: p.persen + '%' }"></div></div>
@@ -465,7 +527,7 @@ onMounted(() => {
               <th>Barang</th>
               <th class="num">Dipesan</th>
               <th class="num">Terkirim</th>
-              <th class="num">Sisa</th>
+              <th class="num">Sisa (belum dikirim)</th>
               <th class="num">Harga Satuan</th>
               <th class="num">Jumlah</th>
             </tr>
@@ -494,9 +556,36 @@ onMounted(() => {
         </table>
       </div>
 
+      <!-- Surat Jalan yang perlu dikonfirmasi -->
+      <div v-if="detail.perluKonfirmasi?.length" class="po-box po-konfirmasi">
+        <div class="po-box-judul">⚠ Surat Jalan Perlu Konfirmasi ({{ detail.perluKonfirmasi.length }})</div>
+        <div class="po-sub" style="margin-bottom: 8px">
+          Surat Jalan ini kemungkinan untuk PO ini, tapi sistem tidak yakin sehingga belum dihitung. Cek lalu hubungkan atau tandai bukan PO ini.
+        </div>
+        <div v-for="x in detail.perluKonfirmasi" :key="x.sjId" class="po-konf-row">
+          <div class="po-konf-info">
+            <div><b class="mono">{{ x.no }}</b> • {{ fmtTgl(x.tanggal) }} • {{ x.jenisBarang || "-" }} • {{ angka(x.m3) }} m3</div>
+            <div>Tujuan SJ: <b>{{ x.tujuan || "-" }}</b></div>
+            <div v-if="detail.lokasiProyek" class="po-sub">Lokasi di PO: {{ detail.lokasiProyek }}</div>
+            <div class="po-sub">{{ alasanTeks(x.alasan) }}</div>
+          </div>
+          <div class="po-konf-aksi">
+            <select :value="pilihanItem(x)" @change="pilihItem[x.sjId] = $event.target.value">
+              <option value="">Pilih barang PO…</option>
+              <option v-for="it in detail.items" :key="it.id" :value="it.id">{{ it.uraian }}</option>
+            </select>
+            <button class="btn btn-sm btn-primary" :disabled="sjSaving === x.sjId" @click="hubungkanSJ(x)">Hubungkan</button>
+            <button class="btn btn-sm btn-ghost" :disabled="sjSaving === x.sjId" @click="tolakSJ(x)">Bukan PO ini</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Catat pengiriman manual -->
       <div v-if="detail.status !== 'DIBATALKAN'" class="po-box">
-        <div class="po-box-judul">Catat Pengiriman</div>
+        <div class="po-box-judul">Catat Pengiriman Manual</div>
+        <div class="po-sub" style="margin-bottom: 6px">
+          Surat Jalan yang dibuat di sistem sudah tercatat otomatis. Isi manual hanya untuk pengiriman di luar sistem.
+        </div>
         <div class="row">
           <div class="field">
             <label>Barang</label>
@@ -550,14 +639,28 @@ onMounted(() => {
               <td>{{ fmtTgl(x.tanggal) }}</td>
               <td>{{ namaItem(detail, x.itemId) }}</td>
               <td class="num mono">{{ angka(x.qty) }} {{ satuanItem(detail, x.itemId) }}</td>
-              <td class="mono">{{ x.noSuratJalan || "-" }}</td>
+              <td class="mono">
+                {{ x.noSuratJalan || "-" }}
+                <span v-if="x.otomatis" class="po-oto" :title="x.dikonfirmasi ? 'Dihubungkan manual oleh user' : 'Tercatat otomatis dari Surat Jalan'">
+                  {{ x.dikonfirmasi ? "SJ ✓" : "otomatis" }}
+                </span>
+              </td>
               <td>{{ x.catatan || "-" }}</td>
-              <td style="text-align: right">
-                <button class="btn btn-sm btn-danger" @click="hapusPengiriman(x.id)">Hapus</button>
+              <td style="text-align: right; white-space: nowrap">
+                <button v-if="x.otomatis" class="btn btn-sm btn-ghost" :disabled="sjSaving === x.sjId" @click="tolakSJ({ sjId: x.sjId, no: x.noSuratJalan }, true)">Lepas</button>
+                <button v-else class="btn btn-sm btn-danger" @click="hapusPengiriman(x.id)">Hapus</button>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div v-if="detail.dilepas?.length" class="po-dilepas">
+        <div class="po-sub" style="margin-bottom: 4px">Surat Jalan yang dilepas dari PO ini:</div>
+        <span v-for="x in detail.dilepas" :key="x.sjId" class="po-dilepas-item">
+          <span class="mono">{{ x.no }}</span> ({{ fmtTgl(x.tanggal) }})
+          <button class="btn btn-sm btn-ghost" :disabled="sjSaving === x.sjId" @click="kembalikanSJ(x)">Kembalikan</button>
+        </span>
       </div>
 
       <div class="po-aksi">
@@ -789,6 +892,48 @@ onMounted(() => {
   background: #fdecec;
   border-left-color: #c0392b;
 }
+.po-cek {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #b45309;
+}
+.po-oto {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #e8f1ff;
+  color: #2459a6;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: inherit;
+}
+.po-konfirmasi {
+  background: #fff8ec;
+  border: 1px solid #f1d9a8;
+}
+.po-konf-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-top: 1px dashed #f1d9a8;
+  font-size: 13px;
+}
+.po-konf-info { flex: 1; min-width: 240px; }
+.po-konf-aksi { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.po-konf-aksi select {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  max-width: 220px;
+}
+.po-dilepas { margin-top: 12px; font-size: 12px; }
+.po-dilepas-item { display: inline-flex; gap: 6px; align-items: center; margin-right: 12px; }
 .po-box {
   background: #f7f9fc;
   border: 1px dashed var(--line);

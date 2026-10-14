@@ -34,6 +34,57 @@ function onSearchInput() {
   searchDebounce = setTimeout(() => reloadList(), 350);
 }
 
+// ---- filter daftar Surat Jalan ----
+// Semua filter dijalankan di backend (GET /surat-jalan?...) dan bisa digabung
+// dengan kolom cari di atas. "Hanya tanggal" = SJ di hari itu saja; "Dari/Sampai"
+// = rentang. Kalau "Hanya tanggal" diisi, Dari/Sampai diabaikan.
+const emptyFilter = () => ({
+  tanggal: "",
+  dari: "",
+  sampai: "",
+  customerId: "",
+  divisi: "",
+  status: "", // "" | draft | final
+  ttd: "", // "" | lengkap | belum
+  invoice: "", // "" | belum | sudah
+});
+const filter = ref(emptyFilter());
+const jumlahFilterAktif = computed(() => {
+  const f = filter.value;
+  let n = 0;
+  if (f.tanggal) n++;
+  else if (f.dari || f.sampai) n++;
+  for (const k of ["customerId", "divisi", "status", "ttd", "invoice"]) if (f[k]) n++;
+  return n;
+});
+const adaPencarianAtauFilter = computed(() => !!searchQuery.value.trim() || jumlahFilterAktif.value > 0);
+
+function bangunQueryList() {
+  const p = new URLSearchParams();
+  const q = searchQuery.value.trim();
+  if (q) p.set("search", q);
+  const f = filter.value;
+  if (f.tanggal) p.set("tanggal", f.tanggal);
+  else {
+    if (f.dari) p.set("dari", f.dari);
+    if (f.sampai) p.set("sampai", f.sampai);
+  }
+  for (const k of ["customerId", "divisi", "status", "ttd", "invoice"]) if (f[k]) p.set(k, f[k]);
+  const str = p.toString();
+  return str ? `?${str}` : "";
+}
+function setHariIni() {
+  filter.value.tanggal = new Date().toLocaleDateString("en-CA");
+  filter.value.dari = "";
+  filter.value.sampai = "";
+  reloadList();
+}
+function resetFilter() {
+  filter.value = emptyFilter();
+  searchQuery.value = "";
+  reloadList();
+}
+
 // ---- search customer di form Buat/Edit Surat Jalan ----
 // Dropdown customer biasa (<select>) susah dicari kalau customernya banyak,
 // jadi dibuat combobox simple: ketik buat filter, klik buat pilih.
@@ -244,8 +295,7 @@ function rupiah(n) {
 async function reloadList() {
   loading.value = true;
   try {
-    const q = searchQuery.value.trim();
-    list.value = await api.get(`/surat-jalan${q ? `?search=${encodeURIComponent(q)}` : ""}`);
+    list.value = await api.get(`/surat-jalan${bangunQueryList()}`);
   } catch (error) {
     console.error(error);
     toast("Gagal memuat data surat jalan");
@@ -257,9 +307,8 @@ async function reloadList() {
 async function load() {
   loading.value = true;
   try {
-    const q = searchQuery.value.trim();
     const [suratJalanData, armadaData, customerData, stockData, sopirData, settingData] = await Promise.all([
-      api.get(`/surat-jalan${q ? `?search=${encodeURIComponent(q)}` : ""}`),
+      api.get(`/surat-jalan${bangunQueryList()}`),
       api.get("/armada"),
       api.get("/customers"),
       api.get("/stock-master"),
@@ -659,6 +708,67 @@ const showScan = ref(false);
       <button v-if="searchQuery" class="btn btn-sm btn-ghost" @click="searchQuery = ''; reloadList()">✕</button>
     </div>
 
+    <div class="sj-filter">
+      <div class="sj-filter-item">
+        <label>Hanya tanggal</label>
+        <div class="sj-filter-tgl">
+          <input v-model="filter.tanggal" type="date" @change="reloadList" />
+          <button type="button" class="btn btn-sm btn-ghost" @click="setHariIni">Hari ini</button>
+        </div>
+      </div>
+      <div class="sj-filter-item">
+        <label>Dari tanggal</label>
+        <input v-model="filter.dari" type="date" :disabled="!!filter.tanggal" @change="reloadList" />
+      </div>
+      <div class="sj-filter-item">
+        <label>Sampai tanggal</label>
+        <input v-model="filter.sampai" type="date" :disabled="!!filter.tanggal" @change="reloadList" />
+      </div>
+      <div class="sj-filter-item">
+        <label>Customer</label>
+        <select v-model="filter.customerId" @change="reloadList">
+          <option value="">Semua customer</option>
+          <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.nama }}</option>
+        </select>
+      </div>
+      <div v-if="isAdmin" class="sj-filter-item">
+        <label>Divisi</label>
+        <select v-model="filter.divisi" @change="reloadList">
+          <option value="">Semua divisi</option>
+          <option v-for="d in DIVISI" :key="d" :value="d">{{ d }}</option>
+        </select>
+      </div>
+      <div class="sj-filter-item">
+        <label>Status</label>
+        <select v-model="filter.status" @change="reloadList">
+          <option value="">Semua</option>
+          <option value="draft">Draft</option>
+          <option value="final">Final</option>
+        </select>
+      </div>
+      <div class="sj-filter-item">
+        <label>TTD</label>
+        <select v-model="filter.ttd" @change="reloadList">
+          <option value="">Semua</option>
+          <option value="lengkap">TTD lengkap</option>
+          <option value="belum">Belum TTD</option>
+        </select>
+      </div>
+      <div class="sj-filter-item">
+        <label>Invoice</label>
+        <select v-model="filter.invoice" @change="reloadList">
+          <option value="">Semua</option>
+          <option value="belum">Belum ditagih</option>
+          <option value="sudah">Sudah ditagih</option>
+        </select>
+      </div>
+      <div class="sj-filter-item sj-filter-reset">
+        <button v-if="adaPencarianAtauFilter" type="button" class="btn btn-sm btn-ghost" @click="resetFilter">
+          ✕ Reset{{ jumlahFilterAktif ? ` (${jumlahFilterAktif} filter)` : "" }}
+        </button>
+      </div>
+    </div>
+
     <!-- RINGKASAN -->
     <div v-if="!loading && list.length" class="sj-summary">
       <div class="sj-summary-card">
@@ -686,9 +796,10 @@ const showScan = ref(false);
 
     <div v-if="loading" class="empty">Memuat data…</div>
 
-    <div v-else-if="!list.length && searchQuery" class="empty">
+    <div v-else-if="!list.length && adaPencarianAtauFilter" class="empty">
       <div class="big">🔍</div>
-      <div>Tidak ada surat jalan yang cocok dengan pencarian "{{ searchQuery }}".</div>
+      <div>Tidak ada surat jalan yang cocok dengan pencarian / filter yang dipilih.</div>
+      <button class="btn btn-sm btn-ghost" style="margin-top: 10px" @click="resetFilter">Reset pencarian &amp; filter</button>
     </div>
 
     <div v-else-if="!list.length" class="empty">
@@ -1042,7 +1153,19 @@ const showScan = ref(false);
 .draft-check input { margin-top: 3px; }
 .draft-check-sub { font-size: 11px; color: var(--ink-soft); }
 .optional { font-weight: 400; color: var(--ink-soft); font-size: 11px; }
-.sj-search { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.sj-search { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.sj-filter {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+  margin-bottom: 14px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--card, #fff);
+}
+.sj-filter-item { display: flex; flex-direction: column; gap: 3px; min-width: 120px; }
+.sj-filter-item label { font-size: 11px; color: var(--ink-soft); font-weight: 600; }
+.sj-filter-item input, .sj-filter-item select {
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; background: #fff;
+}
+.sj-filter-tgl { display: flex; gap: 6px; align-items: center; }
+.sj-filter-reset { justify-content: flex-end; }
 .sj-search input {
   flex: 1;
   max-width: 420px;

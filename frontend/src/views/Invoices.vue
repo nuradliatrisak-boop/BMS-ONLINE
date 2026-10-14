@@ -7,6 +7,8 @@ import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import SearchableSelect from "../components/SearchableSelect.vue";
 import MoneyInput from "../components/MoneyInput.vue";
+import SjSearchBar from "../components/SjSearchBar.vue";
+import { cocokSJ } from "../utils/sjSearch.js";
 import { fmtM3 } from "../utils/format.js";
 import { sarankanHarga } from "../utils/hargaCustomer.js";
 
@@ -117,6 +119,18 @@ function formatTanggal(tanggal) {
 }
 
 const selectedRows = computed(() => rows.value.filter((r) => r.checked));
+
+// Pencarian serbaguna di daftar Surat Jalan belum ditagih (no SJ, tujuan, barang,
+// no. polisi, sopir, tanggal, dll). Yang tercentang tetap ikut walau tersembunyi.
+const sjCari = ref("");
+const rowsTampil = computed(() => rows.value.filter((r) => cocokSJ(r.sj, sjCari.value)));
+const sjTersembunyi = computed(() => rows.value.filter((r) => r.checked && !cocokSJ(r.sj, sjCari.value)).length);
+function centangYangTampil() {
+  for (const r of rowsTampil.value) r.checked = true;
+}
+function kosongkanCentangSJ() {
+  for (const r of rows.value) r.checked = false;
+}
 const formTotal = computed(() =>
   selectedRows.value.reduce((sum, r) => sum + Number(r.hargaSatuan || 0) * Number(r.qty || 0), 0)
 );
@@ -142,6 +156,7 @@ async function load() {
 
 async function loadBelumDitagih() {
   rows.value = [];
+  sjCari.value = "";
   if (!form.value.customerId) return;
   loadingBelumDitagih.value = true;
   try {
@@ -434,7 +449,20 @@ const showImport = ref(false);
       <div v-else-if="!rows.length" class="empty small">
         Tidak ada surat jalan yang belum ditagih untuk customer ini.
       </div>
-      <div v-else class="table-wrap">
+      <SjSearchBar
+        v-if="form.customerId && !loadingBelumDitagih && rows.length"
+        v-model="sjCari"
+        :total="rows.length"
+        :tampil="rowsTampil.length"
+        :tercentang="selectedRows.length"
+        :tersembunyi="sjTersembunyi"
+        @centang-tampil="centangYangTampil"
+        @kosongkan="kosongkanCentangSJ"
+      />
+      <div v-if="form.customerId && !loadingBelumDitagih && rows.length && !rowsTampil.length" class="empty small">
+        Tidak ada surat jalan yang cocok dengan pencarian "{{ sjCari }}".
+      </div>
+      <div v-else-if="rows.length" class="table-wrap">
         <table class="sj-pick-table">
           <thead>
             <tr>
@@ -442,6 +470,7 @@ const showImport = ref(false);
               <th>No SJ</th>
               <th>Tgl</th>
               <th>Jenis Barang</th>
+              <th>Tujuan</th>
               <th>No Pol</th>
               <th class="num">M3</th>
               <th class="num">Harga / M3</th>
@@ -449,18 +478,19 @@ const showImport = ref(false);
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(r, idx) in rows" :key="r.suratJalanId">
+            <tr v-for="r in rowsTampil" :key="r.suratJalanId">
               <td><input type="checkbox" v-model="r.checked" /></td>
               <td class="mono">{{ r.sj.no }}</td>
               <td>{{ formatTanggal(r.sj.tanggal) }}</td>
               <td>{{ r.sj.jenisBarang || "-" }}</td>
+              <td>{{ r.sj.tujuan || "-" }}</td>
               <td class="mono">{{ r.sj.noPolisi || "-" }}</td>
               <td class="num mono">{{ fmtM3(r.qty) }}</td>
               <td class="num">
                 <MoneyInput
                   v-model="r.hargaSatuan"
                   class="price-input"
-                  @change="applyHargaToAll(idx)"
+                  @change="applyHargaToAll(rows.indexOf(r))"
                 />
                 <div v-if="r.hargaInfo" class="harga-info" :class="`harga-${r.hargaInfo.tone}`">{{ r.hargaInfo.label }}</div>
               </td>

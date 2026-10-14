@@ -5,6 +5,8 @@ import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { printInvoice } from "../services/print.js";
 import MoneyInput from "../components/MoneyInput.vue";
+import SjSearchBar from "../components/SjSearchBar.vue";
+import { cocokSJ } from "../utils/sjSearch.js";
 import { fmtM3, fmtQty } from "../utils/format.js";
 import { sarankanHarga } from "../utils/hargaCustomer.js";
 
@@ -20,6 +22,17 @@ const showAddTensivModal = ref(false);
 const savingEdit = ref(false);
 const savingAddItem = ref(false);
 const belumDitagihRows = ref([]);
+// pencarian serbaguna di modal "Tambah Item dari Surat Jalan"
+const sjCari = ref("");
+const belumDitagihTampil = computed(() => belumDitagihRows.value.filter((r) => cocokSJ(r.sj, sjCari.value)));
+const sjTercentang = computed(() => belumDitagihRows.value.filter((r) => r.checked).length);
+const sjTersembunyi = computed(() => belumDitagihRows.value.filter((r) => r.checked && !cocokSJ(r.sj, sjCari.value)).length);
+function centangYangTampil() {
+  for (const r of belumDitagihTampil.value) r.checked = true;
+}
+function kosongkanCentangSJ() {
+  for (const r of belumDitagihRows.value) r.checked = false;
+}
 const belumDitagihTensivRows = ref([]);
 const loadingBelumDitagih = ref(false);
 const loadingBelumDitagihTensiv = ref(false);
@@ -319,8 +332,13 @@ async function hapusInvoice() {
   }
 }
 
+function fmtTglSJ(t) {
+  return t ? new Date(t).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-";
+}
+
 async function openAddItemModal() {
   showAddItemModal.value = true;
+  sjCari.value = "";
   loadingBelumDitagih.value = true;
   try {
     const list = await api.get(
@@ -1012,14 +1030,28 @@ onMounted(load);
 
     <!-- MODAL TAMBAH ITEM DARI SURAT JALAN -->
     <div v-if="showAddItemModal" class="modal-bg" @click.self="showAddItemModal = false">
-      <div class="modal" style="max-width:720px">
+      <div class="modal" style="max-width:920px">
         <button class="modal-close" @click="showAddItemModal = false">×</button>
         <h2>Tambah Item dari Surat Jalan</h2>
         <div class="msub">Surat jalan customer ini yang belum ditagih di invoice manapun.</div>
 
+        <SjSearchBar
+          v-if="!loadingBelumDitagih && belumDitagihRows.length"
+          v-model="sjCari"
+          :total="belumDitagihRows.length"
+          :tampil="belumDitagihTampil.length"
+          :tercentang="sjTercentang"
+          :tersembunyi="sjTersembunyi"
+          @centang-tampil="centangYangTampil"
+          @kosongkan="kosongkanCentangSJ"
+        />
+
         <div v-if="loadingBelumDitagih" class="empty small">Memuat surat jalan…</div>
         <div v-else-if="!belumDitagihRows.length" class="empty small">
           Tidak ada surat jalan yang belum ditagih untuk customer ini.
+        </div>
+        <div v-else-if="!belumDitagihTampil.length" class="empty small">
+          Tidak ada surat jalan yang cocok dengan pencarian "{{ sjCari }}".
         </div>
         <div v-else class="table-wrap">
           <table>
@@ -1027,16 +1059,25 @@ onMounted(load);
               <tr>
                 <th></th>
                 <th>No SJ</th>
+                <th>Tanggal</th>
+                <th>Tujuan / Penerima</th>
                 <th>Jenis Barang</th>
+                <th>No. Polisi</th>
                 <th class="num">M3</th>
                 <th class="num">Harga / M3</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="r in belumDitagihRows" :key="r.suratJalanId">
+              <tr v-for="r in belumDitagihTampil" :key="r.suratJalanId">
                 <td><input type="checkbox" v-model="r.checked" /></td>
                 <td class="mono">{{ r.sj.no }}</td>
+                <td style="white-space: nowrap">{{ fmtTglSJ(r.sj.tanggal) }}</td>
+                <td>
+                  {{ r.sj.tujuan || "-" }}
+                  <div v-if="r.sj.penerima && r.sj.penerima !== r.sj.customer?.nama" class="harga-info">→ {{ r.sj.penerima }}</div>
+                </td>
                 <td>{{ r.sj.jenisBarang || "-" }}</td>
+                <td class="mono">{{ r.sj.noPolisi || "-" }}</td>
                 <td class="num mono">{{ fmtM3(r.sj.m3) }}</td>
                 <td class="num">
                   <MoneyInput v-model="r.hargaSatuan" class="item-harga-input" @change="r.hargaInfo = null" />

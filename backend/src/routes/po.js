@@ -39,6 +39,30 @@ function selisihHari(a, b) {
   return Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86400000);
 }
 
+// ---- Nomor PO otomatis ----
+// Pola: NNN/BMS-PO/<bulan romawi>/<tahun>, mis. 001/BMS-PO/X/2026. Urutan NNN naik
+// terus per tahun (dihitung dari nomor otomatis yang sudah ada), jadi tidak ada
+// yang loncat atau ganda walau PO lain diketik manual. Nomor yang diketik manual
+// tidak ikut dihitung. Kalau 2 orang menyimpan bersamaan, nomor dicoba ulang.
+const ROMAWI = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+const PREFIX_OTOMATIS = "BMS-PO";
+
+async function nomorBerikutnya(tanggalStr) {
+  const tahun = tanggalStr.slice(0, 4);
+  const bulan = Number(tanggalStr.slice(5, 7));
+  const ada = await prisma.purchaseOrder.findMany({
+    where: { no: { contains: `/${PREFIX_OTOMATIS}/` } },
+    select: { no: true },
+  });
+  const pola = new RegExp(`^(\\d+)/${PREFIX_OTOMATIS}/[IVX]+/${tahun}$`);
+  let maks = 0;
+  for (const { no } of ada) {
+    const m = pola.exec(no);
+    if (m) maks = Math.max(maks, Number(m[1]));
+  }
+  return `${String(maks + 1).padStart(3, "0")}/${PREFIX_OTOMATIS}/${ROMAWI[bulan]}/${tahun}`;
+}
+
 const INCLUDE = {
   customer: { select: { id: true, nama: true } },
   items: { orderBy: [{ urut: "asc" }, { id: "asc" }] },
@@ -96,8 +120,9 @@ export function ringkasPo(po) {
 // Validasi isi form PO (dipakai POST & PUT). Balikan { error } atau { data, items }.
 function bacaBody(req) {
   const b = req.body || {};
+  const otomatis = !!b.otomatis && req.method === "POST"; // nomor otomatis hanya saat PO baru dibuat
   const no = bersih(b.no);
-  if (!no) return { error: "Nomor PO wajib diisi" };
+  if (!no && !otomatis) return { error: "Nomor PO wajib diisi" };
   const tanggal = tglDate(b.tanggal);
   if (!tanggal) return { error: "Tanggal PO wajib diisi" };
 
@@ -129,6 +154,7 @@ function bacaBody(req) {
 
   return {
     items,
+    otomatis,
     data: {
       no,
       divisi,
@@ -167,6 +193,16 @@ router.get("/", async (req, res, next) => {
   }
 });
 
+// GET /api/po/nomor-berikutnya?tanggal=YYYY-MM-DD -> { no } (pratinjau nomor otomatis)
+router.get("/nomor-berikutnya", async (req, res, next) => {
+  try {
+    const tgl = tglDate(req.query.tanggal) || tglDate(hariIniStr());
+    res.json({ no: await nomorBerikutnya(tglStr(tgl)) });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get("/:id", async (req, res, next) => {
   try {
     const po = await ambilPo(req, req.params.id);
@@ -179,23 +215,41 @@ router.get("/:id", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { error, data, items } = bacaBody(req);
+    const { error, data, items, otomatis } = bacaBody(req);
     if (error) return res.status(400).json({ error });
-    const po = await prisma.purchaseOrder.create({
-      data: {
-        ...data,
-        items: {
-          create: items.map((it, i) => ({
-            urut: i,
-            uraian: it.uraian,
-            satuan: it.satuan,
-            qty: it.qty,
-            hargaSatuan: it.hargaSatuan,
-          })),
+
+    const buat = (no) =>
+      prisma.purchaseOrder.create({
+        data: {
+          ...data,
+          no,
+          items: {
+            create: items.map((it, i) => ({
+              urut: i,
+              uraian: it.uraian,
+              satuan: it.satuan,
+              qty: it.qty,
+              hargaSatuan: it.hargaSatuan,
+            })),
+          },
         },
-      },
-      include: INCLUDE,
-    });
+        include: INCLUDE,
+      });
+
+    let po;
+    if (otomatis) {
+      // bentrok nomor (2 orang simpan bersamaan) -> ambil nomor berikutnya & coba lagi
+      for (let i = 0; i < 5; i++) {
+        try {
+          po = await buat(await nomorBerikutnya(tglStr(data.tanggal)));
+          break;
+        } catch (e) {
+          if (e.code !== "P2002" || i === 4) throw e;
+        }
+      }
+    } else {
+      po = await buat(data.no);
+    }
     res.status(201).json(ringkasPo(po));
   } catch (e) {
     if (e.code === "P2002") return res.status(409).json({ error: "Nomor PO ini sudah pernah dicatat" });

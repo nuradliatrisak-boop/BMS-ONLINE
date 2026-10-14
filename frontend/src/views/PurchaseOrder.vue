@@ -4,7 +4,7 @@
 // (sesuai permintaan lapangan), tiap pengiriman dicatat manual di sini (boleh
 // diisi no. Surat Jalan sebagai referensi). Terkirim / sisa / status dihitung
 // otomatis oleh server, dan PO yang belum selesai muncul di Pengingat Dashboard.
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { useAuthStore } from "../stores/auth.js";
@@ -44,6 +44,42 @@ const emptyForm = () => ({
   items: [emptyItem()],
 });
 const form = ref(emptyForm());
+
+// Nomor PO: "otomatis" (dibuat server saat disimpan) atau "manual" (diketik, sesuai kertas PO customer).
+// Pilihan terakhir diingat di browser masing-masing user.
+const bacaMode = () => {
+  try {
+    return localStorage.getItem("po_mode_no") === "otomatis" ? "otomatis" : "manual";
+  } catch {
+    return "manual";
+  }
+};
+const modeNo = ref(bacaMode());
+const noPreview = ref("");
+const pakaiOtomatis = computed(() => !editingId.value && modeNo.value === "otomatis");
+
+async function muatPreview() {
+  if (!pakaiOtomatis.value) return;
+  try {
+    const r = await api.get(`/po/nomor-berikutnya?tanggal=${form.value.tanggal || hariIni()}`);
+    noPreview.value = r.no;
+  } catch {
+    noPreview.value = "";
+  }
+}
+function setMode(m) {
+  modeNo.value = m;
+  try {
+    localStorage.setItem("po_mode_no", m);
+  } catch {
+    /* abaikan */
+  }
+  muatPreview();
+}
+watch(
+  () => form.value.tanggal,
+  () => muatPreview()
+);
 
 const emptyPeng = () => ({ itemId: "", tanggal: hariIni(), qty: "", noSuratJalan: "", catatan: "" });
 const peng = ref(emptyPeng());
@@ -124,7 +160,9 @@ const tampil = computed(() => {
 function openForm() {
   editingId.value = null;
   form.value = emptyForm();
+  noPreview.value = "";
   showForm.value = true;
+  muatPreview();
 }
 
 function openEdit(p) {
@@ -176,7 +214,7 @@ const ppnForm = computed(() => (subtotalForm.value * (Number(form.value.ppnPerse
 
 async function submit() {
   const f = form.value;
-  if (!f.no.trim()) return toast("Nomor PO wajib diisi");
+  if (!pakaiOtomatis.value && !f.no.trim()) return toast("Nomor PO wajib diisi");
   if (!f.tanggal) return toast("Tanggal PO wajib diisi");
   if (!f.customerId && !f.namaCustomer.trim()) return toast("Pilih customer atau ketik nama pemesan");
 
@@ -189,14 +227,14 @@ async function submit() {
 
   saving.value = true;
   try {
-    const payload = { ...f, items };
+    const payload = { ...f, items, otomatis: pakaiOtomatis.value, no: pakaiOtomatis.value ? "" : f.no };
     let po;
     if (editingId.value) {
       po = await api.put(`/po/${editingId.value}`, payload);
       toast("PO berhasil diperbarui");
     } else {
       po = await api.post("/po", payload);
-      toast("PO berhasil disimpan");
+      toast(pakaiOtomatis.value ? `PO disimpan dengan nomor ${po.no}` : "PO berhasil disimpan");
     }
     simpanKeList(po);
     showForm.value = false;
@@ -542,7 +580,15 @@ onMounted(() => {
       <div class="row">
         <div class="field">
           <label>Nomor PO</label>
-          <input v-model="form.no" placeholder="Mis. 04/PJS-RUSUN ROROTAN/X/2026" />
+          <div v-if="!editingId" class="po-mode">
+            <button type="button" :class="{ aktif: modeNo === 'otomatis' }" @click="setMode('otomatis')">Otomatis</button>
+            <button type="button" :class="{ aktif: modeNo === 'manual' }" @click="setMode('manual')">Ketik manual</button>
+          </div>
+          <input v-if="!pakaiOtomatis" v-model="form.no" placeholder="Mis. 04/PJS-RUSUN ROROTAN/X/2026" />
+          <input v-else :value="noPreview || 'Memuat…'" readonly />
+          <div v-if="pakaiOtomatis" class="po-sub">
+            Nomor dibuat otomatis saat disimpan (pola 001/BMS-PO/bulan/tahun). Nomor final bisa sedikit berbeda kalau ada yang menyimpan bersamaan.
+          </div>
         </div>
         <div class="field">
           <label>Tanggal PO</label>
@@ -670,6 +716,27 @@ onMounted(() => {
 .po-kpi-sub {
   font-size: 12px;
   color: var(--ink-soft);
+}
+.po-mode {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.po-mode button {
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 12px;
+  border: 0;
+  background: #fff;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+.po-mode button.aktif {
+  background: #2459a6;
+  color: #fff;
+  font-weight: 700;
 }
 .po-cari {
   margin-bottom: 10px;

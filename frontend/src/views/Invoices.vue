@@ -466,7 +466,7 @@ const showImport = ref(false);
         <table class="sj-pick-table">
           <thead>
             <tr>
-              <th></th>
+              <th class="pick-col"></th>
               <th>No SJ</th>
               <th>Tgl</th>
               <th>Jenis Barang</th>
@@ -479,11 +479,11 @@ const showImport = ref(false);
           </thead>
           <tbody>
             <tr v-for="r in rowsTampil" :key="r.suratJalanId">
-              <td><input type="checkbox" v-model="r.checked" /></td>
+              <td class="pick-col"><input type="checkbox" class="pick-check" v-model="r.checked" /></td>
               <td class="mono">{{ r.sj.no }}</td>
               <td>{{ formatTanggal(r.sj.tanggal) }}</td>
               <td>{{ r.sj.jenisBarang || "-" }}</td>
-              <td>{{ r.sj.tujuan || "-" }}</td>
+              <td class="tujuan-col" :title="r.sj.tujuan || ''">{{ r.sj.tujuan || "-" }}</td>
               <td class="mono">{{ r.sj.noPolisi || "-" }}</td>
               <td class="num mono">{{ fmtM3(r.qty) }}</td>
               <td class="num">
@@ -553,6 +553,9 @@ const showImport = ref(false);
 .optional { font-size: 10px; font-weight: 400; }
 .row-3 { grid-template-columns: 1fr 1fr 100px; }
 .sj-pick-table { min-width: 720px; }
+.sj-pick-table .pick-col { width: 40px; min-width: 40px; text-align: center; }
+.sj-pick-table input.pick-check { width: 18px; min-width: 18px; height: 18px; padding: 0; margin: 0; cursor: pointer; accent-color: var(--navy, #1e3a5f); }
+.sj-pick-table .tujuan-col { max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
 .sj-pick-table th, .sj-pick-table td { white-space: nowrap; }
 .price-input { width: 110px; text-align: right; }
 .price-hint { font-size: 10.5px; color: var(--ink-soft); margin: 6px 0 4px; }

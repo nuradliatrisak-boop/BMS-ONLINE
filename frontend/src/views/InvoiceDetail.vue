@@ -1057,7 +1057,7 @@ onMounted(load);
           <table>
             <thead>
               <tr>
-                <th></th>
+                <th class="pick-col"></th>
                 <th>No SJ</th>
                 <th>Tanggal</th>
                 <th>Tujuan / Penerima</th>
@@ -1069,7 +1069,7 @@ onMounted(load);
             </thead>
             <tbody>
               <tr v-for="r in belumDitagihTampil" :key="r.suratJalanId">
-                <td><input type="checkbox" v-model="r.checked" /></td>
+                <td class="pick-col"><input type="checkbox" class="pick-check" v-model="r.checked" /></td>
                 <td class="mono">{{ r.sj.no }}</td>
                 <td style="white-space: nowrap">{{ fmtTglSJ(r.sj.tanggal) }}</td>
                 <td>
@@ -1123,7 +1123,7 @@ onMounted(load);
             </thead>
             <tbody>
               <tr v-for="r in belumDitagihTensivRows" :key="r.tensivId">
-                <td><input type="checkbox" v-model="r.checked" /></td>
+                <td class="pick-col"><input type="checkbox" class="pick-check" v-model="r.checked" /></td>
                 <td class="mono">{{ r.ts.no }}</td>
                 <td>{{ r.ts.tanggal ? new Date(r.ts.tanggal).toLocaleDateString("id-ID") : "-" }}</td>
                 <td>{{ r.ts.unitAlat || "-" }}</td>
@@ -1621,6 +1621,8 @@ onMounted(load);
 </template>
 
 <style scoped>
+.pick-col { width: 40px; min-width: 40px; text-align: center; }
+input.pick-check { width: 18px; min-width: 18px; height: 18px; padding: 0; margin: 0; cursor: pointer; accent-color: var(--navy, #1e3a5f); }
 .item-sj-sub { font-size: 10.5px; color: var(--ink-soft); }
 .net-rincian { margin-top: 3px; font-size: 10.5px; font-weight: 400; color: var(--ink-soft); line-height: 1.45; }
 .potongan-box { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--bms-blue-soft, #f3f6fb); font-size: 12.5px; color: var(--ink-soft, #8a94a3); }

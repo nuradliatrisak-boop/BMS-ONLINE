@@ -418,6 +418,7 @@ model SuratJalan {
   batchId     String?
 
   invoiceItems InvoiceItem[]
+  poLinks      PoSuratJalan[]
 
   @@index([customerId])
   @@index([batchId])
@@ -620,6 +621,7 @@ model PurchaseOrder {
 
   items      PurchaseOrderItem[]
   pengiriman PoPengiriman[]
+  sjLinks    PoSuratJalan[]
 
   @@index([customerId])
   @@index([tanggal])
@@ -657,6 +659,24 @@ model PoPengiriman {
 
   @@index([poId])
   @@index([itemId])
+}
+
+// Keputusan user soal pencocokan Surat Jalan -> PO (lihat services/poSuratJalan.js).
+// Pencocokan otomatis TIDAK disimpan di sini; tabel ini hanya mencatat saat user
+// mengonfirmasi ("TERHUBUNG", sekaligus barang PO yang dikredit) atau menolak
+// ("DITOLAK", SJ itu bukan untuk PO ini) -- supaya keputusan tidak ditanya ulang.
+model PoSuratJalan {
+  id           String        @id @default(cuid())
+  poId         String
+  po           PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  suratJalanId String
+  suratJalan   SuratJalan    @relation(fields: [suratJalanId], references: [id], onDelete: Cascade)
+  status       String // "TERHUBUNG" | "DITOLAK"
+  itemId       String? // barang PO yang dikredit (diisi kalau TERHUBUNG)
+  createdAt    DateTime      @default(now())
+
+  @@unique([poId, suratJalanId])
+  @@index([suratJalanId])
 }
 
 model PrintCalib {

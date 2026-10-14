@@ -162,34 +162,84 @@ const includeRelasi = {
   sopirRef: true,
 };
 
-// Search sederhana: ?search=kata kunci, cocok di nomor SJ, penerima,
-// tujuan, no. polisi, atau nama/kode customer. Dipakai kolom pencarian
-// di halaman daftar Surat Jalan.
+// Daftar Surat Jalan dengan pencarian + filter. Semua parameter opsional dan
+// bisa digabung:
+//   ?search=kata   -> cocok di no SJ, penerima, tujuan, no. polisi, jenis barang,
+//                     sopir, nama/kode customer. Kalimat dengan spasi dipecah per
+//                     kata dan SEMUA kata harus ketemu (di kolom manapun).
+//   ?tanggal=YYYY-MM-DD       -> hanya SJ di hari itu saja
+//   ?dari=YYYY-MM-DD&sampai=YYYY-MM-DD -> rentang tanggal (salah satu boleh kosong)
+//   ?customerId=...  ?divisi=...  ?armadaId=...
+//   ?status=draft|final       -> draft atau sudah final
+//   ?ttd=lengkap|belum        -> status tanda tangan
+//   ?invoice=belum|sudah      -> sudah/belum masuk invoice
+// Dipakai halaman daftar Surat Jalan (aplikasi utama dan simple backend).
+function bacaTanggalFilter(v) {
+  const s = String(v || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const d = new Date(`${s}T00:00:00.000Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function bangunFilterSJ(q) {
+  const and = [];
+
+  const kata = String(q.search || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 8);
+  for (const k of kata) {
+    const c = { contains: k, mode: "insensitive" };
+    and.push({
+      OR: [
+        { no: c },
+        { penerima: c },
+        { tujuan: c },
+        { noPolisi: c },
+        { jenisBarang: c },
+        { sopir: c },
+        { customer: { nama: c } },
+        { customer: { kode: c } },
+      ],
+    });
+  }
+
+  const hari = bacaTanggalFilter(q.tanggal);
+  const dari = hari || bacaTanggalFilter(q.dari);
+  const sampai = hari || bacaTanggalFilter(q.sampai);
+  if (dari || sampai) {
+    const rentang = {};
+    if (dari) rentang.gte = dari;
+    if (sampai) rentang.lt = new Date(sampai.getTime() + 86400000); // sampai akhir hari itu
+    and.push({ tanggal: rentang });
+  }
+
+  if (q.customerId) and.push({ customerId: String(q.customerId) });
+  if (q.divisi) and.push({ divisi: String(q.divisi) });
+  if (q.armadaId) and.push({ armadaId: String(q.armadaId) });
+
+  if (q.status === "draft") and.push({ isDraft: true });
+  else if (q.status === "final") and.push({ isDraft: false });
+
+  if (q.ttd === "lengkap") and.push({ statusTTD: "LENGKAP" });
+  else if (q.ttd === "belum") and.push({ statusTTD: "BELUM_TTD" });
+
+  if (q.invoice === "belum") and.push({ invoiceItems: { none: {} } });
+  else if (q.invoice === "sudah") and.push({ invoiceItems: { some: {} } });
+
+  return and;
+}
+
 router.get("/", async (req, res, next) => {
   try {
-    const { search } = req.query;
-
     const list = await prisma.suratJalan.findMany({
       where: {
         ...scopeDivisi(req),
-        ...(search
-          ? {
-              OR: [
-                { no: { contains: search, mode: "insensitive" } },
-                { penerima: { contains: search, mode: "insensitive" } },
-                { tujuan: { contains: search, mode: "insensitive" } },
-                { noPolisi: { contains: search, mode: "insensitive" } },
-                { jenisBarang: { contains: search, mode: "insensitive" } },
-                { customer: { nama: { contains: search, mode: "insensitive" } } },
-                { customer: { kode: { contains: search, mode: "insensitive" } } },
-              ],
-            }
-          : {}),
+        AND: bangunFilterSJ(req.query),
       },
       include: includeRelasi,
-      orderBy: {
-        tanggal: "desc",
-      },
+      orderBy: [{ tanggal: "desc" }, { createdAt: "desc" }],
     });
 
     res.json(list);
@@ -198,11 +248,6 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-// Daftar Surat Jalan milik seorang customer yang BELUM dipakai di invoice
-// manapun (belum ada InvoiceItem yang menunjuk ke SJ ini). Dipakai di form
-// "Buat Invoice Baru" supaya user tinggal centang, bukan ketik manual.
-// Saran input: daftar penerima+tujuan (master customer + riwayat SJ lama) dan
-// jenis barang yang pernah diketik manual. ?customerId= (kosong = SJ tanpa customer).
 router.get("/riwayat-input", async (req, res, next) => {
   try {
     res.json(await riwayatInput(req.query.customerId || null, scopeDivisi(req)));

@@ -3,6 +3,7 @@ import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
 import { DIVISI_LIST } from "../config/divisiConfig.js";
 import { ringkasPo } from "./po.js";
+import { petakanOtomatis } from "../services/poSuratJalan.js";
 
 const router = Router();
 const tglStrPo = (d) => new Date(d).toISOString().slice(0, 10);
@@ -318,8 +319,10 @@ router.get("/reminder", async (req, res, next) => {
       },
       orderBy: { tanggal: "asc" },
     });
+    // Surat Jalan yang cocok ikut dihitung otomatis (sama seperti halaman PO)
+    const petaPo = await petakanOtomatis(poTerbuka);
     for (const raw of poTerbuka) {
-      const po = ringkasPo(raw);
+      const po = ringkasPo(raw, petaPo.get(raw.id));
       if (po.status !== "BARU" && po.status !== "SEBAGIAN") continue;
       const sisaTeks = po.items
         .filter((it) => it.sisa > 0)

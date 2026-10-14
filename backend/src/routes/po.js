@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
+import { petakanOtomatis } from "../services/poSuratJalan.js";
 
 // ------------------------------------------------------------
 // PURCHASE ORDER (PO)
@@ -11,6 +12,11 @@ import { scopeDivisi } from "../middleware/auth.js";
 // PoPengiriman (boleh diisi no. Surat Jalan sebagai referensi). Dari situ
 // dihitung otomatis: qty terkirim, sisa, status (BARU / SEBAGIAN / SELESAI),
 // dan sudah berapa hari PO menunggu (dipakai pengingat di Dashboard).
+//
+// Selain input manual, Surat Jalan yang sudah dibuat ikut dihitung OTOMATIS
+// kalau customer, alamat tujuan, dan barangnya cocok dengan PO (aturan lengkap
+// di services/poSuratJalan.js). Yang penulisannya beda / tidak yakin masuk
+// "perluKonfirmasi" supaya user yang memutuskan.
 // ------------------------------------------------------------
 const router = Router();
 
@@ -70,10 +76,30 @@ const INCLUDE = {
 };
 
 // Tambahkan angka turunan ke 1 PO (terkirim/sisa per barang, status, umur).
-export function ringkasPo(po) {
+export function ringkasPo(po, auto) {
   const today = hariIniStr();
+  const otomatis = auto?.otomatis || [];
+
+  // riwayat gabungan: input manual + Surat Jalan yang terhitung otomatis (terbaru dulu)
+  const pengiriman = [
+    ...po.pengiriman.map((p) => ({ ...p, otomatis: false })),
+    ...otomatis.map((a) => ({
+      id: `sj:${a.sjId}`,
+      poId: po.id,
+      itemId: a.itemId,
+      tanggal: a.tanggal,
+      qty: a.qty,
+      noSuratJalan: a.no,
+      catatan: a.tujuan || null,
+      createdAt: a.tanggal,
+      otomatis: true,
+      sjId: a.sjId,
+      dikonfirmasi: !!a.dikonfirmasi,
+    })),
+  ].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal) || new Date(b.createdAt) - new Date(a.createdAt));
+
   const terkirimMap = new Map();
-  for (const p of po.pengiriman) terkirimMap.set(p.itemId, (terkirimMap.get(p.itemId) || 0) + p.qty);
+  for (const p of pengiriman) terkirimMap.set(p.itemId, (terkirimMap.get(p.itemId) || 0) + p.qty);
 
   const items = po.items.map((it) => {
     const terkirim = r2(terkirimMap.get(it.id) || 0);
@@ -95,15 +121,18 @@ export function ringkasPo(po) {
   let status = "BARU";
   if (po.batal) status = "DIBATALKAN";
   else if (items.length && items.every((it) => it.sisa === 0)) status = "SELESAI";
-  else if (po.pengiriman.length) status = "SEBAGIAN";
+  else if (pengiriman.length) status = "SEBAGIAN";
 
-  const terakhirKirim = po.pengiriman.length ? tglStr(po.pengiriman[0].tanggal) : null; // sudah urut terbaru dulu
+  const terakhirKirim = pengiriman.length ? tglStr(pengiriman[0].tanggal) : null; // sudah urut terbaru dulu
   const acuan = terakhirKirim || tglStr(po.tanggal);
   const hariTunggu = Math.max(selisihHari(today, acuan), 0);
 
   return {
     ...po,
     items,
+    pengiriman,
+    perluKonfirmasi: auto?.perlu || [],
+    dilepas: auto?.dilepas || [],
     namaCustomerTampil: po.customer?.nama || po.namaCustomer || "",
     subtotal,
     ppn,
@@ -171,6 +200,16 @@ function bacaBody(req) {
   };
 }
 
+// ringkasPo + hitungan otomatis dari Surat Jalan (1 PO atau banyak PO sekaligus)
+async function ringkasLengkap(po) {
+  const peta = await petakanOtomatis([po]);
+  return ringkasPo(po, peta.get(po.id));
+}
+async function ringkasBanyak(list) {
+  const peta = await petakanOtomatis(list);
+  return list.map((po) => ringkasPo(po, peta.get(po.id)));
+}
+
 async function ambilPo(req, id) {
   return prisma.purchaseOrder.findFirst({ where: { id, ...scopeDivisi(req) }, include: INCLUDE });
 }
@@ -183,7 +222,7 @@ router.get("/", async (req, res, next) => {
       include: INCLUDE,
       orderBy: [{ tanggal: "desc" }, { createdAt: "desc" }],
     });
-    let hasil = list.map(ringkasPo);
+    let hasil = await ringkasBanyak(list);
     const st = String(req.query.status || "");
     if (st === "terbuka") hasil = hasil.filter((p) => p.status === "BARU" || p.status === "SEBAGIAN");
     else if (st) hasil = hasil.filter((p) => p.status === st.toUpperCase());
@@ -207,7 +246,7 @@ router.get("/:id", async (req, res, next) => {
   try {
     const po = await ambilPo(req, req.params.id);
     if (!po) return res.status(404).json({ error: "PO tidak ditemukan" });
-    res.json(ringkasPo(po));
+    res.json(await ringkasLengkap(po));
   } catch (e) {
     next(e);
   }
@@ -250,7 +289,7 @@ router.post("/", async (req, res, next) => {
     } else {
       po = await buat(data.no);
     }
-    res.status(201).json(ringkasPo(po));
+    res.status(201).json(await ringkasLengkap(po));
   } catch (e) {
     if (e.code === "P2002") return res.status(409).json({ error: "Nomor PO ini sudah pernah dicatat" });
     next(e);
@@ -300,7 +339,7 @@ router.put("/:id", async (req, res, next) => {
             })
       ),
     ]);
-    res.json(ringkasPo(await ambilPo(req, lama.id)));
+    res.json(await ringkasLengkap(await ambilPo(req, lama.id)));
   } catch (e) {
     if (e.code === "P2002") return res.status(409).json({ error: "Nomor PO ini sudah dipakai PO lain" });
     next(e);
@@ -313,7 +352,7 @@ router.patch("/:id/batal", async (req, res, next) => {
     const po = await ambilPo(req, req.params.id);
     if (!po) return res.status(404).json({ error: "PO tidak ditemukan" });
     await prisma.purchaseOrder.update({ where: { id: po.id }, data: { batal: !!req.body?.batal } });
-    res.json(ringkasPo(await ambilPo(req, po.id)));
+    res.json(await ringkasLengkap(await ambilPo(req, po.id)));
   } catch (e) {
     next(e);
   }
@@ -355,7 +394,7 @@ router.post("/:id/pengiriman", async (req, res, next) => {
         catatan: bersih(b.catatan),
       },
     });
-    res.status(201).json(ringkasPo(await ambilPo(req, po.id)));
+    res.status(201).json(await ringkasLengkap(await ambilPo(req, po.id)));
   } catch (e) {
     next(e);
   }
@@ -368,7 +407,71 @@ router.delete("/:id/pengiriman/:pid", async (req, res, next) => {
     const p = po.pengiriman.find((x) => x.id === req.params.pid);
     if (!p) return res.status(404).json({ error: "Data pengiriman tidak ditemukan" });
     await prisma.poPengiriman.delete({ where: { id: p.id } });
-    res.json(ringkasPo(await ambilPo(req, po.id)));
+    res.json(await ringkasLengkap(await ambilPo(req, po.id)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ---- Konfirmasi pencocokan Surat Jalan -> PO ----
+// SJ yang alamat/barangnya tidak persis sama muncul di "perluKonfirmasi"; user
+// memutuskan hubungkan (dan barang PO mana yang dikredit) atau bukan PO ini.
+async function ambilPoDanSj(req, res) {
+  const po = await ambilPo(req, req.params.id);
+  if (!po) {
+    res.status(404).json({ error: "PO tidak ditemukan" });
+    return {};
+  }
+  const sj = await prisma.suratJalan.findFirst({ where: { id: req.params.sjId, ...scopeDivisi(req) } });
+  if (!sj) {
+    res.status(404).json({ error: "Surat Jalan tidak ditemukan" });
+    return {};
+  }
+  return { po, sj };
+}
+
+// POST /api/po/:id/sj/:sjId/hubungkan  body: { itemId }
+router.post("/:id/sj/:sjId/hubungkan", async (req, res, next) => {
+  try {
+    const { po, sj } = await ambilPoDanSj(req, res);
+    if (!po) return;
+    if (po.batal) return res.status(400).json({ error: "PO ini sudah dibatalkan" });
+    const item = po.items.find((it) => it.id === String(req.body?.itemId || ""));
+    if (!item) return res.status(400).json({ error: "Pilih barang PO yang dikirim lewat Surat Jalan ini" });
+    await prisma.poSuratJalan.upsert({
+      where: { poId_suratJalanId: { poId: po.id, suratJalanId: sj.id } },
+      create: { poId: po.id, suratJalanId: sj.id, status: "TERHUBUNG", itemId: item.id },
+      update: { status: "TERHUBUNG", itemId: item.id },
+    });
+    res.json(await ringkasLengkap(await ambilPo(req, po.id)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/po/:id/sj/:sjId/tolak -> SJ ini bukan untuk PO ini (tidak dihitung & tidak ditanya lagi)
+router.post("/:id/sj/:sjId/tolak", async (req, res, next) => {
+  try {
+    const { po, sj } = await ambilPoDanSj(req, res);
+    if (!po) return;
+    await prisma.poSuratJalan.upsert({
+      where: { poId_suratJalanId: { poId: po.id, suratJalanId: sj.id } },
+      create: { poId: po.id, suratJalanId: sj.id, status: "DITOLAK" },
+      update: { status: "DITOLAK", itemId: null },
+    });
+    res.json(await ringkasLengkap(await ambilPo(req, po.id)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// DELETE /api/po/:id/sj/:sjId -> batalkan keputusan user, pencocokan kembali otomatis
+router.delete("/:id/sj/:sjId", async (req, res, next) => {
+  try {
+    const { po, sj } = await ambilPoDanSj(req, res);
+    if (!po) return;
+    await prisma.poSuratJalan.deleteMany({ where: { poId: po.id, suratJalanId: sj.id } });
+    res.json(await ringkasLengkap(await ambilPo(req, po.id)));
   } catch (e) {
     next(e);
   }

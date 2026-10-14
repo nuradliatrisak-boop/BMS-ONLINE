@@ -1,1 +1,151 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard BMS Gudang</title><link rel="stylesheet" href="style.css"></head><body><div class="topbar"><h1>Dashboard BMS Gudang</h1><div id="userbar" class="userbar"></div></div><div class="wrap"><a href="menu.html" class="btn secondary">&laquo; Menu</a><div class="card"><h2>Ringkasan</h2><div id="stats" class="loading">Memuat...</div></div><div class="card"><h2>Surat Jalan Terbaru</h2><div id="recent" class="loading"></div></div></div><script src="common.js"></script><script>(function(){var u=requireLogin();if(!u)return;document.getElementById('userbar').textContent='Login sebagai: '+u.nama+' ('+u.role+')';api.get('/surat-jalan').then(function(sj){api.get('/invoices').then(function(inv){var draft=0,final=0;for(var i=0;i<sj.length;i++)sj[i].isDraft?draft++:final++;document.getElementById('stats').innerHTML='<p><b>Draft Surat Jalan:</b> '+draft+'</p><p><b>Surat Jalan final:</b> '+final+'</p><p><b>Total Invoice:</b> '+inv.length+'</p><p><a class="btn" href="surat-jalan-list.html">Daftar Surat Jalan</a> <a class="btn" href="invoice-list.html">Daftar Invoice</a></p>';var html='<table class="sj-table"><tr><th>No</th><th>Status</th><th>Customer</th><th>Barang</th><th>M3</th></tr>';for(var j=0;j<Math.min(10,sj.length);j++){var x=sj[j];html+='<tr><td>'+x.no+'</td><td>'+(x.isDraft?'DRAFT':'FINAL')+'</td><td>'+((x.customer&&x.customer.nama)||'-')+'</td><td>'+(x.jenisBarang||'-')+'</td><td>'+fd23(x.m3||0)+'</td></tr>'}html+='</table>';document.getElementById('recent').innerHTML=html}).catch(function(e){document.getElementById('stats').textContent=e.message})}).catch(function(e){document.getElementById('stats').textContent=e.message})})();</script></body></html>
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Daftar Surat Jalan</title><link rel="stylesheet" href="style.css"></head><body><div class="topbar"><h1>Daftar Surat Jalan</h1><div id="userbar" class="userbar"></div></div><div class="wrap" style="max-width:1100px"><a href="dashboard.html" class="btn secondary">&laquo; Dashboard</a> <a href="surat-jalan.html" class="btn">+ Buat Surat Jalan</a> <a href="scan.html?tipe=sj" class="btn secondary">Scan Kamera</a><div class="card"><label style="margin-top:0">Cari</label><input id="searchBox" type="text" placeholder="Cari no SJ, tujuan, penerima, barang, no. polisi, sopir, customer... (beberapa kata boleh)" style="width:100%">
+<table style="width:100%;margin-top:6px"><tr>
+<td style="padding-right:6px"><label>Hanya tanggal</label><input id="fTanggal" type="date" style="width:100%"></td>
+<td style="padding-right:6px"><label>Dari tanggal</label><input id="fDari" type="date" style="width:100%"></td>
+<td><label>Sampai tanggal</label><input id="fSampai" type="date" style="width:100%"></td>
+</tr></table>
+<table style="width:100%"><tr>
+<td style="padding-right:6px"><label>Customer</label><select id="fCustomer" style="width:100%"><option value="">Semua customer</option></select></td>
+<td id="fDivisiCell" style="padding-right:6px;display:none"><label>Divisi</label><select id="fDivisi" style="width:100%"><option value="">Semua divisi</option></select></td>
+<td style="padding-right:6px"><label>Status</label><select id="fStatus" style="width:100%"><option value="">Semua</option><option value="draft">Draft</option><option value="final">Final</option></select></td>
+<td style="padding-right:6px"><label>TTD</label><select id="fTtd" style="width:100%"><option value="">Semua</option><option value="lengkap">TTD lengkap</option><option value="belum">Belum TTD</option></select></td>
+<td><label>Invoice</label><select id="fInvoice" style="width:100%"><option value="">Semua</option><option value="belum">Belum ditagih</option><option value="sudah">Sudah ditagih</option></select></td>
+</tr></table>
+<div style="margin-top:10px"><button class="btn secondary" id="btnHariIni" type="button">Hari ini</button> <button class="btn secondary" id="btnReset" type="button">Reset filter</button> <span id="hasilInfo" style="font-size:13px;color:#555;margin-left:8px"></span></div></div><div class="card"><div id="msg" class="msg" style="display:none"></div></div><div id="batchbar" style="display:none;margin-bottom:10px"><span id="batchcount"></span> &nbsp; <button class="btn secondary" id="btnCetakTerpilih">Cetak Terpilih</button> <button class="btn secondary" id="btnExcelTerpilih">Excel Terpilih</button> <button class="btn secondary" id="btnBatal">Batal pilih</button></div><div id="list" class="loading">Memuat...</div></div></div><script src="common.js"></script><script src="print.js"></script><script>(function(){
+var u=requireLogin();if(!u)return;
+document.getElementById('userbar').textContent='Login sebagai: '+u.nama;
+var box=document.getElementById('list'),msg=document.getElementById('msg');
+var batchbar=document.getElementById('batchbar'),batchcount=document.getElementById('batchcount');
+var data=[]; // data terakhir dari server, dipakai lagi biar tombol Terpilih tidak perlu fetch ulang
+var selected={}; // map id -> true
+
+function fdate(v){var d=new Date(v);return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear()}
+
+function selectedList(){
+  var out=[];
+  for(var i=0;i<data.length;i++){ if(selected[data[i].id]) out.push(data[i]); }
+  return out;
+}
+
+function updateBatchBar(){
+  var n=selectedList().length;
+  if(n>0){ batchbar.style.display='block'; batchcount.textContent=n+' dipilih'; }
+  else { batchbar.style.display='none'; }
+}
+
+var loadSeq=0;
+var FIELDS=[['searchBox','search'],['fTanggal','tanggal'],['fDari','dari'],['fSampai','sampai'],['fCustomer','customerId'],['fDivisi','divisi'],['fStatus','status'],['fTtd','ttd'],['fInvoice','invoice']];
+function buildQuery(){
+  var p=[];
+  for(var i=0;i<FIELDS.length;i++){
+    var v=(document.getElementById(FIELDS[i][0]).value||'').trim();
+    if(!v) continue;
+    // 'Hanya tanggal' menang atas dari/sampai (sama seperti di server)
+    p.push(FIELDS[i][1]+'='+encodeURIComponent(v));
+  }
+  return p.length?('?'+p.join('&')):'';
+}
+function adaFilter(){return buildQuery()!=='';}
+
+function load(){
+  var url='/surat-jalan'+buildQuery();
+  var reqId=++loadSeq;
+  api.get(url).then(function(a){
+    if(reqId!==loadSeq) return; // balasan lama, abaikan
+    data=a; selected={}; updateBatchBar();
+    document.getElementById('hasilInfo').textContent=a.length+' surat jalan'+(adaFilter()?' (sesuai filter)':'');
+    if(!a.length){ box.innerHTML='<div class="card">Tidak ada surat jalan yang cocok dengan filter.</div>'; return; }
+    var h='<table class="sj-table"><tr><th></th><th>No SJ</th><th>Tanggal</th><th>Customer</th><th>Tujuan</th><th>Barang</th><th>M3</th><th>Status</th><th>Aksi</th></tr>';
+    for(var i=0;i<a.length;i++){
+      var x=a[i];
+      h+='<tr><td><input type="checkbox" class="pilih" data-id="'+x.id+'"></td><td>'+x.no+'</td><td>'+fdate(x.tanggal)+'</td><td>'+((x.customer&&x.customer.nama)||'-')+'</td><td>'+escapeHtml(x.tujuan||'-')+'</td><td>'+(x.jenisBarang||'-')+'</td><td>'+fd23(x.m3||0)+'</td><td>'+(x.isDraft?'DRAFT':'FINAL')+'</td><td><button class="btn edit" data-id="'+x.id+'">Edit</button> <button class="btn secondary print" data-id="'+x.id+'">Print</button> <button class="btn secondary xlsx" data-id="'+x.id+'" data-no="'+x.no+'">Excel</button> <button class="btn danger del" data-id="'+x.id+'">Hapus</button></td></tr>';
+    }
+    h+='</table>';
+    box.innerHTML=h;
+
+    var cs=box.getElementsByClassName('pilih');
+    for(var c=0;c<cs.length;c++)cs[c].onchange=function(){
+      var id=this.getAttribute('data-id');
+      if(this.checked) selected[id]=true; else delete selected[id];
+      updateBatchBar();
+    };
+
+    var bs=box.getElementsByClassName('edit');
+    for(var j=0;j<bs.length;j++)bs[j].onclick=function(){location.href='surat-jalan.html?id='+encodeURIComponent(this.getAttribute('data-id'))};
+
+    var ps=box.getElementsByClassName('print');
+    for(var k=0;k<ps.length;k++)ps[k].onclick=function(){var id=this.getAttribute('data-id');api.get('/surat-jalan/'+id).then(printSJ)};
+
+    // Export ke Excel satu SJ - dicetak lewat Excel (Page Setup tersimpan
+    // di file, lebih stabil di kertas continuous form daripada lewat
+    // dialog print browser yang settingnya suka balik ke default).
+    var xs=box.getElementsByClassName('xlsx');
+    for(var m=0;m<xs.length;m++)xs[m].onclick=function(){
+      var btn=this,id=btn.getAttribute('data-id'),no=btn.getAttribute('data-no');
+      btn.disabled=true;
+      api.download('/surat-jalan/'+id+'/export-xlsx','SJ-'+no+'.xlsx').then(function(){btn.disabled=false}).catch(function(e){btn.disabled=false;showMsg(msg,e.message,'err')});
+    };
+
+    var ds=box.getElementsByClassName('del');
+    for(var l=0;l<ds.length;l++)ds[l].onclick=function(){var id=this.getAttribute('data-id');if(!confirm('Hapus Surat Jalan ini?'))return;api.del('/surat-jalan/'+id).then(load).catch(function(e){showMsg(msg,e.message,'err')})};
+  }).catch(function(e){box.textContent=e.message});
+}
+
+// Cetak beberapa SJ yang dicentang sekaligus lewat browser, berurutan
+// tanpa jeda (print.js sudah mendukung array).
+document.getElementById('btnCetakTerpilih').onclick=function(){
+  var items=selectedList();
+  if(!items.length){ showMsg(msg,'Pilih dulu Surat Jalan yang mau dicetak','err'); return; }
+  printSJ(items);
+};
+
+// Export beberapa SJ yang dicentang jadi SATU file .xlsx (satu sheet per
+// SJ). Waktu diprint di PC print, HARUS diprint sebagai satu file/workbook
+// sekaligus (bukan sheet satu-satu) supaya kertas terus nyambung tanpa
+// jeda - lihat PrintSJExcel.vbs, sudah disesuaikan untuk ini.
+document.getElementById('btnExcelTerpilih').onclick=function(){
+  var items=selectedList();
+  if(!items.length){ showMsg(msg,'Pilih dulu Surat Jalan yang mau di-export','err'); return; }
+  var ids=[]; for(var i=0;i<items.length;i++) ids.push(items[i].id);
+  var btn=this; btn.disabled=true;
+  api.download('/surat-jalan/export-xlsx-batch','SJ-Batch-'+ids.length+'dok.xlsx',{method:'POST',body:{ids:ids}})
+    .then(function(){btn.disabled=false})
+    .catch(function(e){btn.disabled=false;showMsg(msg,e.message,'err')});
+};
+
+document.getElementById('btnBatal').onclick=function(){
+  selected={};
+  var cs=box.getElementsByClassName('pilih');
+  for(var c=0;c<cs.length;c++)cs[c].checked=false;
+  updateBatchBar();
+};
+
+// isi dropdown customer (dan divisi untuk admin)
+api.get('/customers').then(function(cs){
+  var sel=document.getElementById('fCustomer'),dv={},dvList=[];
+  for(var i=0;i<cs.length;i++){
+    var o=document.createElement('option');o.value=cs[i].id;o.textContent=cs[i].nama;sel.appendChild(o);
+    if(cs[i].divisi&&!dv[cs[i].divisi]){dv[cs[i].divisi]=true;dvList.push(cs[i].divisi);}
+  }
+  if(u.role==='ADMIN'&&dvList.length){
+    var ds=document.getElementById('fDivisi');
+    for(var j=0;j<dvList.length;j++){var d=document.createElement('option');d.value=dvList[j];d.textContent=dvList[j];ds.appendChild(d);}
+    document.getElementById('fDivisiCell').style.display='';
+  }
+}).catch(function(){});
+
+load();
+
+var searchDebounce=null;
+document.getElementById('searchBox').oninput=function(){
+  clearTimeout(searchDebounce);
+  searchDebounce=setTimeout(load,350);
+};
+var ids=['fTanggal','fDari','fSampai','fCustomer','fDivisi','fStatus','fTtd','fInvoice'];
+for(var n=0;n<ids.length;n++){document.getElementById(ids[n]).onchange=load;}
+document.getElementById('btnHariIni').onclick=function(){document.getElementById('fTanggal').value=todayStr();load();};
+document.getElementById('btnReset').onclick=function(){
+  for(var i=0;i<FIELDS.length;i++){document.getElementById(FIELDS[i][0]).value='';}
+  load();
+};
+})();</script></body></html>

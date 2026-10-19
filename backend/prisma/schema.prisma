@@ -91,6 +91,7 @@ model Customer {
   tensiv    Tensiv[]
   recipients CustomerRecipient[]
   purchaseOrders PurchaseOrder[]
+  proyekKontraktor ProyekKontraktor[]
 }
 
 // Daftar "Penerima" pengiriman milik seorang Customer, beserta alamat
@@ -313,6 +314,9 @@ model Invoice {
   halaman     Int      @default(1)
   status      StatusPembayaran @default(BELUM)
   catatan     String?
+  // Opsional: invoice ini bagian dari proyek Kontraktor mana (menu "Proyek Kontraktor")
+  proyekId    String?
+  proyek      ProyekKontraktor? @relation(fields: [proyekId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 
   items       InvoiceItem[]
@@ -677,6 +681,62 @@ model PoSuratJalan {
 
   @@unique([poId, suratJalanId])
   @@index([suratJalanId])
+}
+
+// ------------------------------------------------------------------
+// PROYEK KONTRAKTOR (Divisi Kontraktor) -- rekap per proyek: tagihan (dari
+// Invoice yang ditautkan lewat Invoice.proyekId), pembayaran (dari Pembayaran
+// invoice tsb), pengeluaran/HPP, diskon, dan margin bersih. Ini pengganti
+// kertas coretan "total tagihan - pengeluaran = margin" per proyek.
+//
+//   Tagihan  = jumlah semua baris invoice yang ditautkan ke proyek ini
+//   Margin   = Tagihan - (HPP - Potongan HPP) - Diskon
+//
+// Tiap baris biaya (ProyekBiaya) otomatis dicerminkan ke Laporan Divisi
+// Kontraktor > Pengeluaran (DivisiTx, kolom `sumber` = "AUTO_PROYEK:<id>"),
+// jadi laba rugi divisi ikut terisi tanpa input dua kali. Tagihan TIDAK
+// dicerminkan karena Laporan Divisi sudah otomatis menjumlah Invoice divisi
+// tsb ("Invoice (Sistem)").
+// ------------------------------------------------------------------
+model ProyekKontraktor {
+  id           String    @id @default(cuid())
+  nama         String    // mis. "Pulau Tidung"
+  divisi       String    @default("Kontraktor")
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  namaCustomer String?   // nama pemesan (teks bebas) kalau belum ada di master Customer
+  lokasi       String?
+  catatan      String?
+  createdAt    DateTime  @default(now())
+
+  invoices Invoice[]
+  biaya    ProyekBiaya[]
+
+  @@index([customerId])
+  @@index([divisi])
+}
+
+// jenis:
+//   HPP          = pengeluaran/modal proyek (beli barang, sewa kapal, kuli, dst)
+//   POTONGAN_HPP = pengurang HPP (mis. sisa pasir yang dikembalikan/dijual lagi)
+//   DISKON       = diskon yang diberikan ke customer (mengurangi margin)
+// nominal selalu POSITIF; tandanya ditentukan dari `jenis`.
+model ProyekBiaya {
+  id          String           @id @default(cuid())
+  proyekId    String
+  proyek      ProyekKontraktor @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  jenis       String           @default("HPP")
+  tanggal     DateTime
+  uraian      String
+  qty         Float?
+  satuan      String?
+  hargaSatuan Float?
+  nominal     Float
+  catatan     String?
+  urut        Int              @default(0)
+  createdAt   DateTime         @default(now())
+
+  @@index([proyekId])
 }
 
 model PrintCalib {

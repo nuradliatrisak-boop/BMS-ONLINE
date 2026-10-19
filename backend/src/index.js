@@ -29,6 +29,7 @@ import uangMakanAlatRoutes from "./routes/uangMakanAlat.js";
 import laporanNetRoutes from "./routes/laporanNet.js";
 import scanRoutes from "./routes/scan.js";
 import poRoutes from "./routes/po.js";
+import proyekRoutes from "./routes/proyek.js";
 
 import { requireAuth, requireRole } from "./middleware/auth.js";
 
@@ -95,6 +96,7 @@ app.use("/api/sopir", requireAuth, sopirRoutes);
 app.use("/api/uang-makan-alat", requireAuth, uangMakanAlatRoutes);
 app.use("/api/laporan-net", requireAuth, requireRole("ADMIN"), laporanNetRoutes);
 app.use("/api/po", requireAuth, poRoutes);
+app.use("/api/proyek", requireAuth, proyekRoutes);
 
 // Penanganan error terpusat
 app.use((err, req, res, next) => {

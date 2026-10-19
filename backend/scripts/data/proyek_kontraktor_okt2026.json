@@ -1,0 +1,682 @@
+{
+ "proyek": [
+  {
+   "nama": "Pulau Tidung",
+   "customer": "Bp. Michael",
+   "lokasi": "Pulau Tidung",
+   "catatan": "Angkutan material via kapal ke Pulau Tidung. Rekap dari invoice BMS - OM001 & OM002 + catatan tulisan tangan.",
+   "invoices": [
+    {
+     "no": "BMS - OM001",
+     "tanggal": "2026-10-05",
+     "totalKertas": 85834000,
+     "items": [
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Tidung - BMS 20 (SJ 01703, 28 Sep 2026)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 15000000
+      },
+      {
+       "keterangan": "Pasir pasang (SJ 01703)",
+       "qty": 18,
+       "satuan": "m3",
+       "hargaSatuan": 230000
+      },
+      {
+       "keterangan": "Biaya pengemasan karung + jasa (SJ 01703)",
+       "qty": 990,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Batu belah (SJ 01703)",
+       "qty": 24,
+       "satuan": "m3",
+       "hargaSatuan": 280000
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Tidung - BMS 20 (SJ 01953, 3 Okt 2026)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 15000000
+      },
+      {
+       "keterangan": "Semen (SJ 01953)",
+       "qty": 400,
+       "satuan": "sak",
+       "hargaSatuan": 64000
+      },
+      {
+       "keterangan": "Biaya kuli turun semen 3 mobil (SJ 01953)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 750000
+      },
+      {
+       "keterangan": "Kaso 5/7 (SJ 01953)",
+       "qty": 52,
+       "satuan": "btg",
+       "hargaSatuan": 38000
+      },
+      {
+       "keterangan": "Kaso 4/6 (SJ 01953)",
+       "qty": 36,
+       "satuan": "btg",
+       "hargaSatuan": 28000
+      },
+      {
+       "keterangan": "Dolken (SJ 01953)",
+       "qty": 60,
+       "satuan": "btg",
+       "hargaSatuan": 50000
+      },
+      {
+       "keterangan": "Triplek (SJ 01953)",
+       "qty": 50,
+       "satuan": "lbr",
+       "hargaSatuan": 170000
+      },
+      {
+       "keterangan": "Kuli turun kaso, dolken, triplek (SJ 01953)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 200000
+      },
+      {
+       "keterangan": "Paku 7 (SJ 01953)",
+       "qty": 7,
+       "satuan": "kg",
+       "hargaSatuan": 25000
+      },
+      {
+       "keterangan": "Paku 6 (SJ 01953)",
+       "qty": 6,
+       "satuan": "kg",
+       "hargaSatuan": 25000
+      },
+      {
+       "keterangan": "Bendrat (SJ 01953)",
+       "qty": 3,
+       "satuan": "roll",
+       "hargaSatuan": 380000
+      }
+     ],
+     "pembayaran": [
+      {
+       "tanggal": "2026-09-22",
+       "nominal": 30000000,
+       "metode": "Bank BCA"
+      }
+     ]
+    },
+    {
+     "no": "BMS - OM002",
+     "tanggal": "2026-10-12",
+     "totalKertas": 33952000,
+     "items": [
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Tidung - Mandala Wangi (SJ 02877, 9 Okt 2026)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 15000000
+      },
+      {
+       "keterangan": "Batu split (SJ 02877)",
+       "qty": 20,
+       "satuan": "m3",
+       "hargaSatuan": 380000
+      },
+      {
+       "keterangan": "Biaya pengemasan karung + jasa (SJ 02877)",
+       "qty": 1100,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Batu belah (SJ 02877)",
+       "qty": 5,
+       "satuan": "m3",
+       "hargaSatuan": 280000
+      },
+      {
+       "keterangan": "Kaso 5/7 (SJ 02877)",
+       "qty": 163,
+       "satuan": "btg",
+       "hargaSatuan": 38000
+      },
+      {
+       "keterangan": "Kaso 4/6 (SJ 02877)",
+       "qty": 36,
+       "satuan": "btg",
+       "hargaSatuan": 28000
+      }
+     ],
+     "pembayaran": []
+    }
+   ],
+   "biaya": [
+    {
+     "jenis": "HPP",
+     "uraian": "Angkutan 3 kapal",
+     "qty": 3,
+     "satuan": "kapal",
+     "hargaSatuan": 11200000,
+     "nominal": 33600000
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Semen",
+     "qty": 400,
+     "satuan": "sak",
+     "hargaSatuan": 59600,
+     "nominal": 23840000
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Pasir pasang",
+     "qty": 18,
+     "satuan": "m3",
+     "hargaSatuan": 175000,
+     "nominal": 3150000
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Batu belah",
+     "qty": 29,
+     "satuan": "m3",
+     "hargaSatuan": 210000,
+     "nominal": 6090000
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Batu split",
+     "qty": 20,
+     "satuan": "m3",
+     "hargaSatuan": 380000,
+     "nominal": 7600000
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Karungan",
+     "qty": 2090,
+     "satuan": "krg",
+     "hargaSatuan": 1500,
+     "nominal": 3135000
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Dolken 60 batang",
+     "qty": null,
+     "satuan": null,
+     "hargaSatuan": null,
+     "nominal": 2700000
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Kaso + triplek",
+     "qty": null,
+     "satuan": null,
+     "hargaSatuan": null,
+     "nominal": 14150000,
+     "catatan": "Angka tulisan tangan kurang jelas; dihitung dari total pengeluaran 95.930.000"
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Paku + bendrat",
+     "qty": null,
+     "satuan": null,
+     "hargaSatuan": null,
+     "nominal": 1465000
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Kuli turun",
+     "qty": null,
+     "satuan": null,
+     "hargaSatuan": null,
+     "nominal": 200000,
+     "catatan": "Angka tulisan tangan kurang jelas; dihitung dari total pengeluaran 95.930.000"
+    }
+   ],
+   "tanggalBiaya": "2026-10-12",
+   "kertas": {
+    "totalTagihan": 119786000,
+    "totalPengeluaran": 95930000,
+    "margin": 23856000
+   }
+  },
+  {
+   "nama": "Pasir Bangka - Pulau Kelor",
+   "customer": "PT Arum Anugrah",
+   "lokasi": "Pulau Kelor",
+   "catatan": "Pengiriman pasir Bangka ke Pulau Kelor (27.500 karung / 55 karung per m3 = 500 m3), 17 rit kapal. Rekapan 001/INV-BMS/X/2026 tgl 15 Okt 2026.",
+   "invoices": [
+    {
+     "no": "BMS-AA.001",
+     "tanggal": "2026-10-15",
+     "totalKertas": 512267500,
+     "items": [
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - INSA IV (SJ 01862, 17 Sep)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 2.200 krg - INSA IV (SJ 01862. 17 Sep)",
+       "qty": 40.0,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - INSA IV (SJ 01862, 17 Sep)",
+       "qty": 2200,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - BMS 2 (SJ 01951, 24 Sep)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 2.200 krg - BMS 2 (SJ 01951. 24 Sep)",
+       "qty": 40.0,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - BMS 2 (SJ 01951, 24 Sep)",
+       "qty": 2200,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - INSA IV (Kapal Tengelam) (SJ 02874, 25 Sep)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 7000000
+      },
+      {
+       "keterangan": "Pasir Bangka 717 krg - INSA IV (Kapal Tengelam) (SJ 02874. 25 Sep)",
+       "qty": 13.036363636363637,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - INSA IV (Kapal Tengelam) (SJ 02874, 25 Sep)",
+       "qty": 717,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - Mandala Wanggi 1 (SJ 01968, 26 Sep)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.200 krg - Mandala Wanggi 1 (SJ 01968. 26 Sep)",
+       "qty": 21.818181818181817,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - Mandala Wanggi 1 (SJ 01968, 26 Sep)",
+       "qty": 1200,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - BM II (SJ 01967, 26 Sep)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.360 krg - BM II (SJ 01967. 26 Sep)",
+       "qty": 24.727272727272727,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - BM II (SJ 01967, 26 Sep)",
+       "qty": 1360,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - Mandala Wanggi 1 (SJ 01702, 28 Sep)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.200 krg - Mandala Wanggi 1 (SJ 01702. 28 Sep)",
+       "qty": 21.818181818181817,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - Mandala Wanggi 1 (SJ 01702, 28 Sep)",
+       "qty": 1200,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - Mandala Wanggi 1 (SJ 01705, 30 Sep)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.600 krg - Mandala Wanggi 1 (SJ 01705. 30 Sep)",
+       "qty": 29.09090909090909,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - Mandala Wanggi 1 (SJ 01705, 30 Sep)",
+       "qty": 1600,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - BMS 20 (SJ 01706, 30 Sep)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.800 krg - BMS 20 (SJ 01706. 30 Sep)",
+       "qty": 32.72727272727273,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - BMS 20 (SJ 01706, 30 Sep)",
+       "qty": 1800,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - Mandala Wanggi 1 (SJ 01710, 2 Okt)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.600 krg - Mandala Wanggi 1 (SJ 01710. 2 Okt)",
+       "qty": 29.09090909090909,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - Mandala Wanggi 1 (SJ 01710, 2 Okt)",
+       "qty": 1600,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - BMS 2 (SJ 01954, 3 Okt)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.800 krg - BMS 2 (SJ 01954. 3 Okt)",
+       "qty": 32.72727272727273,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - BMS 2 (SJ 01954, 3 Okt)",
+       "qty": 1800,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - Mandala Wanggi 1 (SJ 02860, 5 Okt)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.600 krg - Mandala Wanggi 1 (SJ 02860. 5 Okt)",
+       "qty": 29.09090909090909,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - Mandala Wanggi 1 (SJ 02860, 5 Okt)",
+       "qty": 1600,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - BM II (SJ 02858, 5 Okt)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.600 krg - BM II (SJ 02858. 5 Okt)",
+       "qty": 29.09090909090909,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - BM II (SJ 02858, 5 Okt)",
+       "qty": 1600,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - BMS 20 (SJ 02859, 5 Okt)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.360 krg - BMS 20 (SJ 02859. 5 Okt)",
+       "qty": 24.727272727272727,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - BMS 20 (SJ 02859, 5 Okt)",
+       "qty": 1360,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Tanah merah (ikut pengiriman SJ 02859, tanpa tagihan)",
+       "qty": 100,
+       "satuan": "krg",
+       "hargaSatuan": 0
+      },
+      {
+       "keterangan": "Pohon (ikut pengiriman SJ 02859, tanpa tagihan)",
+       "qty": 3,
+       "satuan": "btg",
+       "hargaSatuan": 0
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - BMS 2 (SJ 01999, 6 Okt)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 2.000 krg - BMS 2 (SJ 01999. 6 Okt)",
+       "qty": 36.36363636363637,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - BMS 2 (SJ 01999, 6 Okt)",
+       "qty": 2000,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - Mandala Wanggi 1 (SJ 02868, 7 Okt)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.600 krg - Mandala Wanggi 1 (SJ 02868. 7 Okt)",
+       "qty": 29.09090909090909,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - Mandala Wanggi 1 (SJ 02868, 7 Okt)",
+       "qty": 1600,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Kanstin (ikut pengiriman SJ 02868, tanpa tagihan)",
+       "qty": 150,
+       "satuan": "bh",
+       "hargaSatuan": 0
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - BMS 2 (SJ 02872, 8 Okt)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 2.000 krg - BMS 2 (SJ 02872. 8 Okt)",
+       "qty": 36.36363636363637,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - BMS 2 (SJ 02872, 8 Okt)",
+       "qty": 2000,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      },
+      {
+       "keterangan": "Jasa Angkutan Kapal Pulau Kelor - BMS 2 (SJ 02880, 12 Okt)",
+       "qty": 1,
+       "satuan": "ls",
+       "hargaSatuan": 14000000
+      },
+      {
+       "keterangan": "Pasir Bangka 1.663 krg - BMS 2 (SJ 02880. 12 Okt)",
+       "qty": 30.236363636363638,
+       "satuan": "m3",
+       "hargaSatuan": 425000
+      },
+      {
+       "keterangan": "Kuli karung tali - BMS 2 (SJ 02880, 12 Okt)",
+       "qty": 1670,
+       "satuan": "krg",
+       "hargaSatuan": 2500
+      }
+     ],
+     "pembayaran": [
+      {
+       "tanggal": "2026-09-11",
+       "nominal": 70000000
+      },
+      {
+       "tanggal": "2026-09-12",
+       "nominal": 80000000
+      },
+      {
+       "tanggal": "2026-09-18",
+       "nominal": 50000000
+      },
+      {
+       "tanggal": "2026-10-01",
+       "nominal": 50000000
+      },
+      {
+       "tanggal": "2026-10-09",
+       "nominal": 50000000
+      },
+      {
+       "tanggal": "2026-10-12",
+       "nominal": 25000000
+      }
+     ]
+    }
+   ],
+   "biaya": [
+    {
+     "jenis": "HPP",
+     "uraian": "Beli pasir Bangka 426 m3",
+     "qty": 426,
+     "satuan": "m3",
+     "hargaSatuan": null,
+     "nominal": 169000000
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Pasir Cilegon 5 mobil",
+     "qty": 26.5,
+     "satuan": "m3",
+     "hargaSatuan": 175000,
+     "nominal": 4637500
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Kapal 17 rit",
+     "qty": 17,
+     "satuan": "rit",
+     "hargaSatuan": 11200000,
+     "nominal": 190400000
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Karungan",
+     "qty": 27500,
+     "satuan": "krg",
+     "hargaSatuan": 1500,
+     "nominal": 41250000
+    },
+    {
+     "jenis": "HPP",
+     "uraian": "Pok Tronton Bangun 18 rit",
+     "qty": 18,
+     "satuan": "rit",
+     "hargaSatuan": 400000,
+     "nominal": 7200000,
+     "catatan": "Tulisan tangan: 'Pok Tronton Bangun' (cek ejaan)"
+    },
+    {
+     "jenis": "POTONGAN_HPP",
+     "uraian": "Bangka sisa 2 mobil",
+     "qty": 9,
+     "satuan": "m3",
+     "hargaSatuan": 400000,
+     "nominal": 3600000,
+     "catatan": "Sesuai catatan: 9 x 400.000"
+    },
+    {
+     "jenis": "DISKON",
+     "uraian": "Diskon untuk customer",
+     "qty": null,
+     "satuan": null,
+     "hargaSatuan": null,
+     "nominal": 20000000
+    }
+   ],
+   "tanggalBiaya": "2026-10-15",
+   "kertas": {
+    "totalTagihan": 512267500,
+    "totalPengeluaran": 408888000,
+    "margin": 83379000,
+    "catatanSelisih": "Catatan tulisan tangan memakai angka dibulatkan ribuan (tagihan 512.267.000, pengeluaran 408.888.000), jadi margin kertas 83.379.000; hitungan sistem 83.380.000."
+   }
+  }
+ ]
+}

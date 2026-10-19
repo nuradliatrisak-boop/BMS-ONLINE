@@ -3,6 +3,15 @@ import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
 import { DIVISI_LIST, DIVISI_CONFIG, getMirrorTarget, MIRROR_SOURCE_PREFIX } from "../config/divisiConfig.js";
 
+// Baris pengeluaran yang dicerminkan otomatis dari menu "Proyek Kontraktor"
+// (lihat routes/proyek.js) -- diedit/dihapus dari menu Proyek, bukan di sini.
+const PROYEK_SUMBER_PREFIX = "AUTO_PROYEK:";
+function isAutoProyek(tx) {
+  return !!tx?.sumber && tx.sumber.startsWith(PROYEK_SUMBER_PREFIX);
+}
+const PESAN_AUTO_PROYEK =
+  "Transaksi ini otomatis dari menu Proyek Kontraktor. Ubah/hapus dari menu Proyek Kontraktor (bagian Pengeluaran proyek tsb).";
+
 const router = Router();
 
 // --- Sinkronisasi otomatis Armada/Alat Berat -> Supplier ("Sewa Armada &
@@ -127,6 +136,7 @@ router.put("/:id", async (req, res, next) => {
     const current = await prisma.divisiTx.findUnique({ where: { id: req.params.id } });
     if (!current) return res.status(404).json({ error: "Transaksi tidak ditemukan" });
 
+    if (isAutoProyek(current)) return res.status(400).json({ error: PESAN_AUTO_PROYEK });
     if (isAutoMirror(current)) {
       return res.status(400).json({
         error:
@@ -185,6 +195,7 @@ router.delete("/:id", async (req, res, next) => {
     const current = await prisma.divisiTx.findUnique({ where: { id: req.params.id } });
     if (!current) return res.status(404).json({ error: "Transaksi tidak ditemukan" });
 
+    if (isAutoProyek(current)) return res.status(400).json({ error: PESAN_AUTO_PROYEK });
     if (isAutoMirror(current)) {
       return res.status(400).json({
         error:

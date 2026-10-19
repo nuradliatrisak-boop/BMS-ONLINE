@@ -1,0 +1,4724 @@
+{
+ "sumber": "alexander.xls (rekapan invoice Bp. Alexander, dikirim Pak Adi)",
+ "pengiriman": [
+  {
+   "poNo": "04/PJS-RUSUN ROROTAN/X/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-12",
+   "qty": 6.5,
+   "noSuratJalan": "3192",
+   "catatan": "Excel Pak Adi BMS - OA 107 - B 9086 UYY"
+  },
+  {
+   "poNo": "04/PJS-RUSUN ROROTAN/X/2026",
+   "uraian": "Batu Belah (Colt Diesel)",
+   "tanggal": "2026-10-12",
+   "qty": 6.5,
+   "noSuratJalan": "3193",
+   "catatan": "Excel Pak Adi BMS - OA 107 - B 9086 UYY"
+  },
+  {
+   "poNo": "02/CNB-EMBUNG SEJUK/X/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-12",
+   "qty": 6.5,
+   "noSuratJalan": "3183",
+   "catatan": "Excel Pak Adi BMS - OA 105 - B 9789 UYW"
+  },
+  {
+   "poNo": "02/CNB-EMBUNG SEJUK/X/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-10-12",
+   "qty": 6.5,
+   "noSuratJalan": "3184",
+   "catatan": "Excel Pak Adi BMS - OA 105 - B 9520 UIS"
+  },
+  {
+   "poNo": "02/CNB-EMBUNG SEJUK/X/2026",
+   "uraian": "Batu Belah (Colt Diesel)",
+   "tanggal": "2026-10-12",
+   "qty": 6.5,
+   "noSuratJalan": "3185",
+   "catatan": "Excel Pak Adi BMS - OA 105 - B 9489 UYX"
+  },
+  {
+   "poNo": "02/CNB-EMBUNG SEJUK/X/2026",
+   "uraian": "Batu Belah (Colt Diesel)",
+   "tanggal": "2026-10-12",
+   "qty": 6.5,
+   "noSuratJalan": "3186",
+   "catatan": "Excel Pak Adi BMS - OA 105 - B 9789 UYW"
+  },
+  {
+   "poNo": "02/CNB-EMBUNG SEJUK/X/2026",
+   "uraian": "Batu Belah (Colt Diesel)",
+   "tanggal": "2026-10-12",
+   "qty": 6.5,
+   "noSuratJalan": "3188",
+   "catatan": "Excel Pak Adi BMS - OA 105 - B 9520 UIS"
+  },
+  {
+   "poNo": "02/CNB-EMBUNG SEJUK/X/2026",
+   "uraian": "Batu Belah (Colt Diesel)",
+   "tanggal": "2026-10-12",
+   "qty": 6.5,
+   "noSuratJalan": "3189",
+   "catatan": "Excel Pak Adi BMS - OA 105 - B 9188 UYX"
+  },
+  {
+   "poNo": "23/APM-SAL PASAR ENJO/X/2026",
+   "uraian": "Abu Batu (Colt Diesel)",
+   "tanggal": "2026-10-10",
+   "qty": 6.5,
+   "noSuratJalan": "3162",
+   "catatan": "Excel Pak Adi BMS - OA 100 - B 9069 UIS"
+  },
+  {
+   "poNo": "23/APM-SAL PASAR ENJO/X/2026",
+   "uraian": "Abu Batu (Colt Diesel)",
+   "tanggal": "2026-10-10",
+   "qty": 6.5,
+   "noSuratJalan": "3165",
+   "catatan": "Excel Pak Adi BMS - OA 100 - B 9069 UIS"
+  },
+  {
+   "poNo": "03/ASS-WADUK GIRI KENCANA/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-07",
+   "qty": 6.5,
+   "noSuratJalan": "3087",
+   "catatan": "Excel Pak Adi BMS - OA 096 - B 9069 UIS"
+  },
+  {
+   "poNo": "03/ASS-WADUK GIRI KENCANA/IX/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-10-07",
+   "qty": 6.5,
+   "noSuratJalan": "3088",
+   "catatan": "Excel Pak Adi BMS - OA 096 - B 9069 UIS"
+  },
+  {
+   "poNo": "03/ASS-WADUK GIRI KENCANA/IX/2026",
+   "uraian": "Batu Kali (Colt Diesel)",
+   "tanggal": "2026-10-07",
+   "qty": 6.5,
+   "noSuratJalan": "3089",
+   "catatan": "Excel Pak Adi BMS - OA 096 - B 9069 UIS"
+  },
+  {
+   "poNo": "10/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-09-28",
+   "qty": 6.5,
+   "noSuratJalan": "2905",
+   "catatan": "Excel Pak Adi BMS - OA 083 - B 9305 UYX"
+  },
+  {
+   "poNo": "10/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-09-28",
+   "qty": 6.5,
+   "noSuratJalan": "2908",
+   "catatan": "Excel Pak Adi BMS - OA 083 - B 9188 UYX"
+  },
+  {
+   "poNo": "10/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-01",
+   "qty": 6.5,
+   "noSuratJalan": "2980",
+   "catatan": "Excel Pak Adi BMS - OA 083 - B 9188 UYX"
+  },
+  {
+   "poNo": "10/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-08",
+   "qty": 6.5,
+   "noSuratJalan": "3106",
+   "catatan": "Excel Pak Adi BMS - OA 083 - B 9086 UYY"
+  },
+  {
+   "poNo": "10/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-10",
+   "qty": 6.5,
+   "noSuratJalan": "3163",
+   "catatan": "Excel Pak Adi BMS - OA 103 - B 9201 UYZ"
+  },
+  {
+   "poNo": "10/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-10-12",
+   "qty": 6.5,
+   "noSuratJalan": "3172",
+   "catatan": "Excel Pak Adi BMS - OA 103 - B 9201 UYZ"
+  },
+  {
+   "poNo": "10/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-14",
+   "qty": 6.5,
+   "noSuratJalan": "3232",
+   "catatan": "Excel Pak Adi BMS - OA 103 - B 9188 UYX"
+  },
+  {
+   "poNo": "19/ASS-RUMAH POMPA KALI ITEM/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-28",
+   "qty": 6.5,
+   "noSuratJalan": "2907",
+   "catatan": "Excel Pak Adi BMS - OA 085 - B 9488 UYX"
+  },
+  {
+   "poNo": "19/ASS-RUMAH POMPA KALI ITEM/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-29",
+   "qty": 6.5,
+   "noSuratJalan": "2923",
+   "catatan": "Excel Pak Adi BMS - OA 085 - B 9715 UYW"
+  },
+  {
+   "poNo": "19/ASS-RUMAH POMPA KALI ITEM/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-29",
+   "qty": 6.5,
+   "noSuratJalan": "2924",
+   "catatan": "Excel Pak Adi BMS - OA 085 - B 9488 UYX"
+  },
+  {
+   "poNo": "46/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "MopDemop",
+   "tanggal": "2026-09-29",
+   "qty": 1,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 095"
+  },
+  {
+   "poNo": "46/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Rental Excavator Breker PC 75 All in (25 jam x Rp 430.000/jam)",
+   "tanggal": "2026-09-29",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 095 - Exca PC75"
+  },
+  {
+   "poNo": "46/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Rental Excavator Breker PC 75 All in (25 jam x Rp 430.000/jam)",
+   "tanggal": "2026-09-30",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 095 - Exca PC75"
+  },
+  {
+   "poNo": "46/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Rental Excavator Breker PC 75 All in (25 jam x Rp 430.000/jam)",
+   "tanggal": "2026-10-01",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 095 - Exca PC75"
+  },
+  {
+   "poNo": "46/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Rental Excavator Breker PC 75 All in (25 jam x Rp 430.000/jam)",
+   "tanggal": "2026-10-02",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 095 - Exca PC75"
+  },
+  {
+   "poNo": "15/ASS-RUMAH POMPA KALI ITEM/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-17",
+   "qty": 6.5,
+   "noSuratJalan": "2675",
+   "catatan": "Excel Pak Adi BMS - OA 075 - B 9069 UIS"
+  },
+  {
+   "poNo": "15/ASS-RUMAH POMPA KALI ITEM/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-23",
+   "qty": 6.5,
+   "noSuratJalan": "2780",
+   "catatan": "Excel Pak Adi BMS - OA 075 - B 9715 UYW"
+  },
+  {
+   "poNo": "44/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Pasir Pasang (Tronton)",
+   "tanggal": "2026-09-15",
+   "qty": 28.98,
+   "noSuratJalan": "2624",
+   "catatan": "Excel Pak Adi BMS - OA 074 - B 9659 UYY"
+  },
+  {
+   "poNo": "44/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Pasir Pasang (Tronton)",
+   "tanggal": "2026-09-23",
+   "qty": 28.67,
+   "noSuratJalan": "2787",
+   "catatan": "Excel Pak Adi BMS - OA 074 - B 9372 UYZ"
+  },
+  {
+   "poNo": "44/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Pasir Pasang (Tronton)",
+   "tanggal": "2026-09-25",
+   "qty": 28.67,
+   "noSuratJalan": "188",
+   "catatan": "Excel Pak Adi BMS - OA 074 - B 9372 UYZ"
+  },
+  {
+   "poNo": "44/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Pasir Pasang (Tronton)",
+   "tanggal": "2026-10-10",
+   "qty": 30.96,
+   "noSuratJalan": "415",
+   "catatan": "Excel Pak Adi BMS - OA 090 - B 9320 UIS"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-24",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 084 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-26",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 084 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-27",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 084 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-29",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 104 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-30",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 104 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-01",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 104 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-02",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 104 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-04",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 104 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-07",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 104 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-08",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 104 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-09",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 104 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-10",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 104 - Exca - PC75"
+  },
+  {
+   "poNo": "06/ASS-TROTOAR H.DARIP/IX/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-11",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 104 - Exca - PC75"
+  },
+  {
+   "poNo": "16/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-12",
+   "qty": 5.3,
+   "noSuratJalan": "3182",
+   "catatan": "Excel Pak Adi BMS - OA 099 - B 9878 UYV"
+  },
+  {
+   "poNo": "20/BKP-CIBESUT/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-19",
+   "qty": 5.51,
+   "noSuratJalan": "2725",
+   "catatan": "Excel Pak Adi BMS - OA 077 - B 9305 UYX"
+  },
+  {
+   "poNo": "20/BKP-CIBESUT/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-25",
+   "qty": 5.33,
+   "noSuratJalan": "2852",
+   "catatan": "Excel Pak Adi BMS - OA 077 - B 9188 UYX"
+  },
+  {
+   "poNo": "20/BKP-CIBESUT/IX/2026",
+   "uraian": "Split 2-3 (Colt Diesel)",
+   "tanggal": "2026-09-25",
+   "qty": 5.33,
+   "noSuratJalan": "2853",
+   "catatan": "Excel Pak Adi BMS - OA 077 - B 9715 UYW"
+  },
+  {
+   "poNo": "14/CNB-INTAN VI/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-15",
+   "qty": 6.5,
+   "noSuratJalan": "2609",
+   "catatan": "Excel Pak Adi BMS - OA 076 - B 9201 UYZ"
+  },
+  {
+   "poNo": "14/CNB-INTAN VI/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-24",
+   "qty": 6.5,
+   "noSuratJalan": "2812",
+   "catatan": "Excel Pak Adi BMS - OA 076 - B 9488 UYX"
+  },
+  {
+   "poNo": "14/CNB-INTAN VI/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-01",
+   "qty": 6.5,
+   "noSuratJalan": "2988",
+   "catatan": "Excel Pak Adi BMS - OA 091 - B 9069 UIS"
+  },
+  {
+   "poNo": "14/CNB-INTAN VI/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-09",
+   "qty": 6.5,
+   "noSuratJalan": "3141",
+   "catatan": "Excel Pak Adi BMS - OA 102 - B 9201 UYZ"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 6.26,
+   "noSuratJalan": "2662",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9782 UYV"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 6.26,
+   "noSuratJalan": "2663",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9488 UYX"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 5.56,
+   "noSuratJalan": "2664",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9520 UIS"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 5.99,
+   "noSuratJalan": "2665",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9878 UYV"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 5.93,
+   "noSuratJalan": "2666",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9789 UYW"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 6.26,
+   "noSuratJalan": "2667",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9488 UYX"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 5.99,
+   "noSuratJalan": "2668",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9661 UYW"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 4.91,
+   "noSuratJalan": "2669",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9188 UYX"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 5.49,
+   "noSuratJalan": "2670",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9789 UYW"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 5.99,
+   "noSuratJalan": "2671",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9878 UYV"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-17",
+   "qty": 5.66,
+   "noSuratJalan": "2682",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9782 UYV"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-17",
+   "qty": 5.93,
+   "noSuratJalan": "2684",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9789 UYW"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-19",
+   "qty": 6.19,
+   "noSuratJalan": "2706",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9878 UYV"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-19",
+   "qty": 5.93,
+   "noSuratJalan": "2707",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9489 UYX"
+  },
+  {
+   "poNo": "12/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Sirdam (Colt Diesel)",
+   "tanggal": "2026-09-19",
+   "qty": 5.93,
+   "noSuratJalan": "2708",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9789 UYW"
+  },
+  {
+   "poNo": "01/BKP-PERBAIKAN RAWA BUAYA/IX/2026",
+   "uraian": "Makadam Uk Sedang (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 6.16,
+   "noSuratJalan": "2626",
+   "catatan": "Excel Pak Adi BMS - OA 073 - B 9715 UYW"
+  },
+  {
+   "poNo": "01/BKP-PERBAIKAN RAWA BUAYA/IX/2026",
+   "uraian": "Abu Batu (Colt Diesel)",
+   "tanggal": "2026-09-16",
+   "qty": 6.16,
+   "noSuratJalan": "2627",
+   "catatan": "Excel Pak Adi BMS - OA 073 - B 9488 UYX"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-09-15",
+   "qty": 24.78,
+   "noSuratJalan": "2622",
+   "catatan": "Excel Pak Adi BMS - OA 074 - B 9598 UYV"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-09-15",
+   "qty": 23.46,
+   "noSuratJalan": "2623",
+   "catatan": "Excel Pak Adi BMS - OA 074 - B 9320 UIS"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-09-23",
+   "qty": 24.24,
+   "noSuratJalan": "2562",
+   "catatan": "Excel Pak Adi BMS - OA 074 - B 9848 UIU"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-09-23",
+   "qty": 24.24,
+   "noSuratJalan": "2563",
+   "catatan": "Excel Pak Adi BMS - OA 074 - B 9847 UIU"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-09-25",
+   "qty": 24.24,
+   "noSuratJalan": "2799",
+   "catatan": "Excel Pak Adi BMS - OA 074 - B 9848 UIU"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-09-25",
+   "qty": 24.24,
+   "noSuratJalan": "2800",
+   "catatan": "Excel Pak Adi BMS - OA 074 - B 9847 UIU"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-09-25",
+   "qty": 24.78,
+   "noSuratJalan": "2802",
+   "catatan": "Excel Pak Adi BMS - OA 074 - B 9598 UYV"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-10-01",
+   "qty": 24.48,
+   "noSuratJalan": "2991",
+   "catatan": "Excel Pak Adi BMS - OA 090 - B 9534 UIS"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-10-01",
+   "qty": 24.24,
+   "noSuratJalan": "2992",
+   "catatan": "Excel Pak Adi BMS - OA 090 - B 9848 UIU"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-10-01",
+   "qty": 24.78,
+   "noSuratJalan": "2993",
+   "catatan": "Excel Pak Adi BMS - OA 090 - B 9598 UYV"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-10-05",
+   "qty": 24.48,
+   "noSuratJalan": "3067",
+   "catatan": "Excel Pak Adi BMS - OA 090 - B 9534 UIS"
+  },
+  {
+   "poNo": "39/LTM-WADUK CIMANGGIS/IX/2026",
+   "uraian": "Batu Belah Uk.10-20cm (Tronton)",
+   "tanggal": "2026-10-09",
+   "qty": 24.48,
+   "noSuratJalan": "3123",
+   "catatan": "Excel Pak Adi BMS - OA 090 - B 9659 UYY"
+  },
+  {
+   "poNo": "09/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Abu Batu (Colt Diesel)",
+   "tanggal": "2026-09-09",
+   "qty": 6.5,
+   "noSuratJalan": "2491",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9489 UYX"
+  },
+  {
+   "poNo": "09/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Abu Batu (Colt Diesel)",
+   "tanggal": "2026-09-09",
+   "qty": 6.5,
+   "noSuratJalan": "2492",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9661 UYW"
+  },
+  {
+   "poNo": "09/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Abu Batu (Colt Diesel)",
+   "tanggal": "2026-09-09",
+   "qty": 6.16,
+   "noSuratJalan": "2493",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9489 UYX"
+  },
+  {
+   "poNo": "09/ASS-PHB GANDUN/IX/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-09-09",
+   "qty": 6.5,
+   "noSuratJalan": "2495",
+   "catatan": "Excel Pak Adi BMS - OA 067 - B 9520 UIS"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "MopDemop",
+   "tanggal": "2026-08-30",
+   "qty": 1,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-30",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-31",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-01",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-02",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-03",
+   "qty": 3.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-04",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-06",
+   "qty": 7.5,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-08",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-09",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-10",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-11",
+   "qty": 3.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-12",
+   "qty": 3.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-13",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-14",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-15",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "05/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 75 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-16",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 065 - SANY PC 075 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "08/ASS-RUMAH POMPA KALI ITEM/IX/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-09-09",
+   "qty": 6.5,
+   "noSuratJalan": "2496",
+   "catatan": "Excel Pak Adi BMS - OA 066 - B 9069 UIS"
+  },
+  {
+   "poNo": "08/ASS-RUMAH POMPA KALI ITEM/IX/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-09",
+   "qty": 6.5,
+   "noSuratJalan": "2497",
+   "catatan": "Excel Pak Adi BMS - OA 066 - B 9789 UYW"
+  },
+  {
+   "poNo": "04/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-28",
+   "qty": 6.5,
+   "noSuratJalan": "2334",
+   "catatan": "Excel Pak Adi BMS - OA 057 - B 9201 UYZ"
+  },
+  {
+   "poNo": "04/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-08-28",
+   "qty": 6.5,
+   "noSuratJalan": "2335",
+   "catatan": "Excel Pak Adi BMS - OA 057 - B 9488 UYX"
+  },
+  {
+   "poNo": "04/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-08-29",
+   "qty": 6.5,
+   "noSuratJalan": "2346",
+   "catatan": "Excel Pak Adi BMS - OA 057 - B 9069 UIS"
+  },
+  {
+   "poNo": "04/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-05",
+   "qty": 6.5,
+   "noSuratJalan": "12",
+   "catatan": "Excel Pak Adi BMS - OA 063 - B 9201 UYZ"
+  },
+  {
+   "poNo": "04/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-29",
+   "qty": 6.5,
+   "noSuratJalan": "2931",
+   "catatan": "Excel Pak Adi BMS - OA 086 - B 9069 UIS"
+  },
+  {
+   "poNo": "04/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-06",
+   "qty": 6.5,
+   "noSuratJalan": "3076",
+   "catatan": "Excel Pak Adi BMS - OA 086 - B 9086 UYY"
+  },
+  {
+   "poNo": "04/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-09",
+   "qty": 6.5,
+   "noSuratJalan": "3124",
+   "catatan": "Excel Pak Adi BMS - OA 100 - B 9069 UIS"
+  },
+  {
+   "poNo": "04/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-10-12",
+   "qty": 6.5,
+   "noSuratJalan": "3191",
+   "catatan": "Excel Pak Adi BMS - OA 100 - B 9086 UYY"
+  },
+  {
+   "poNo": "04/APM-SAL PASAR ENJO/VIII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-10-13",
+   "qty": 6.5,
+   "noSuratJalan": "3201",
+   "catatan": "Excel Pak Adi BMS - OA 100 - B 9069 UIS"
+  },
+  {
+   "poNo": "25/BKP-SRENGSENG RAYA/VIII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-26",
+   "qty": 5.51,
+   "noSuratJalan": "2305",
+   "catatan": "Excel Pak Adi BMS - OA 055 - B 9789 UYW"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "MopDemop",
+   "tanggal": "2026-08-18",
+   "qty": 1,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 044"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-18",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 044 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-19",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 044 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-20",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 044 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-21",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 044 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-22",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 044 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-23",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 044 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-24",
+   "qty": 12.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 054 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-25",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 054 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-26",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 054 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-27",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 054 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-28",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 054 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-29",
+   "qty": 9.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 054 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-30",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 054 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-08-31",
+   "qty": 9.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 054 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-01",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 054 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-02",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 062 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-03",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 062 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-04",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 062 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-05",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 062 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-06",
+   "qty": 11.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 062 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-07",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 062 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-08",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 062 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-09",
+   "qty": 9.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 062 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-10",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 071 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-11",
+   "qty": 9.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 071 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-12",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 071 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-13",
+   "qty": 11.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 071 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-14",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 071 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-15",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 071 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-16",
+   "qty": 10.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 071 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-17",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 071 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-18",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 079 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-19",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 079 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-23",
+   "qty": 5.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 079 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-24",
+   "qty": 9.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 079 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-25",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 079 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-26",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-27",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-28",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-29",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-09-30",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-01",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-02",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-03",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-04",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-05",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-06",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-07",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-08",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-09",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-10",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (50 jam x Rp 400.000/jam)",
+   "tanggal": "2026-10-11",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 088 - Exca PC200 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Mopdemop",
+   "tanggal": "2026-08-09",
+   "qty": 1,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 038"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-09",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 038 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-10",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 038 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-11",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 038 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-12",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 038 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-13",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 038 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-14",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 038 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-15",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 038 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-16",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 038 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-18",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 038 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-19",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 038 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-20",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 049 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-21",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 049 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-22",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 049 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-23",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 049 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-24",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 052 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-25",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 052 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-26",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 052 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-27",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 052 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-28",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 052 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-29",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 052 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-30",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 052 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-08-31",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 052 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-01",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 052 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-02",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 052 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-03",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 059 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-04",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 059 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-05",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 059 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-06",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 059 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-07",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 059 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-08",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-09",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-10",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-11",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-12",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-13",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-14",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-15",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-16",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-17",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-18",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-19",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 069 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-20",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 081 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-21",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 081 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-22",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 081 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-23",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 081 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-24",
+   "qty": 11.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 081 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-25",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 081 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-26",
+   "qty": 3.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 081 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-27",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 081 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-28",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 094 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-29",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 094 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-09-30",
+   "qty": 10.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 094 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-01",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 094 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-02",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 094 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-03",
+   "qty": 10.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 094 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-04",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 094 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-05",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 094 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-06",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 098 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-06",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 098 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-07",
+   "qty": 9.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 098 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-08",
+   "qty": 11.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 098 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-09",
+   "qty": 9.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 098 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-10",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 098 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-11",
+   "qty": 10.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 098 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-12",
+   "qty": 10.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 098 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "31/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Excavator PC 50 All In",
+   "tanggal": "2026-10-13",
+   "qty": 10.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 098 - XCMG XE - 60 (unit di invoice beda dari PO)"
+  },
+  {
+   "poNo": "25/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Sirtu (Colt Diesel)",
+   "tanggal": "2026-08-13",
+   "qty": 6.5,
+   "noSuratJalan": "2155",
+   "catatan": "Excel Pak Adi BMS - OA 040 - B 9188 UYX"
+  },
+  {
+   "poNo": "21/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Batu Belah Uk 20-30 cm",
+   "tanggal": "2026-08-03",
+   "qty": 27.75,
+   "noSuratJalan": "1954",
+   "catatan": "Excel Pak Adi BMS - OA 033 - B 9656 UYX"
+  },
+  {
+   "poNo": "21/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Batu Belah Uk 20-30 cm",
+   "tanggal": "2026-08-24",
+   "qty": 25.3,
+   "noSuratJalan": "2266",
+   "catatan": "Excel Pak Adi BMS - OA 048 - B 9656 UYX"
+  },
+  {
+   "poNo": "21/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Batu Belah Uk 20-30 cm",
+   "tanggal": "2026-08-24",
+   "qty": 26.78,
+   "noSuratJalan": "2272",
+   "catatan": "Excel Pak Adi BMS - OA 048 - B 9598 UYV"
+  },
+  {
+   "poNo": "21/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Batu Belah Uk 20-30 cm",
+   "tanggal": "2026-08-24",
+   "qty": 24.48,
+   "noSuratJalan": "2273",
+   "catatan": "Excel Pak Adi BMS - OA 050 - B 9847 UIU"
+  },
+  {
+   "poNo": "21/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Batu Belah Uk 20-30 cm",
+   "tanggal": "2026-08-24",
+   "qty": 24.77,
+   "noSuratJalan": "2276",
+   "catatan": "Excel Pak Adi BMS - OA 048 - B 9848 UIU"
+  },
+  {
+   "poNo": "21/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Batu Belah Uk 20-30 cm",
+   "tanggal": "2026-08-24",
+   "qty": 25.92,
+   "noSuratJalan": "2279",
+   "catatan": "Excel Pak Adi BMS - OA 050 - B 9534 UIS"
+  },
+  {
+   "poNo": "21/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Batu Belah Uk 20-30 cm",
+   "tanggal": "2026-08-25",
+   "qty": 25.3,
+   "noSuratJalan": "2270",
+   "catatan": "Excel Pak Adi BMS - OA 048 - B 9534 UIS"
+  },
+  {
+   "poNo": "21/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Batu Belah Uk 20-30 cm",
+   "tanggal": "2026-08-25",
+   "qty": 25.3,
+   "noSuratJalan": "2277",
+   "catatan": "Excel Pak Adi BMS - OA 048 - B 9659 UYY"
+  },
+  {
+   "poNo": "21/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Batu Belah Uk 20-30 cm",
+   "tanggal": "2026-08-27",
+   "qty": 24.48,
+   "noSuratJalan": "118",
+   "catatan": "Excel Pak Adi BMS - OA 050 - B 9656 UYX"
+  },
+  {
+   "poNo": "21/PMP-KAMPUNG RAMBUTAN 1/VIII/2026",
+   "uraian": "Batu Belah Uk 20-30 cm",
+   "tanggal": "2026-08-27",
+   "qty": 24.48,
+   "noSuratJalan": "1458",
+   "catatan": "Excel Pak Adi BMS - OA 050 - B 9659 UYY"
+  },
+  {
+   "poNo": "19/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-03",
+   "qty": 5.52,
+   "noSuratJalan": "1947",
+   "catatan": "Excel Pak Adi BMS - OA 030 - B 9520 UIS"
+  },
+  {
+   "poNo": "19/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-03",
+   "qty": 5.31,
+   "noSuratJalan": "1948",
+   "catatan": "Excel Pak Adi BMS - OA 030 - B 9661 UYW"
+  },
+  {
+   "poNo": "19/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-03",
+   "qty": 5.38,
+   "noSuratJalan": "1949",
+   "catatan": "Excel Pak Adi BMS - OA 030 - B 9489 UYX"
+  },
+  {
+   "poNo": "19/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-08-04",
+   "qty": 5.38,
+   "noSuratJalan": "1968",
+   "catatan": "Excel Pak Adi BMS - OA 030 - B 9489 UYX"
+  },
+  {
+   "poNo": "19/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-08-05",
+   "qty": 5.39,
+   "noSuratJalan": "1999",
+   "catatan": "Excel Pak Adi BMS - OA 030 - B 9305 UYX"
+  },
+  {
+   "poNo": "19/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-08-12",
+   "qty": 5.33,
+   "noSuratJalan": "2126",
+   "catatan": "Excel Pak Adi BMS - OA 045 - B 9305 UYX"
+  },
+  {
+   "poNo": "19/LTM-WADUK CIMANGGIS/VIII/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-08-13",
+   "qty": 5.33,
+   "noSuratJalan": "2154",
+   "catatan": "Excel Pak Adi BMS - OA 042 - B 9305 UYX"
+  },
+  {
+   "poNo": "06/LTM-CIRACAS/VIII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-04",
+   "qty": 6.5,
+   "noSuratJalan": "1979",
+   "catatan": "Excel Pak Adi BMS - OA 031 - B 9188 UYX"
+  },
+  {
+   "poNo": "06/LTM-CIRACAS/VIII/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-08-04",
+   "qty": 6.5,
+   "noSuratJalan": "1980",
+   "catatan": "Excel Pak Adi BMS - OA 031 - B 9201 UYZ"
+  },
+  {
+   "poNo": "15/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-29",
+   "qty": 5.46,
+   "noSuratJalan": "1868",
+   "catatan": "Excel Pak Adi BMS - OA 021 - B 9365 UYX"
+  },
+  {
+   "poNo": "15/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-29",
+   "qty": 5.18,
+   "noSuratJalan": "1869",
+   "catatan": "Excel Pak Adi BMS - OA 021 - B 9789 UYW"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "MopDemop",
+   "tanggal": "2026-08-01",
+   "qty": 1,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-01",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-02",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-03",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-04",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-05",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-06",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-07",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-08",
+   "qty": 2.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-09",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-10",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-11",
+   "qty": 2.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-12",
+   "qty": 7.15,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-13",
+   "qty": 5.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 039 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-14",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 043 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-15",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 043 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-16",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 043 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-18",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 043 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-19",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 043 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-20",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 047 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-21",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 047 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-22",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 047 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-23",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 047 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-24",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 053 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-25",
+   "qty": 11.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 053 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-26",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 053 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-27",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 053 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-28",
+   "qty": 12.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 053 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-29",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 053 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-30",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 053 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-08-31",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 053 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-01",
+   "qty": 11.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 053 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-02",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 061 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-03",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 061 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-04",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 061 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-05",
+   "qty": 11.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 061 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-06",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 061 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-07",
+   "qty": 9.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 061 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-10",
+   "qty": 10.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-11",
+   "qty": 9.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-12",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-13",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-14",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-15",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-16",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-17",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-18",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-19",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-20",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-21",
+   "qty": 10.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 070 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-22",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 078 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-23",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 078 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-24",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 078 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-25",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 078 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-26",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 078 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-27",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 078 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-28",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-29",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-09-30",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-01",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-02",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-03",
+   "qty": 11.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-04",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-06",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-07",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-08",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-09",
+   "qty": 9.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-10",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-11",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-12",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "16/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Rental Excavator Long Arm PC 200 All in (100 jam x Rp 650.000/jam)",
+   "tanggal": "2026-10-13",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 087 - Hitachi LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-07-29",
+   "qty": 6.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 029 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-07-30",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 029 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-07-31",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 029 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-01",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 029 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-03",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 029 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-04",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 029 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-05",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 029 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-06",
+   "qty": 5.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 029 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-07",
+   "qty": 2.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 037 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-08",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 037 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-09",
+   "qty": 2.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 037 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-10",
+   "qty": 5.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 037 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-11",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 037 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-12",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 037 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-13",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 037 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-14",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 037 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-15",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 037 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-16",
+   "qty": 5.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 037 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-18",
+   "qty": 1.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 051 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-19",
+   "qty": 2.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 051 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-20",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 051 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-21",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 051 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-22",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 051 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-23",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 051 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-24",
+   "qty": 2.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 051 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-25",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 051 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-26",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 051 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-27",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 051 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-28",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 058 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-08-29",
+   "qty": 2.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 058 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-01",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 058 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-02",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 058 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-03",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 060 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-04",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 060 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-05",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 060 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-06",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 060 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-07",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 060 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-08",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-09",
+   "qty": 2.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-10",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-11",
+   "qty": 5.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-12",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-13",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-14",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-15",
+   "qty": 2.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-16",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-17",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-18",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-19",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 068 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-20",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 080 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-21",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 080 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-22",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 080 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-23",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 080 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-24",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 080 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-25",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 080 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-26",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 080 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-27",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 093 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-28",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 093 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-29",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 093 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-09-30",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 093 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-01",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 093 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-02",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 093 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-03",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 097 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-04",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 093 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-05",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 093 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-06",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 093 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-07",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 093 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-10",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 097 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-11",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 097 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-12",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 097 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-13",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 097 - PC-200 LongArm"
+  },
+  {
+   "poNo": "12/PMP-KAMPUNG RAMBUTAN 1/VII/2026",
+   "uraian": "Excavator PC200 Long Arm All In",
+   "tanggal": "2026-10-14",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 097 - PC-200 LongArm"
+  },
+  {
+   "poNo": "08/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Makadam 5-15 cm (Colt Diesel)",
+   "tanggal": "2026-07-21",
+   "qty": 5.51,
+   "noSuratJalan": "1737",
+   "catatan": "Excel Pak Adi BMS - OA 016 - B 9782 UYV"
+  },
+  {
+   "poNo": "08/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Makadam 5-15 cm (Colt Diesel)",
+   "tanggal": "2026-07-21",
+   "qty": 5.51,
+   "noSuratJalan": "1738",
+   "catatan": "Excel Pak Adi BMS - OA 016 - B 9782 UYV"
+  },
+  {
+   "poNo": "08/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Makadam 5-15 cm (Colt Diesel)",
+   "tanggal": "2026-07-21",
+   "qty": 5.51,
+   "noSuratJalan": "1739",
+   "catatan": "Excel Pak Adi BMS - OA 016 - B 9782 UYV"
+  },
+  {
+   "poNo": "08/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Makadam 5-15 cm (Colt Diesel)",
+   "tanggal": "2026-07-22",
+   "qty": 5.38,
+   "noSuratJalan": "1748",
+   "catatan": "Excel Pak Adi BMS - OA 021 - B 9878 UYV"
+  },
+  {
+   "poNo": "08/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Makadam 5-15 cm (Colt Diesel)",
+   "tanggal": "2026-07-22",
+   "qty": 5.38,
+   "noSuratJalan": "1749",
+   "catatan": "Excel Pak Adi BMS - OA 016 - B 9489 UYX"
+  },
+  {
+   "poNo": "08/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Makadam 5-15 cm (Colt Diesel)",
+   "tanggal": "2026-07-22",
+   "qty": 5.51,
+   "noSuratJalan": "1750",
+   "catatan": "Excel Pak Adi BMS - OA 021 - B 9782 UYV"
+  },
+  {
+   "poNo": "08/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Makadam 5-15 cm (Colt Diesel)",
+   "tanggal": "2026-07-22",
+   "qty": 5.31,
+   "noSuratJalan": "1751",
+   "catatan": "Excel Pak Adi BMS - OA 016 - B 9661 UYW"
+  },
+  {
+   "poNo": "08/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Makadam 5-15 cm (Colt Diesel)",
+   "tanggal": "2026-07-24",
+   "qty": 5.83,
+   "noSuratJalan": "1782",
+   "catatan": "Excel Pak Adi BMS - OA 021 - B 9789 UYW"
+  },
+  {
+   "poNo": "08/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Makadam 5-15 cm (Colt Diesel)",
+   "tanggal": "2026-07-24",
+   "qty": 5.38,
+   "noSuratJalan": "1783",
+   "catatan": "Excel Pak Adi BMS - OA 021 - B 9489 UYX"
+  },
+  {
+   "poNo": "08/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Makadam 5-15 cm (Colt Diesel)",
+   "tanggal": "2026-07-24",
+   "qty": 5.46,
+   "noSuratJalan": "1788",
+   "catatan": "Excel Pak Adi BMS - OA 021 - B 9305 UYX"
+  },
+  {
+   "poNo": "05/ASS-BALEKAMBANG/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-25",
+   "qty": 6.5,
+   "noSuratJalan": "1612",
+   "catatan": "Excel Pak Adi BMS - OA 019 - B 9069 UIS"
+  },
+  {
+   "poNo": "05/ASS-BALEKAMBANG/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-31",
+   "qty": 6.5,
+   "noSuratJalan": "1787",
+   "catatan": "Excel Pak Adi BMS - OA 025 - B 9715 UYW"
+  },
+  {
+   "poNo": "05/ASS-BALEKAMBANG/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-03",
+   "qty": 6.5,
+   "noSuratJalan": "1952",
+   "catatan": "Excel Pak Adi BMS - OA 025 - B 9715 UYW"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-27",
+   "qty": 24.48,
+   "noSuratJalan": "1270",
+   "catatan": "Excel Pak Adi BMS - OA 012 - B 9534 UIS"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-15",
+   "qty": 5.51,
+   "noSuratJalan": "1637",
+   "catatan": "Excel Pak Adi BMS - OA 012 - B 9789 UYW"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-15",
+   "qty": 5.51,
+   "noSuratJalan": "1638",
+   "catatan": "Excel Pak Adi BMS - OA 012 - B 9878 UYV"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-23",
+   "qty": 24.48,
+   "noSuratJalan": "401",
+   "catatan": "Excel Pak Adi BMS - OA 018 - B 9320 UIS"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-24",
+   "qty": 5.51,
+   "noSuratJalan": "1807",
+   "catatan": "Excel Pak Adi BMS - OA 018 - B 9489 UYX"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-24",
+   "qty": 5.51,
+   "noSuratJalan": "1808",
+   "catatan": "Excel Pak Adi BMS - OA 018 - B 9662 UYY"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-26",
+   "qty": 5.51,
+   "noSuratJalan": "1823",
+   "catatan": "Excel Pak Adi BMS - OA 018 - B 9661 UYW"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-26",
+   "qty": 5.51,
+   "noSuratJalan": "1824",
+   "catatan": "Excel Pak Adi BMS - OA 018 - B 9305 UYX"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-31",
+   "qty": 24.78,
+   "noSuratJalan": "1428",
+   "catatan": "Excel Pak Adi BMS - OA 027 - B 9598 UYV"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-07",
+   "qty": 5.51,
+   "noSuratJalan": "2026",
+   "catatan": "Excel Pak Adi BMS - OA 034 - B 9489 UYX"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-07",
+   "qty": 5.51,
+   "noSuratJalan": "2027",
+   "catatan": "Excel Pak Adi BMS - OA 034 - B 9782 UYV"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-12",
+   "qty": 5.51,
+   "noSuratJalan": "2134",
+   "catatan": "Excel Pak Adi BMS - OA 034 - B 9489 UYX"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-12",
+   "qty": 5.51,
+   "noSuratJalan": "2135",
+   "catatan": "Excel Pak Adi BMS - OA 034 - B 9878 UYV"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-14",
+   "qty": 5.51,
+   "noSuratJalan": "2162",
+   "catatan": "Excel Pak Adi BMS - OA 041 - B 9878 UYV"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-14",
+   "qty": 5.51,
+   "noSuratJalan": "2163",
+   "catatan": "Excel Pak Adi BMS - OA 041 - B 9789 UYW"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-22",
+   "qty": 5.51,
+   "noSuratJalan": "2256",
+   "catatan": "Excel Pak Adi BMS - OA 046 - B 9489 UYX"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-22",
+   "qty": 5.51,
+   "noSuratJalan": "2257",
+   "catatan": "Excel Pak Adi BMS - OA 046 - B 9305 UYX"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-28",
+   "qty": 5.51,
+   "noSuratJalan": "2332",
+   "catatan": "Excel Pak Adi BMS - OA 056 - B 9782 UYV"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-08-28",
+   "qty": 5.51,
+   "noSuratJalan": "2333",
+   "catatan": "Excel Pak Adi BMS - OA 056 - B 9661 UYW"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-02",
+   "qty": 5.51,
+   "noSuratJalan": "2393",
+   "catatan": "Excel Pak Adi BMS - OA 056 - B 9489 UYX"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-02",
+   "qty": 5.51,
+   "noSuratJalan": "2394",
+   "catatan": "Excel Pak Adi BMS - OA 056 - B 9188 UYX"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-07",
+   "qty": 5.51,
+   "noSuratJalan": "26",
+   "catatan": "Excel Pak Adi BMS - OA 064 - B 9661 UYW"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-07",
+   "qty": 5.51,
+   "noSuratJalan": "27",
+   "catatan": "Excel Pak Adi BMS - OA 064 - B 9520 UIS"
+  },
+  {
+   "poNo": "58/PMP-KALI KEMANGGISAN/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-09-15",
+   "qty": 5.51,
+   "noSuratJalan": "2608",
+   "catatan": "Excel Pak Adi BMS - OA 072 - B 9520 UIS"
+  },
+  {
+   "poNo": "03/APM-PAGAR PENGAMAN BALEKAMBANG/VII/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-08-03",
+   "qty": 6.5,
+   "noSuratJalan": "1953",
+   "catatan": "Excel Pak Adi BMS - OA 032 - B 9086 UYY"
+  },
+  {
+   "poNo": "04/ASS-BALEKAMBANG/VII/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-07-15",
+   "qty": 6.5,
+   "noSuratJalan": "1609",
+   "catatan": "Excel Pak Adi BMS - OA 014 - B 9201 UYZ"
+  },
+  {
+   "poNo": "04/ASS-BALEKAMBANG/VII/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-07-15",
+   "qty": 6.5,
+   "noSuratJalan": "1610",
+   "catatan": "Excel Pak Adi BMS - OA 014 - B 9086 UYY"
+  },
+  {
+   "poNo": "04/ASS-BALEKAMBANG/VII/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-07-15",
+   "qty": 6.5,
+   "noSuratJalan": "1611",
+   "catatan": "Excel Pak Adi BMS - OA 019 - B 9488 UYX"
+  },
+  {
+   "poNo": "04/ASS-BALEKAMBANG/VII/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-07-27",
+   "qty": 6.5,
+   "noSuratJalan": "1850",
+   "catatan": "Excel Pak Adi BMS - OA 019 - B 9201 UYZ"
+  },
+  {
+   "poNo": "04/ASS-BALEKAMBANG/VII/2026",
+   "uraian": "Pasir Urug (Colt Diesel)",
+   "tanggal": "2026-07-28",
+   "qty": 6.5,
+   "noSuratJalan": "1862",
+   "catatan": "Excel Pak Adi BMS - OA 019 - B 9086 UYY"
+  },
+  {
+   "poNo": "18/APM-ALKAL/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-17",
+   "qty": 6.5,
+   "noSuratJalan": "1660",
+   "catatan": "Excel Pak Adi BMS - OA 013 - B 9488 UYX"
+  },
+  {
+   "poNo": "18/APM-ALKAL/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-17",
+   "qty": 6.5,
+   "noSuratJalan": "1661",
+   "catatan": "Excel Pak Adi BMS - OA 013 - B 9789 UYW"
+  },
+  {
+   "poNo": "18/APM-ALKAL/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-22",
+   "qty": 6.5,
+   "noSuratJalan": "1761",
+   "catatan": "Excel Pak Adi BMS - OA 020 - B 9201 UYZ"
+  },
+  {
+   "poNo": "18/APM-ALKAL/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-22",
+   "qty": 6.5,
+   "noSuratJalan": "1762",
+   "catatan": "Excel Pak Adi BMS - OA 013 - B 9488 UYX"
+  },
+  {
+   "poNo": "02/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-10",
+   "qty": 4.37,
+   "noSuratJalan": "1555",
+   "catatan": "Excel Pak Adi BMS - OA 010 - B 9069 UIS"
+  },
+  {
+   "poNo": "02/LTM-WADUK CIMANGGIS/VII/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-07-10",
+   "qty": 4.34,
+   "noSuratJalan": "1556",
+   "catatan": "Excel Pak Adi BMS - OA 010 - B 9086 UYY"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-02",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-05",
+   "qty": 17.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-06",
+   "qty": 15.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-07",
+   "qty": 5.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-08",
+   "qty": 14.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-09",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-10",
+   "qty": 12.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-11",
+   "qty": 16.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-12",
+   "qty": 15.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Breker PC 100 All in (50 jam x Rp 480.000/jam)",
+   "tanggal": "2026-07-14",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 017 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-14",
+   "qty": 11.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 017 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Breker PC 100 All in (50 jam x Rp 480.000/jam)",
+   "tanggal": "2026-07-15",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 017 - SK - 100"
+  },
+  {
+   "poNo": "11/BKP-SRENGSENG RAYA/VII/2026",
+   "uraian": "Perpanjang Excavator Baket PC 100 All in (150 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-15",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 017 - SK - 100"
+  },
+  {
+   "poNo": "12/APM-ALKAL/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-07",
+   "qty": 6.5,
+   "noSuratJalan": "1471",
+   "catatan": "Excel Pak Adi BMS - OA 008 - B 9520 UIS"
+  },
+  {
+   "poNo": "12/APM-ALKAL/VII/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-07",
+   "qty": 6.5,
+   "noSuratJalan": "1472",
+   "catatan": "Excel Pak Adi BMS - OA 008 - B 9661 UYW"
+  },
+  {
+   "poNo": "12/APM-ALKAL/VII/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-07-07",
+   "qty": 6.5,
+   "noSuratJalan": "1473",
+   "catatan": "Excel Pak Adi BMS - OA 008 - B 9789 UYW"
+  },
+  {
+   "poNo": "10/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Makadam Uk Sedang (Colt Diesel)",
+   "tanggal": "2026-06-23",
+   "qty": 5.33,
+   "noSuratJalan": "1197",
+   "catatan": "Excel Pak Adi BMS - OA 002 - B 9878 UYV"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-06-18",
+   "qty": 5.33,
+   "noSuratJalan": "1117",
+   "catatan": "Excel Pak Adi BMS - OA 002 - B 9488 UYX"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-06-18",
+   "qty": 5.33,
+   "noSuratJalan": "1118",
+   "catatan": "Excel Pak Adi BMS - OA 002 - B 9086 UYY"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-06-18",
+   "qty": 5.33,
+   "noSuratJalan": "1138",
+   "catatan": "Excel Pak Adi BMS - OA 002 - B 9086 UYY"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-06-22",
+   "qty": 5.33,
+   "noSuratJalan": "1168",
+   "catatan": "Excel Pak Adi BMS - OA 002 - B 9715 UYW"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-06-23",
+   "qty": 5.33,
+   "noSuratJalan": "1198",
+   "catatan": "Excel Pak Adi BMS - OA 002 - B 9878 UYV"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-06-29",
+   "qty": 5.66,
+   "noSuratJalan": "1309",
+   "catatan": "Excel Pak Adi BMS - OA 004 - B 9305 UYX"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-06-29",
+   "qty": 5.51,
+   "noSuratJalan": "1565",
+   "catatan": "Excel Pak Adi BMS - OA 004 - B 9305 UYX"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-06",
+   "qty": 5.66,
+   "noSuratJalan": "1308",
+   "catatan": "Excel Pak Adi BMS - OA 004 - B 9305 UYX"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-17",
+   "qty": 6.5,
+   "noSuratJalan": "1673",
+   "catatan": "Excel Pak Adi BMS - OA 015 - B 9305 UYX"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-18",
+   "qty": 5.33,
+   "noSuratJalan": "1694",
+   "catatan": "Excel Pak Adi BMS - OA 015 - B 9305 UYX"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-25",
+   "qty": 5.51,
+   "noSuratJalan": "1816",
+   "catatan": "Excel Pak Adi BMS - OA 022 - B 9305 UYX"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Pasir Pasang (Colt Diesel)",
+   "tanggal": "2026-07-31",
+   "qty": 5.18,
+   "noSuratJalan": "1900",
+   "catatan": "Excel Pak Adi BMS - OA 026 - B 9305 UYX"
+  },
+  {
+   "poNo": "08/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Split (Colt Diesel)",
+   "tanggal": "2026-07-31",
+   "qty": 5.51,
+   "noSuratJalan": "1901",
+   "catatan": "Excel Pak Adi BMS - OA 026 - B 9305 UYX"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "MopDemop",
+   "tanggal": "2026-06-20",
+   "qty": 1,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Breker PC 100 All in (100 jam x Rp 480.000/jam)",
+   "tanggal": "2026-06-20",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+   "tanggal": "2026-06-20",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+   "tanggal": "2026-06-21",
+   "qty": 13.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Breker PC 100 All in (100 jam x Rp 480.000/jam)",
+   "tanggal": "2026-06-22",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+   "tanggal": "2026-06-22",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+   "tanggal": "2026-06-23",
+   "qty": 13.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+   "tanggal": "2026-06-24",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Breker PC 100 All in (100 jam x Rp 480.000/jam)",
+   "tanggal": "2026-06-24",
+   "qty": 5.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+   "tanggal": "2026-06-25",
+   "qty": 14.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+   "tanggal": "2026-06-26",
+   "qty": 11.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+   "tanggal": "2026-06-27",
+   "qty": 7.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+   "tanggal": "2026-06-28",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+   "tanggal": "2026-06-29",
+   "qty": 13.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Breker PC 100 All in (100 jam x Rp 480.000/jam)",
+   "tanggal": "2026-06-30",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 003 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Breker PC 100 All in (100 jam x Rp 480.000/jam)",
+   "tanggal": "2026-07-01",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Baket PC 100 All in (100 jam x Rp 400.000/jam)",
+   "tanggal": "2026-07-01",
+   "qty": 9.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Breker PC 100 All in (100 jam x Rp 480.000/jam)",
+   "tanggal": "2026-07-02",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Breker PC 100 All in (100 jam x Rp 480.000/jam)",
+   "tanggal": "2026-07-07",
+   "qty": 4.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "09/BKP-SRENGSENG RAYA/VI/2026",
+   "uraian": "Rental Excavator Breker PC 100 All in (100 jam x Rp 480.000/jam)",
+   "tanggal": "2026-07-09",
+   "qty": 8.0,
+   "noSuratJalan": null,
+   "catatan": "Excel Pak Adi BMS - OA 006 - SK - 100"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-10",
+   "qty": 24.24,
+   "noSuratJalan": "1012",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9847 UIU"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-10",
+   "qty": 24.24,
+   "noSuratJalan": "1013",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9847 UIU"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-12",
+   "qty": 24.24,
+   "noSuratJalan": "1011",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9847 UIU"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-12",
+   "qty": 24.24,
+   "noSuratJalan": "1041",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9847 UIU"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-13",
+   "qty": 24.24,
+   "noSuratJalan": "1054",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9847 UIU"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-15",
+   "qty": 24.24,
+   "noSuratJalan": "1090",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9847 UIU"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-17",
+   "qty": 24.48,
+   "noSuratJalan": "1108",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9659 UYY"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-19",
+   "qty": 24.48,
+   "noSuratJalan": "1140",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9372 UYZ"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-21",
+   "qty": 24.48,
+   "noSuratJalan": "1158",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9659 UYY"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-21",
+   "qty": 24.24,
+   "noSuratJalan": "1159",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9847 UIU"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-21",
+   "qty": 24.48,
+   "noSuratJalan": "1160",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9659 UYY"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-21",
+   "qty": 24.24,
+   "noSuratJalan": "1161",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9847 UIU"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-21",
+   "qty": 24.24,
+   "noSuratJalan": "1207",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9847 UIU"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-21",
+   "qty": 24.48,
+   "noSuratJalan": "1208",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9659 UYY"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-22",
+   "qty": 24.48,
+   "noSuratJalan": "1166",
+   "catatan": "Excel Pak Adi BMS - OA 005 - B 9372 UYZ"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-22",
+   "qty": 24.48,
+   "noSuratJalan": "1167",
+   "catatan": "Excel Pak Adi BMS - OA 005 - B 9372 UYZ"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-24",
+   "qty": 24.48,
+   "noSuratJalan": "1212",
+   "catatan": "Excel Pak Adi BMS - OA 005 - B 9534 UIS"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-24",
+   "qty": 24.48,
+   "noSuratJalan": "1214",
+   "catatan": "Excel Pak Adi BMS - OA 005 - B 9372 UYZ"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-27",
+   "qty": 24.48,
+   "noSuratJalan": "1271",
+   "catatan": "Excel Pak Adi BMS - OA 009 - B 9659 UYY"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-27",
+   "qty": 25.49,
+   "noSuratJalan": "1272",
+   "catatan": "Excel Pak Adi BMS - OA 007 - B 9598 UYV"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-27",
+   "qty": 24.48,
+   "noSuratJalan": "1283",
+   "catatan": "Excel Pak Adi BMS - OA 005 - B 9534 UIS"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-27",
+   "qty": 24.48,
+   "noSuratJalan": "1284",
+   "catatan": "Excel Pak Adi BMS - OA 005 - B 9534 UIS"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-01",
+   "qty": 24.48,
+   "noSuratJalan": "1351",
+   "catatan": "Excel Pak Adi BMS - OA 007 - B 9320 UIS"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-01",
+   "qty": 24.48,
+   "noSuratJalan": "1352",
+   "catatan": "Excel Pak Adi BMS - OA 007 - B 9320 UIS"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-01",
+   "qty": 24.48,
+   "noSuratJalan": "1353",
+   "catatan": "Excel Pak Adi BMS - OA 007 - B 9659 UYY"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-01",
+   "qty": 24.48,
+   "noSuratJalan": "1354",
+   "catatan": "Excel Pak Adi BMS - OA 005 - B 9659 UYY"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-01",
+   "qty": 24.48,
+   "noSuratJalan": "1355",
+   "catatan": "Excel Pak Adi BMS - OA 007 - B 9659 UYY"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-03",
+   "qty": 24.78,
+   "noSuratJalan": "1419",
+   "catatan": "Excel Pak Adi BMS - OA 009 - B 9598 UYV"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-03",
+   "qty": 24.24,
+   "noSuratJalan": "1420",
+   "catatan": "Excel Pak Adi BMS - OA 009 - B 9847 UIU"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-03",
+   "qty": 24.78,
+   "noSuratJalan": "1421",
+   "catatan": "Excel Pak Adi BMS - OA 009 - B 9598 UYV"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-03",
+   "qty": 24.24,
+   "noSuratJalan": "1422",
+   "catatan": "Excel Pak Adi BMS - OA 009 - B 9848 UIU"
+  },
+  {
+   "poNo": "46/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-07-03",
+   "qty": 24.24,
+   "noSuratJalan": "1423",
+   "catatan": "Excel Pak Adi BMS - OA 009 - B 9848 UIU"
+  },
+  {
+   "poNo": "44/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-03",
+   "qty": 25.2,
+   "noSuratJalan": "981",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9534 UIS"
+  },
+  {
+   "poNo": "44/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-08",
+   "qty": 24.24,
+   "noSuratJalan": "973",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9847 UIU"
+  },
+  {
+   "poNo": "44/PMP-KALI KEMANGGISAN/VI/2026",
+   "uraian": "Sirdam (Tronton)",
+   "tanggal": "2026-06-09",
+   "qty": 24.24,
+   "noSuratJalan": "961",
+   "catatan": "Excel Pak Adi BMS - OA 001 - B 9847 UIU"
+  }
+ ],
+ "tidakTercatat": [
+  {
+   "invoice": "BMS - OA 001",
+   "baris": "Basecose",
+   "ref": "982",
+   "poDiInvoice": [
+    "44/PMP-KALI KEMANGGISAN/VI/2026",
+    "46/PMP-KALI KEMANGGISAN/VI/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 014",
+   "baris": "Ps. Pasang",
+   "ref": "1713",
+   "poDiInvoice": [
+    "04/ASS-BALEKAMBANG/VII/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 014",
+   "baris": "Split",
+   "ref": "1714",
+   "poDiInvoice": [
+    "04/ASS-BALEKAMBANG/VII/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 020",
+   "baris": "Split",
+   "ref": "1763",
+   "poDiInvoice": [
+    "18/APM-ALKAL/VII/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 055",
+   "baris": "Split",
+   "ref": "2328",
+   "poDiInvoice": [
+    "25/BKP-SRENGSENG RAYA/VIII/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 065",
+   "baris": "EXC SANY PC 075 breker",
+   "ref": "2026-09-05",
+   "poDiInvoice": [
+    "05/APM-SAL PASAR ENJO/VIII/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 065",
+   "baris": "EXC SANY PC 075 breker",
+   "ref": "2026-09-08",
+   "poDiInvoice": [
+    "05/APM-SAL PASAR ENJO/VIII/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 065",
+   "baris": "EXC SANY PC 075 breker",
+   "ref": "2026-09-11",
+   "poDiInvoice": [
+    "05/APM-SAL PASAR ENJO/VIII/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 065",
+   "baris": "EXC SANY PC 075 breker",
+   "ref": "2026-09-12",
+   "poDiInvoice": [
+    "05/APM-SAL PASAR ENJO/VIII/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 067",
+   "baris": "Ps. Pasang",
+   "ref": "2494",
+   "poDiInvoice": [
+    "09/ASS-PHB GANDUN/IX/2026",
+    "12/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 074",
+   "baris": "Makadam",
+   "ref": "2866",
+   "poDiInvoice": [
+    "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "44/LTM-WADUK CIMANGGIS/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 074",
+   "baris": "Makadam",
+   "ref": "2867",
+   "poDiInvoice": [
+    "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "44/LTM-WADUK CIMANGGIS/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 074",
+   "baris": "Makadam",
+   "ref": "2879",
+   "poDiInvoice": [
+    "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "44/LTM-WADUK CIMANGGIS/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 083",
+   "baris": "Batu Belah",
+   "ref": "2978",
+   "poDiInvoice": [
+    "10/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 083",
+   "baris": "Batu Belah",
+   "ref": "2979",
+   "poDiInvoice": [
+    "10/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 084",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-09-25",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 084",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-09-27",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 084",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-09-28",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 085",
+   "baris": "Split",
+   "ref": "3086",
+   "poDiInvoice": [
+    "19/ASS-RUMAH POMPA KALI ITEM/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 085",
+   "baris": "Batu Belah",
+   "ref": "3104",
+   "poDiInvoice": [
+    "19/ASS-RUMAH POMPA KALI ITEM/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 089",
+   "baris": "Abu Batu",
+   "ref": "2966",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 089",
+   "baris": "Abu Batu",
+   "ref": "2967",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 089",
+   "baris": "Makadam",
+   "ref": "2971",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 089",
+   "baris": "Makadam",
+   "ref": "2972",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 089",
+   "baris": "Makadam",
+   "ref": "2973",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 089",
+   "baris": "Makadam",
+   "ref": "2974",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 089",
+   "baris": "Makadam",
+   "ref": "2975",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 089",
+   "baris": "Makadam",
+   "ref": "3025",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 089",
+   "baris": "Makadam",
+   "ref": "3026",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 089",
+   "baris": "Makadam",
+   "ref": "3027",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 089",
+   "baris": "Makadam",
+   "ref": "3034",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 090",
+   "baris": "Makadam",
+   "ref": "2919",
+   "poDiInvoice": [
+    "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "44/LTM-WADUK CIMANGGIS/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 090",
+   "baris": "Makadam",
+   "ref": "2920",
+   "poDiInvoice": [
+    "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "44/LTM-WADUK CIMANGGIS/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 090",
+   "baris": "Makadam",
+   "ref": "2921",
+   "poDiInvoice": [
+    "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "44/LTM-WADUK CIMANGGIS/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 090",
+   "baris": "Makadam",
+   "ref": "2922",
+   "poDiInvoice": [
+    "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "44/LTM-WADUK CIMANGGIS/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 090",
+   "baris": "Makadam",
+   "ref": "3065",
+   "poDiInvoice": [
+    "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "44/LTM-WADUK CIMANGGIS/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 090",
+   "baris": "Makadam",
+   "ref": "3066",
+   "poDiInvoice": [
+    "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "44/LTM-WADUK CIMANGGIS/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 090",
+   "baris": "Makadam",
+   "ref": "3068",
+   "poDiInvoice": [
+    "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "44/LTM-WADUK CIMANGGIS/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 090",
+   "baris": "Makadam",
+   "ref": "3069",
+   "poDiInvoice": [
+    "39/LTM-WADUK CIMANGGIS/IX/2026",
+    "44/LTM-WADUK CIMANGGIS/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 099",
+   "baris": "Makadam",
+   "ref": "3028",
+   "poDiInvoice": [
+    "16/ASS-PHB GANDUN/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 103",
+   "baris": "Batu Belah",
+   "ref": "3164",
+   "poDiInvoice": [
+    "10/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 104",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-09-29",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 104",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-09-30",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 104",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-10-01",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 104",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-10-03",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 104",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-10-04",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 104",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-10-05",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 104",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-10-06",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 104",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-10-07",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 104",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-10-08",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 104",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-10-10",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  },
+  {
+   "invoice": "BMS - OA 104",
+   "baris": "EXC Exca - PC75 breker",
+   "ref": "2026-10-11",
+   "poDiInvoice": [
+    "06/ASS-TROTOAR H.DARIP/IX/2026"
+   ]
+  }
+ ]
+}

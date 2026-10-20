@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { daftarModel } from "../services/gemini.js";
 import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
 
@@ -39,7 +40,7 @@ function divisiFor(req, divisi) {
 router.get("/config", (req, res) => {
   res.json({
     ai: !!process.env.GEMINI_API_KEY,
-    model: process.env.GEMINI_API_KEY ? process.env.GEMINI_MODEL || "gemini-flash-latest" : null,
+    model: process.env.GEMINI_API_KEY ? daftarModel()[0] : null,
   });
 });
 
@@ -86,21 +87,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Urutan model yang dicoba. Kalau model pertama sibuk (503) / kuotanya habis (429),
 // otomatis pindah ke model berikutnya -- ini penyebab utama popup "AI gagal" sebelumnya.
-function daftarModel() {
-  const utama = process.env.GEMINI_MODEL || "gemini-flash-latest";
-  const cadangan = (process.env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash,gemini-2.5-flash-lite")
-    .split(",").map((x) => x.trim()).filter(Boolean);
-  return [...new Set([utama, ...cadangan])];
-}
+// Daftar modelnya dipakai bersama dengan services/gemini.js (model 1.x/2.x yang sudah dimatikan otomatis dilewati).
 
 // Satu panggilan ke satu model. Mengembalikan { ok, status, json, detail }.
 async function panggilGemini(model, key, parts, tanpaThinking) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 45000);
   try {
-    const generationConfig = { temperature: 0, responseMimeType: "application/json" };
-    // Matikan "thinking" supaya jauh lebih cepat (baca dokumen tidak perlu berpikir panjang)
-    if (!tanpaThinking && /2\.5-flash/.test(model)) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    // Gemini 3.x: temperature sudah deprecated (tidak dikirim); thinkingBudget diganti thinkingLevel.
+    const generationConfig = { responseMimeType: "application/json" };
+    // thinking "low" supaya jauh lebih cepat (baca dokumen tidak perlu berpikir panjang)
+    if (!tanpaThinking) generationConfig.thinkingConfig = { thinkingLevel: "low" };
     const r = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
       {
@@ -149,7 +146,8 @@ async function geminiExtract(tipe, dataUrl) {
           break; // ganti model
         }
       }
-      terakhir = r;
+      // 404 (model tidak ada) jangan menimpa error yang lebih informatif dari model sebelumnya (mis. 429 kuota)
+      if (!terakhir || r.status !== 404 || terakhir.status === 404) terakhir = r;
       console.error(`[scan/ai] model=${model} status=${r.status} ${r.detail || ""}`.slice(0, 300));
       const sementara = r.status === 429 || r.status === 0 || r.status === 504 || r.status >= 500;
       if (!sementara) break;          // 400/403/404: percuma diulang di model yang sama
@@ -160,7 +158,8 @@ async function geminiExtract(tipe, dataUrl) {
 
   const st = terakhir?.status;
   if (st === 429) throw httpError(429, "Kuota gratis AI sedang habis, coba lagi sebentar lagi.");
-  if (st === 400 || st === 403 || st === 404) throw httpError(502, `AI menolak permintaan (${st}). Cek GEMINI_MODEL / GEMINI_API_KEY. ${terakhir.detail || ""}`.trim());
+  if (st === 404) throw httpError(502, `Model AI tidak ditemukan / sudah dimatikan Google (404). Di pengaturan server, hapus GEMINI_MODEL & GEMINI_FALLBACK_MODELS atau isi dengan gemini-3.6-flash. ${terakhir.detail || ""}`.trim());
+  if (st === 400 || st === 403) throw httpError(502, `AI menolak permintaan (${st}). Cek GEMINI_MODEL / GEMINI_API_KEY. ${terakhir.detail || ""}`.trim());
   if (st === 504) throw httpError(504, "AI terlalu lama merespons");
   throw httpError(502, `AI sedang sibuk (${st || "tidak terhubung"}). ${terakhir?.detail || ""}`.trim());
 }

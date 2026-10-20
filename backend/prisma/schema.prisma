@@ -748,6 +748,47 @@ model ProyekBiaya {
   @@index([proyekId])
 }
 
+// ------------------------------------------------------------------
+// STOK (menu "Stok", pengganti menu Material) -- kartu stok per barang:
+//   Sisa = qtyAwal + total MASUK - total KELUAR  (dihitung realtime, bukan disimpan)
+// Tiap baris mutasi boleh punya upah kuli; otomatis dicerminkan ke Laporan Divisi >
+// Pengeluaran (DivisiTx.sumber = "AUTO_STOK_KULI:<id mutasi>"), lihat services/stokUpahKuli.js.
+// Daftar harga material lama (model Material) tetap ada & dipakai di tab "Daftar Material".
+// ------------------------------------------------------------------
+model StokBarang {
+  id           String   @id @default(cuid())
+  nama         String   // mis. "Kubus Masif"
+  kategori     String   @default("Material") // bebas: Material, Kubus, dst
+  satuan       String?
+  divisi       String   @default("Kontraktor")
+  namaCustomer String?
+  proyek       String?
+  qtyAwal      Float    @default(0) // total stok awal (mis. 11000)
+  catatan      String?
+  aktif        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  mutasi StokMutasi[]
+
+  @@index([divisi])
+}
+
+// tipe: "KELUAR" (dikirim / dipakai, mengurangi stok) | "MASUK" (tambah stok)
+model StokMutasi {
+  id        String     @id @default(cuid())
+  stokId    String
+  stok      StokBarang @relation(fields: [stokId], references: [id], onDelete: Cascade)
+  tipe      String     @default("KELUAR")
+  tanggal   DateTime
+  qty       Float
+  noSurat   String?
+  catatan   String?
+  upahKuli  Float?
+  createdAt DateTime   @default(now())
+
+  @@index([stokId])
+}
+
 model PrintCalib {
   id      String @id @default(cuid())
   jenis   String @unique // "sj" atau "inv"

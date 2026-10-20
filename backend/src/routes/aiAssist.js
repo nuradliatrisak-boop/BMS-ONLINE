@@ -126,7 +126,7 @@ router.post("/tanya", async (req, res, next) => {
     const systemInstruction = { parts: [{ text: `${PANDUAN}\n\nHari ini ${hariIni}. User: ${req.user.username} (${req.user.role === "ADMIN" ? "admin, boleh lihat semua divisi" : "staf divisi " + req.user.divisi}).` }] };
 
     for (let putaran = 0; putaran < 5; putaran++) {
-      const content = await geminiGenerate({ systemInstruction, contents, tools: [{ functionDeclarations: TOOLS }], generationConfig: { temperature: 0.2 } });
+      const content = await geminiGenerate({ systemInstruction, contents, tools: [{ functionDeclarations: TOOLS }] });
       const panggilan = content.parts.filter((p) => p.functionCall);
       if (!panggilan.length) {
         const jawaban = content.parts.map((p) => p.text || "").join("").trim();

@@ -1,5 +1,5 @@
 {
- "sumber": "Gambar stok KUBUS MASIF - PT TRANS CILEGON - TANGGUL DERMAGA (total 11000)",
+ "sumber": "Gambar stok KUBUS MASIF - PT TRANS CILEGON - TANGGUL DERMAGA (total 11000) + foto surat jalan REAL-KRM/KRW-PCT/10-2026/2074",
  "customer": "PT. Trans Cilegon",
  "divisi": "Kontraktor",
  "proyek": "Tanggul Dermaga",
@@ -45,6 +45,13 @@
    "noSuratJalan": "REAL-KRM/CBT-PCT/10-2026/2973",
    "qty": 300,
    "upahKuli": null
+  },
+  {
+   "tanggal": "2026-10-17",
+   "noSuratJalan": "REAL-KRM/KRW-PCT/10-2026/2074",
+   "qty": 300,
+   "upahKuli": null,
+   "catatan": "Kubus beton 0,4x0,4x0,4 m K-350 semen tipe V (161 + 139 pcs). Truk B 9942 SYL, angkutan PT Inti Persada Mandiri (Tatang). Tgl surat jalan 17 Okt 2026, stempel security 18 Okt, diterima proyek 20 Okt 2026. PO angkutan PO/PCI/10-2026/06258."
   }
  ]
 }

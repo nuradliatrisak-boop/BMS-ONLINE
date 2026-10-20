@@ -4,10 +4,18 @@ export const aiAktif = () => !!process.env.GEMINI_API_KEY;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 
-function daftarModel() {
-  const utama = process.env.GEMINI_MODEL || "gemini-flash-latest";
-  const cadangan = (process.env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash,gemini-2.5-flash-lite").split(",").map((x) => x.trim()).filter(Boolean);
-  return [...new Set([utama, ...cadangan])];
+// Model Gemini 1.x / 2.x sudah dimatikan Google (2.5-flash & 2.5-flash-lite mati 16 Okt 2026 -> error 404).
+// Kalau env lama (GEMINI_MODEL / GEMINI_FALLBACK_MODELS) masih menunjuk ke sana, otomatis diabaikan.
+const MODEL_MATI = /^gemini-(1|2)(\.|-)/;
+export function daftarModel() {
+  const utama = (process.env.GEMINI_MODEL || "gemini-3.6-flash").trim();
+  const cadangan = (process.env.GEMINI_FALLBACK_MODELS || "gemini-3.5-flash-lite,gemini-flash-latest").split(",").map((x) => x.trim()).filter(Boolean);
+  const daftar = [...new Set([utama, ...cadangan])].filter((m) => {
+    if (!MODEL_MATI.test(m)) return true;
+    console.warn(`[ai] model "${m}" sudah dimatikan Google, dilewati. Ganti GEMINI_MODEL / GEMINI_FALLBACK_MODELS.`);
+    return false;
+  });
+  return daftar.length ? daftar : ["gemini-3.6-flash", "gemini-3.5-flash-lite"];
 }
 
 async function satuPanggilan(model, key, body, tanpaThinking) {
@@ -15,7 +23,10 @@ async function satuPanggilan(model, key, body, tanpaThinking) {
   const timer = setTimeout(() => ctrl.abort(), 60000);
   try {
     const gc = { ...(body.generationConfig || {}) };
-    if (!tanpaThinking && /2\.5-flash/.test(model)) gc.thinkingConfig = { thinkingBudget: 0 };
+    // Model Gemini 3.x: thinkingBudget sudah tidak didukung, pakai thinkingLevel. "low" = cepat (cukup untuk baca dokumen).
+    if (!tanpaThinking) gc.thinkingConfig = { thinkingLevel: "low" };
+    // temperature / topP / topK sudah deprecated di Gemini 3.x (diabaikan), jadi tidak dikirim lagi.
+    delete gc.temperature; delete gc.topP; delete gc.topK;
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: "POST", signal: ctrl.signal,
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
@@ -47,7 +58,8 @@ export async function geminiGenerate(body) {
         terakhir = { status: 502, detail: "jawaban AI kosong" };
         break;
       }
-      terakhir = r;
+      // 404 (model tidak ada) jangan menimpa error yang lebih informatif dari model sebelumnya (mis. 429 kuota)
+      if (!terakhir || r.status !== 404 || terakhir.status === 404) terakhir = r;
       console.error(`[ai] model=${model} status=${r.status} ${r.detail || ""}`.slice(0, 300));
       const sementara = r.status === 429 || r.status === 0 || r.status === 504 || r.status >= 500;
       if (!sementara || r.status === 429) break;
@@ -56,7 +68,8 @@ export async function geminiGenerate(body) {
   }
   const st = terakhir?.status;
   if (st === 429) throw httpError(429, "Kuota gratis AI sedang habis, coba lagi sebentar lagi.");
-  if (st === 400 || st === 403 || st === 404) throw httpError(502, `AI menolak permintaan (${st}). Cek GEMINI_MODEL / GEMINI_API_KEY. ${terakhir.detail || ""}`.trim());
+  if (st === 404) throw httpError(502, `Model AI tidak ditemukan / sudah dimatikan Google (404). Di pengaturan server, hapus GEMINI_MODEL & GEMINI_FALLBACK_MODELS atau isi dengan gemini-3.6-flash. ${terakhir.detail || ""}`.trim());
+  if (st === 400 || st === 403) throw httpError(502, `AI menolak permintaan (${st}). Cek GEMINI_MODEL / GEMINI_API_KEY. ${terakhir.detail || ""}`.trim());
   if (st === 504) throw httpError(504, "AI terlalu lama merespons");
   throw httpError(502, `AI sedang sibuk (${st || "tidak terhubung"}). ${terakhir?.detail || ""}`.trim());
 }
@@ -66,7 +79,7 @@ export async function geminiBacaGambar(prompt, dataUrl) {
   if (!m) throw httpError(400, "Format gambar tidak valid");
   const content = await geminiGenerate({
     contents: [{ role: "user", parts: [{ text: prompt }, { inline_data: { mime_type: m[1], data: m[2] } }] }],
-    generationConfig: { temperature: 0, responseMimeType: "application/json" },
+    generationConfig: { responseMimeType: "application/json" },
   });
   const text = content.parts.map((p) => p.text || "").join("");
   try {

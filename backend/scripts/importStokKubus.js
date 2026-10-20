@@ -49,7 +49,7 @@ async function main() {
   let baru = 0;
   for (const p of d.pengiriman) {
     if (po.pengiriman.some((x) => x.itemId === item.id && x.noSuratJalan === p.noSuratJalan)) continue;
-    const dibuat = await prisma.poPengiriman.create({ data: { poId: po.id, itemId: item.id, tanggal: tgl(p.tanggal), qty: p.qty, noSuratJalan: p.noSuratJalan, upahKuli: p.upahKuli } });
+    const dibuat = await prisma.poPengiriman.create({ data: { poId: po.id, itemId: item.id, tanggal: tgl(p.tanggal), qty: p.qty, noSuratJalan: p.noSuratJalan, upahKuli: p.upahKuli, catatan: p.catatan || null } });
     if (p.upahKuli) await syncUpahKuliTx(po, item, dibuat);
     baru++;
   }

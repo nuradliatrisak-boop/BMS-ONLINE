@@ -1,90 +1,91 @@
 {
- "sumber": "PENGELUARAN_PT_TRANSCILEGON_JAYA.xlsx (sheet Pengeluaran)",
- "customer": "PT. Trans Cilegon",
- "proyek": {
-  "nama": "Penyempurnaan Tanggul Cilincing",
-  "lokasi": "Cilincing",
-  "catatan": "Kontrak No. 004/BA-T7P3/OPS/SPPS/IX/2026 (PT Brantas Abipraya - PT Trans Cilegon Jaya), 25 Sep 2026 s/d 25 Jan 2027. Nilai kontrak Rp 2.248.123.500 (belum PPN). Item BoQ: B1 bambu, B2 cerucuk, B3 rakit bambu, B4 geotekstil, B5 armor kubus batu. Pengeluaran dari catatan Excel; BoQ & progress fisik masih di Excel."
- },
- "totalKertas": 19148000,
- "biaya": [
-  {
-   "tanggal": "2026-10-09",
-   "kategori": "Material",
-   "uraian": "Bambu (diameter 8, panjang 6 m)",
-   "qty": 1093.0,
-   "satuan": "batang",
-   "hargaSatuan": 16000.0,
-   "dibayarKe": "Haris Munandar",
-   "metode": "Transfer BRI",
-   "kodeBoq": "B1",
-   "linkBukti": "https://drive.google.com/file/d/1H5Cd3dqALmV1ZIGsj-zEY7GOPQ375jGd/view?usp=drive_link",
-   "catatanAsli": "Bukti transfer BRI 09/10/2026"
+  "sumber": "PENGELUARAN_PT_TRANSCILEGON_JAYA.xlsx (sheet Pengeluaran)",
+  "customer": "PT. Trans Cilegon",
+  "proyek": {
+    "nama": "Penyempurnaan Tanggul Cilincing",
+    "lokasi": "Cilincing",
+    "catatan": "Kontrak No. 004/BA-T7P3/OPS/SPPS/IX/2026 (PT Brantas Abipraya - PT Trans Cilegon Jaya), 25 Sep 2026 s/d 25 Jan 2027. Nilai kontrak Rp 2.248.123.500 (belum PPN). Item BoQ: B1 bambu, B2 cerucuk, B3 rakit bambu, B4 geotekstil, B5 armor kubus batu. Pengeluaran dari catatan Excel; BoQ & progress fisik masih di Excel.",
+    "nilaiKontrak": 2248123500
   },
-  {
-   "tanggal": "2026-10-16",
-   "kategori": "APD/K3",
-   "uraian": "Sepatu boots",
-   "qty": 2.0,
-   "satuan": "pasang",
-   "hargaSatuan": 195000.0,
-   "dibayarKe": "Toko (nota 16/10/2026)",
-   "metode": "Transfer BCA (gabungan 490.000)",
-   "kodeBoq": "K3",
-   "linkBukti": "https://drive.google.com/file/d/1MatZ5KtIPd0U-RI8zLvbuXOzGnilEtAU/view?usp=drive_link",
-   "catatanAsli": "Dibayar via transfer BCA ke Mahmud Fauzy, Rp 490.000 (boots + rompi + helm)"
-  },
-  {
-   "tanggal": "2026-10-16",
-   "kategori": "APD/K3",
-   "uraian": "Rompi safety",
-   "qty": 2.0,
-   "satuan": "pcs",
-   "hargaSatuan": 15000.0,
-   "dibayarKe": "Toko (nota 16/10/2026)",
-   "metode": "Transfer BCA (gabungan 490.000)",
-   "kodeBoq": "K3",
-   "linkBukti": "https://drive.google.com/file/d/1VDptNicyXUcAj03hDuyjo6ei6kN5DZHk/view?usp=drive_link",
-   "catatanAsli": "Nota yang sama dengan helm"
-  },
-  {
-   "tanggal": "2026-10-16",
-   "kategori": "APD/K3",
-   "uraian": "Helm",
-   "qty": 2.0,
-   "satuan": "pcs",
-   "hargaSatuan": 35000.0,
-   "dibayarKe": "Toko (nota 16/10/2026)",
-   "metode": "Transfer BCA (gabungan 490.000)",
-   "kodeBoq": "K3",
-   "linkBukti": "https://drive.google.com/file/d/1VDptNicyXUcAj03hDuyjo6ei6kN5DZHk/view?usp=drive_link",
-   "catatanAsli": null
-  },
-  {
-   "tanggal": "2026-10-17",
-   "kategori": "Upah",
-   "uraian": "Upah kuli 2 mobil",
-   "qty": 2.0,
-   "satuan": "mobil",
-   "hargaSatuan": 150000.0,
-   "dibayarKe": null,
-   "metode": null,
-   "kodeBoq": "B5",
-   "linkBukti": null,
-   "catatanAsli": null
-  },
-  {
-   "tanggal": "2026-10-17",
-   "kategori": "APD/K3",
-   "uraian": "APD (rincian belum dicatat)",
-   "qty": 1.0,
-   "satuan": null,
-   "hargaSatuan": 870000.0,
-   "dibayarKe": null,
-   "metode": null,
-   "kodeBoq": null,
-   "linkBukti": null,
-   "catatanAsli": null
-  }
- ]
+  "totalKertas": 19148000,
+  "biaya": [
+    {
+      "tanggal": "2026-10-09",
+      "kategori": "Material",
+      "uraian": "Bambu (diameter 8, panjang 6 m)",
+      "qty": 1093.0,
+      "satuan": "batang",
+      "hargaSatuan": 16000.0,
+      "dibayarKe": "Haris Munandar",
+      "metode": "Transfer BRI",
+      "kodeBoq": "B1",
+      "linkBukti": "https://drive.google.com/file/d/1H5Cd3dqALmV1ZIGsj-zEY7GOPQ375jGd/view?usp=drive_link",
+      "catatanAsli": "Bukti transfer BRI 09/10/2026"
+    },
+    {
+      "tanggal": "2026-10-16",
+      "kategori": "APD/K3",
+      "uraian": "Sepatu boots",
+      "qty": 2.0,
+      "satuan": "pasang",
+      "hargaSatuan": 195000.0,
+      "dibayarKe": "Toko (nota 16/10/2026)",
+      "metode": "Transfer BCA (gabungan 490.000)",
+      "kodeBoq": "K3",
+      "linkBukti": "https://drive.google.com/file/d/1MatZ5KtIPd0U-RI8zLvbuXOzGnilEtAU/view?usp=drive_link",
+      "catatanAsli": "Dibayar via transfer BCA ke Mahmud Fauzy, Rp 490.000 (boots + rompi + helm)"
+    },
+    {
+      "tanggal": "2026-10-16",
+      "kategori": "APD/K3",
+      "uraian": "Rompi safety",
+      "qty": 2.0,
+      "satuan": "pcs",
+      "hargaSatuan": 15000.0,
+      "dibayarKe": "Toko (nota 16/10/2026)",
+      "metode": "Transfer BCA (gabungan 490.000)",
+      "kodeBoq": "K3",
+      "linkBukti": "https://drive.google.com/file/d/1VDptNicyXUcAj03hDuyjo6ei6kN5DZHk/view?usp=drive_link",
+      "catatanAsli": "Nota yang sama dengan helm"
+    },
+    {
+      "tanggal": "2026-10-16",
+      "kategori": "APD/K3",
+      "uraian": "Helm",
+      "qty": 2.0,
+      "satuan": "pcs",
+      "hargaSatuan": 35000.0,
+      "dibayarKe": "Toko (nota 16/10/2026)",
+      "metode": "Transfer BCA (gabungan 490.000)",
+      "kodeBoq": "K3",
+      "linkBukti": "https://drive.google.com/file/d/1VDptNicyXUcAj03hDuyjo6ei6kN5DZHk/view?usp=drive_link",
+      "catatanAsli": null
+    },
+    {
+      "tanggal": "2026-10-17",
+      "kategori": "Upah",
+      "uraian": "Upah kuli 2 mobil",
+      "qty": 2.0,
+      "satuan": "mobil",
+      "hargaSatuan": 150000.0,
+      "dibayarKe": null,
+      "metode": null,
+      "kodeBoq": "B5",
+      "linkBukti": null,
+      "catatanAsli": null
+    },
+    {
+      "tanggal": "2026-10-17",
+      "kategori": "APD/K3",
+      "uraian": "APD (rincian belum dicatat)",
+      "qty": 1.0,
+      "satuan": null,
+      "hargaSatuan": 870000.0,
+      "dibayarKe": null,
+      "metode": null,
+      "kodeBoq": null,
+      "linkBukti": null,
+      "catatanAsli": null
+    }
+  ]
 }

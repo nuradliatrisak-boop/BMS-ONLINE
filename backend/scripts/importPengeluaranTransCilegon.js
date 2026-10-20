@@ -77,9 +77,12 @@ async function main() {
   if (!cust) cust = await prisma.customer.create({ data: { kode: await kodeCustomerBerikutnya(), nama: d.customer, divisi: DIVISI } });
   if (!proyek) {
     proyek = await prisma.proyekKontraktor.create({
-      data: { nama: d.proyek.nama, divisi: DIVISI, customerId: cust.id, lokasi: d.proyek.lokasi || null, catatan: d.proyek.catatan || null },
+      data: { nama: d.proyek.nama, divisi: DIVISI, customerId: cust.id, lokasi: d.proyek.lokasi || null, catatan: d.proyek.catatan || null, nilaiKontrak: d.proyek.nilaiKontrak || null },
     });
     console.log("Proyek dibuat.");
+  } else if (!proyek.nilaiKontrak && d.proyek.nilaiKontrak) {
+    proyek = await prisma.proyekKontraktor.update({ where: { id: proyek.id }, data: { nilaiKontrak: d.proyek.nilaiKontrak } });
+    console.log(`Nilai kontrak diisi: ${rp(d.proyek.nilaiKontrak)}`);
   }
 
   const ada = await prisma.proyekBiaya.findMany({ where: { proyekId: proyek.id } });

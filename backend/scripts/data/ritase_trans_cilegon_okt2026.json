@@ -1,0 +1,274 @@
+{
+  "sumber": "Rekap_Ritase_Trans_Cilegon.xlsx",
+  "kubikasiDefault": 5.5,
+  "upahPerHari": 500000,
+  "mobil": [
+    {
+      "noPolisi": "B 9661 UYW",
+      "sopir": "Nanang",
+      "ritase": [
+        {
+          "tanggal": "2026-10-05",
+          "ritase": 3,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-06",
+          "ritase": 7,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-07",
+          "ritase": 6,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-08",
+          "ritase": 4,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-09",
+          "ritase": 8,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-10",
+          "ritase": 8,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-11",
+          "ritase": 5,
+          "kubikasi": 5.5
+        }
+      ],
+      "keterangan": [
+        {
+          "tanggal": "2026-10-12",
+          "status": "Libur",
+          "catatan": ""
+        },
+        {
+          "tanggal": "2026-10-13",
+          "status": "Kerja",
+          "catatan": "Mobil terbalik"
+        }
+      ],
+      "abaikanRitase": false
+    },
+    {
+      "noPolisi": "B 9715 UYX",
+      "sopir": "Yumi",
+      "ritase": [
+        {
+          "tanggal": "2026-10-07",
+          "ritase": 3,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-08",
+          "ritase": 4,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-09",
+          "ritase": 8,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-10",
+          "ritase": 8,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-11",
+          "ritase": 5,
+          "kubikasi": 5.5
+        }
+      ],
+      "keterangan": [],
+      "abaikanRitase": false
+    },
+    {
+      "noPolisi": "B 9782 UYV",
+      "sopir": "Aceng",
+      "ritase": [
+        {
+          "tanggal": "2026-10-05",
+          "ritase": 3,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-06",
+          "ritase": 7,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-07",
+          "ritase": 7,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-08",
+          "ritase": 4,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-09",
+          "ritase": 8,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-10",
+          "ritase": 7,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-11",
+          "ritase": 2,
+          "kubikasi": 5.5
+        }
+      ],
+      "keterangan": [],
+      "abaikanRitase": false
+    },
+    {
+      "noPolisi": "B 9305 UYX",
+      "sopir": "Parno",
+      "ritase": [
+        {
+          "tanggal": "2026-10-06",
+          "ritase": 7,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-07",
+          "ritase": 6,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-08",
+          "ritase": 4,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-09",
+          "ritase": 8,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-10",
+          "ritase": 8,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-11",
+          "ritase": 5,
+          "kubikasi": 5.5
+        }
+      ],
+      "keterangan": [
+        {
+          "tanggal": "2026-10-12",
+          "status": "Libur",
+          "catatan": ""
+        },
+        {
+          "tanggal": "2026-10-13",
+          "status": "Kerja",
+          "catatan": ""
+        },
+        {
+          "tanggal": "2026-10-14",
+          "status": "Kerja",
+          "catatan": ""
+        },
+        {
+          "tanggal": "2026-10-15",
+          "status": "Libur",
+          "catatan": ""
+        },
+        {
+          "tanggal": "2026-10-16",
+          "status": "Kerja",
+          "catatan": ""
+        },
+        {
+          "tanggal": "2026-10-17",
+          "status": "Kerja",
+          "catatan": ""
+        },
+        {
+          "tanggal": "2026-10-18",
+          "status": "Kerja",
+          "catatan": ""
+        },
+        {
+          "tanggal": "2026-10-19",
+          "status": "Kerja",
+          "catatan": ""
+        },
+        {
+          "tanggal": "2026-10-20",
+          "status": "Kerja",
+          "catatan": ""
+        }
+      ],
+      "abaikanRitase": false
+    },
+    {
+      "noPolisi": "B 9201 UYZ",
+      "sopir": "Yanto",
+      "ritase": [
+        {
+          "tanggal": "2026-10-06",
+          "ritase": 7,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-07",
+          "ritase": 6,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-08",
+          "ritase": 4,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-09",
+          "ritase": 8,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-10",
+          "ritase": 8,
+          "kubikasi": 5.5
+        },
+        {
+          "tanggal": "2026-10-11",
+          "ritase": 5,
+          "kubikasi": 5.5
+        }
+      ],
+      "keterangan": [
+        {
+          "tanggal": "2026-10-19",
+          "status": "Kerja",
+          "catatan": ""
+        },
+        {
+          "tanggal": "2026-10-20",
+          "status": "Izin",
+          "catatan": ""
+        }
+      ],
+      "abaikanRitase": true
+    }
+  ],
+  "dibayar": {
+    "Nanang": 6,
+    "Parno": 8
+  }
+}

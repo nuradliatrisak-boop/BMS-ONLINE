@@ -22,6 +22,8 @@ const loading = ref(false);
 
 const data = ref({ sopir: [], absensi: [], upahPerHari: 0, bayar: [] });
 const ritaseHari = ref({}); // { noPolisi: Set("YYYY-MM-DD") } dari Rekap Ritase
+const ritaseRows = ref({}); // { noPolisi: [{tanggal, ritase, kubikasi, total}] } untuk detail per tanggal
+const detailSopir = ref(null); // sopir yang sedang dilihat detailnya
 
 const draft = ref({ sopir: [], upahPerHari: "" });
 const bayarForm = ref({ sopirId: "", tanggal: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`, hari: "", catatan: "" });
@@ -44,11 +46,17 @@ async function loadRitase() {
   try {
     const d = await api.get(`/rekap-penjualan/ritase?from=${tahun.value}-01-01&to=${tahun.value}-12-31&sumber=gabung`);
     const m = {};
-    for (const g of d.groups || []) m[g.noPolisi] = new Set((g.rows || []).map((r) => r.tanggal));
+    const rows = {};
+    for (const g of d.groups || []) {
+      m[g.noPolisi] = new Set((g.rows || []).map((r) => r.tanggal));
+      rows[g.noPolisi] = g.rows || [];
+    }
     ritaseHari.value = m;
+    ritaseRows.value = rows;
   } catch (e) {
     console.error(e);
     ritaseHari.value = {};
+    ritaseRows.value = {};
   }
 }
 // Ambil sopir otomatis dari mobil yang ada di Rekap Ritase, nama sopirnya dari menu Armada/Sopir.
@@ -145,6 +153,35 @@ const tahunList = computed(() => {
 const tahunanRows = computed(() =>
   data.value.sopir.map((s) => ({ s, per: tahunList.value.map((y) => hitung(s, String(y))) }))
 );
+
+// ---- detail per tanggal (seperti tab per mobil di Excel) untuk bulan yang dipilih ----
+const detailRows = computed(() => {
+  const s = detailSopir.value;
+  if (!s) return [];
+  const prefix = `${tahun.value}-${pad(bulan.value)}`;
+  const perTgl = new Map();
+  for (const r of ritaseRows.value[s.noPolisi] || []) {
+    if (!r.tanggal.startsWith(prefix)) continue;
+    const x = perTgl.get(r.tanggal) || { tanggal: r.tanggal, ritase: 0, total: 0, kubikasi: r.kubikasi };
+    x.ritase += r.ritase;
+    x.total += r.total;
+    perTgl.set(r.tanggal, x);
+  }
+  for (const a of data.value.absensi) if (a.sopirId === s.id && a.tanggal.startsWith(prefix) && !perTgl.has(a.tanggal)) perTgl.set(a.tanggal, { tanggal: a.tanggal, ritase: 0, total: 0, kubikasi: 0 });
+  return [...perTgl.values()]
+    .sort((a, b) => a.tanggal.localeCompare(b.tanggal))
+    .map((x) => ({ ...x, status: statusDi(s, x.tanggal), catatan: absensiMap.value.get(`${s.id}|${x.tanggal}`)?.catatan || "" }));
+});
+const detailTotal = computed(() => ({
+  ritase: detailRows.value.reduce((a, r) => a + r.ritase, 0),
+  total: detailRows.value.reduce((a, r) => a + r.total, 0),
+  kerja: detailRows.value.filter((r) => isKerja(r.status)).length,
+}));
+const fmtTgl = (t) => {
+  const [y, m, d] = t.split("-").map(Number);
+  return `${HARI[new Date(y, m - 1, d).getDay()]}, ${pad(d)}/${pad(m)}/${y}`;
+};
+const nf = (n) => (Number(n) || 0).toLocaleString("id-ID", { maximumFractionDigits: 3 });
 
 // klik sel: Kerja -> Libur -> Izin -> Sakit -> kosong
 async function ubahSel(s, tgl) {
@@ -264,7 +301,7 @@ const warna = (st) => ({ Kerja: "#d9f2e1", Ritase: "#cfe8ff", Libur: "#eee", Izi
         </thead>
         <tbody>
           <tr v-for="r in harianRows" :key="r.s.id">
-            <td style="white-space: nowrap"><b>{{ r.s.nama }}</b><br /><small>{{ r.s.noPolisi }}</small></td>
+            <td style="white-space: nowrap; cursor: pointer" title="Klik untuk lihat detail per tanggal" @click="detailSopir = r.s"><b style="text-decoration: underline">{{ r.s.nama }}</b><br /><small>{{ r.s.noPolisi }}</small></td>
             <td v-for="(c, i) in r.cells" :key="i" :style="{ background: warna(c), textAlign: 'center', cursor: 'pointer', userSelect: 'none' }" @click="ubahSel(r.s, hariBulan[i].tgl)">{{ SINGKAT[c] || "" }}</td>
             <td><b>{{ r.total.kerja }}</b></td><td>{{ r.total.libur }}</td><td>{{ r.total.izin }}</td><td>{{ r.total.sakit }}</td>
           </tr>
@@ -278,8 +315,8 @@ const warna = (st) => ({ Kerja: "#d9f2e1", Ritase: "#cfe8ff", Libur: "#eee", Izi
         <thead><tr><th>Sopir</th><th v-for="b in BULAN" :key="b">{{ b.slice(0, 3) }}</th><th>Total Kerja</th><th>Libur</th><th>Izin</th><th>Sakit</th></tr></thead>
         <tbody>
           <tr v-for="r in bulananRows" :key="r.s.id">
-            <td><b>{{ r.s.nama }}</b></td>
-            <td v-for="(p, i) in r.per" :key="i" style="text-align: center">{{ p.kerja || "" }}</td>
+            <td style="cursor: pointer" @click="detailSopir = r.s; tab = 'harian'; bulan = bulan"><b style="text-decoration: underline">{{ r.s.nama }}</b></td>
+            <td v-for="(p, i) in r.per" :key="i" style="text-align: center; cursor: pointer" @click="detailSopir = r.s; bulan = i + 1">{{ p.kerja || "" }}</td>
             <td><b>{{ r.total.kerja }}</b></td><td>{{ r.total.libur }}</td><td>{{ r.total.izin }}</td><td>{{ r.total.sakit }}</td>
           </tr>
         </tbody>
@@ -336,7 +373,7 @@ const warna = (st) => ({ Kerja: "#d9f2e1", Ritase: "#cfe8ff", Libur: "#eee", Izi
     </div>
 
     <!-- MASTER -->
-    <div v-else class="card">
+    <div v-else-if="tab === 'master'" class="card">
       <div class="row" style="gap: 10px; margin-bottom: 10px">
         <div class="field"><label>Upah per hari (Rp)</label><input v-model="draft.upahPerHari" inputmode="numeric" placeholder="500000" /></div>
       </div>
@@ -356,5 +393,36 @@ const warna = (st) => ({ Kerja: "#d9f2e1", Ritase: "#cfe8ff", Libur: "#eee", Izi
         <button class="btn btn-primary" @click="simpanMaster">Simpan</button>
       </div>
     </div>
+    <!-- DETAIL PER TANGGAL -->
+    <div v-if="detailSopir" style="position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px" @click.self="detailSopir = null">
+      <div class="card" style="max-width: 760px; width: 100%; max-height: 90vh; overflow: auto">
+        <div style="display: flex; justify-content: space-between; align-items: start; gap: 8px">
+          <div>
+            <h3 style="margin: 0">{{ detailSopir.nama }} — {{ detailSopir.noPolisi }}</h3>
+            <small>{{ BULAN[bulan - 1] }} {{ tahun }}</small>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <select v-model.number="bulan"><option v-for="(b, i) in BULAN" :key="i" :value="i + 1">{{ b }}</option></select>
+            <button class="btn btn-ghost" @click="detailSopir = null">Tutup</button>
+          </div>
+        </div>
+        <table class="tbl" style="margin-top: 10px">
+          <thead><tr><th>Tanggal</th><th>Ritase</th><th>Kubikasi (m³)</th><th>Total (m³)</th><th>Status</th><th>Catatan</th></tr></thead>
+          <tbody>
+            <tr v-for="r in detailRows" :key="r.tanggal">
+              <td>{{ fmtTgl(r.tanggal) }}</td>
+              <td>{{ r.ritase || "-" }}</td>
+              <td>{{ r.kubikasi ? nf(r.kubikasi) : "-" }}</td>
+              <td>{{ r.total ? nf(r.total) : "-" }}</td>
+              <td :style="{ background: warna(r.status) }">{{ r.status === "Ritase" ? "Kerja (ada ritase)" : r.status || "-" }}</td>
+              <td>{{ r.catatan }}</td>
+            </tr>
+            <tr v-if="!detailRows.length"><td colspan="6">Belum ada data di bulan ini.</td></tr>
+            <tr v-else><td><b>Total</b></td><td><b>{{ detailTotal.ritase }}</b></td><td></td><td><b>{{ nf(detailTotal.total) }}</b></td><td colspan="2"><b>{{ detailTotal.kerja }} hari kerja</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 </template>

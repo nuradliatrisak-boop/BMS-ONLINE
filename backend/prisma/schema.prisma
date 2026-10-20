@@ -317,10 +317,15 @@ model Invoice {
   // Opsional: invoice ini bagian dari proyek Kontraktor mana (menu "Proyek Kontraktor")
   proyekId    String?
   proyek      ProyekKontraktor? @relation(fields: [proyekId], references: [id], onDelete: SetNull)
+  // Nomor rekapan invoice per customer (mis. 002/INV-BMS/X/2026) -- beberapa invoice
+  // milik 1 customer boleh punya noRekap yang sama; dipakai Laporan per Customer.
+  noRekap     String?
   createdAt   DateTime @default(now())
 
   items       InvoiceItem[]
   pembayaran  Pembayaran[]
+
+  @@index([noRekap])
 }
 
 model InvoiceItem {
@@ -659,6 +664,10 @@ model PoPengiriman {
   qty          Float
   noSuratJalan String?
   catatan      String?
+  // Upah kuli bongkar/muat untuk pengiriman ini (Rp, opsional). Otomatis dicerminkan
+  // ke Laporan Divisi > Pengeluaran (DivisiTx.sumber = "AUTO_PO_KULI:<id>"), lihat
+  // services/poUpahKuli.js.
+  upahKuli     Float?
   createdAt    DateTime          @default(now())
 
   @@index([poId])

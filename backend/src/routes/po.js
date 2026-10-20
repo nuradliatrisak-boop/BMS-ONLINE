@@ -2,6 +2,7 @@ import { Router } from "express";
 import prisma from "../prismaClient.js";
 import { scopeDivisi } from "../middleware/auth.js";
 import { petakanOtomatis } from "../services/poSuratJalan.js";
+import { syncUpahKuliTx, hapusUpahKuliTx, syncSemuaUpahKuliPo } from "../services/poUpahKuli.js";
 
 // ------------------------------------------------------------
 // PURCHASE ORDER (PO)
@@ -32,6 +33,13 @@ const bersih = (v) => {
   const s = String(v ?? "").trim().replace(/\s+/g, " ");
   return s || null;
 };
+
+// Upah kuli: kosong/0 -> null.
+function bacaUpah(v) {
+  if (v === undefined || v === null || v === "") return null;
+  const n = toNum(v);
+  return n > 0 ? n : null;
+}
 
 // "YYYY-MM-DD" -> Date (UTC tengah malam), sama seperti tanggal di tabel lain.
 function tglDate(v) {
@@ -112,6 +120,7 @@ export function ringkasPo(po, auto) {
     };
   });
 
+  const totalUpahKuli = r2(po.pengiriman.reduce((s, p) => s + (Number(p.upahKuli) || 0), 0));
   const totalQty = r2(items.reduce((s, it) => s + it.qty, 0));
   const totalTerkirim = r2(items.reduce((s, it) => s + Math.min(it.terkirim, it.qty), 0));
   const persen = totalQty > 0 ? Math.min(100, Math.round((totalTerkirim / totalQty) * 100)) : 0;
@@ -139,6 +148,7 @@ export function ringkasPo(po, auto) {
     total: subtotal + ppn,
     totalQty,
     totalTerkirim,
+    totalUpahKuli,
     persen,
     status,
     terakhirKirim,
@@ -339,6 +349,7 @@ router.put("/:id", async (req, res, next) => {
             })
       ),
     ]);
+    await syncSemuaUpahKuliPo(lama.id);
     res.json(await ringkasLengkap(await ambilPo(req, lama.id)));
   } catch (e) {
     if (e.code === "P2002") return res.status(409).json({ error: "Nomor PO ini sudah dipakai PO lain" });
@@ -362,6 +373,7 @@ router.delete("/:id", async (req, res, next) => {
   try {
     const po = await ambilPo(req, req.params.id);
     if (!po) return res.status(404).json({ error: "PO tidak ditemukan" });
+    await hapusUpahKuliTx(po.pengiriman.map((p) => p.id));
     await prisma.purchaseOrder.delete({ where: { id: po.id } }); // barang & pengiriman ikut terhapus (cascade)
     res.status(204).end();
   } catch (e) {
@@ -384,7 +396,7 @@ router.post("/:id/pengiriman", async (req, res, next) => {
     const qty = toNum(b.qty);
     if (qty <= 0) return res.status(400).json({ error: "Jumlah dikirim harus lebih dari 0" });
 
-    await prisma.poPengiriman.create({
+    const baru = await prisma.poPengiriman.create({
       data: {
         poId: po.id,
         itemId: item.id,
@@ -392,8 +404,10 @@ router.post("/:id/pengiriman", async (req, res, next) => {
         qty,
         noSuratJalan: bersih(b.noSuratJalan),
         catatan: bersih(b.catatan),
+        upahKuli: bacaUpah(b.upahKuli),
       },
     });
+    await syncUpahKuliTx(po, item, baru);
     res.status(201).json(await ringkasLengkap(await ambilPo(req, po.id)));
   } catch (e) {
     next(e);
@@ -406,8 +420,79 @@ router.delete("/:id/pengiriman/:pid", async (req, res, next) => {
     if (!po) return res.status(404).json({ error: "PO tidak ditemukan" });
     const p = po.pengiriman.find((x) => x.id === req.params.pid);
     if (!p) return res.status(404).json({ error: "Data pengiriman tidak ditemukan" });
+    await hapusUpahKuliTx(p.id);
     await prisma.poPengiriman.delete({ where: { id: p.id } });
     res.json(await ringkasLengkap(await ambilPo(req, po.id)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// PUT /api/po/:id/pengiriman/:pid  body: { tanggal?, qty?, noSuratJalan?, catatan?, upahKuli? }
+router.put("/:id/pengiriman/:pid", async (req, res, next) => {
+  try {
+    const po = await ambilPo(req, req.params.id);
+    if (!po) return res.status(404).json({ error: "PO tidak ditemukan" });
+    const p = po.pengiriman.find((x) => x.id === req.params.pid);
+    if (!p) return res.status(404).json({ error: "Data pengiriman tidak ditemukan" });
+    const b = req.body || {};
+    const data = {};
+    if (b.tanggal !== undefined) {
+      const t = tglDate(b.tanggal);
+      if (!t) return res.status(400).json({ error: "Tanggal pengiriman tidak valid" });
+      data.tanggal = t;
+    }
+    if (b.qty !== undefined) {
+      const q = toNum(b.qty);
+      if (q <= 0) return res.status(400).json({ error: "Jumlah dikirim harus lebih dari 0" });
+      data.qty = q;
+    }
+    if (b.noSuratJalan !== undefined) data.noSuratJalan = bersih(b.noSuratJalan);
+    if (b.catatan !== undefined) data.catatan = bersih(b.catatan);
+    if (b.upahKuli !== undefined) data.upahKuli = bacaUpah(b.upahKuli);
+    const baru = await prisma.poPengiriman.update({ where: { id: p.id }, data });
+    await syncUpahKuliTx(po, po.items.find((i) => i.id === baru.itemId), baru);
+    res.json(await ringkasLengkap(await ambilPo(req, po.id)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/po/:id/pengiriman/bulk   (menu Impor: stok keluar dari Excel / progres PO)
+// body: { rows: [{ itemId | uraian, tanggal, qty, noSuratJalan?, catatan?, upahKuli? }] }
+// Baris yang SAMA PERSIS (barang+tanggal+qty+no.surat) dilewati -> aman diimpor ulang.
+router.post("/:id/pengiriman/bulk", async (req, res, next) => {
+  try {
+    const po = await ambilPo(req, req.params.id);
+    if (!po) return res.status(404).json({ error: "PO tidak ditemukan" });
+    if (po.batal) return res.status(400).json({ error: "PO ini sudah dibatalkan" });
+    const rows = Array.isArray(req.body?.rows) ? req.body.rows : [];
+    if (!rows.length) return res.status(400).json({ error: "Tidak ada baris untuk diimpor" });
+    if (rows.length > 3000) return res.status(400).json({ error: "Maksimal 3000 baris sekali impor" });
+
+    const kunci = (itemId, tgl, qty, sj) => `${itemId}|${tglStr(tgl)}|${r2(qty)}|${String(sj || "").trim()}`;
+    const sudah = new Set(po.pengiriman.map((x) => kunci(x.itemId, x.tanggal, x.qty, x.noSuratJalan)));
+    const baru = [];
+    let dilewati = 0;
+    for (const [i, r] of rows.entries()) {
+      const item = po.items.find((it) => it.id === String(r.itemId)) ||
+        (r.uraian ? po.items.find((it) => it.uraian.toLowerCase() === String(r.uraian).trim().toLowerCase()) : null) ||
+        (po.items.length === 1 ? po.items[0] : null);
+      if (!item) return res.status(400).json({ error: `Baris ${i + 1}: barang PO tidak ditemukan` });
+      const tanggal = tglDate(r.tanggal);
+      if (!tanggal) return res.status(400).json({ error: `Baris ${i + 1}: tanggal tidak valid` });
+      const qty = toNum(r.qty);
+      if (qty <= 0) return res.status(400).json({ error: `Baris ${i + 1}: qty harus lebih dari 0` });
+      const noSuratJalan = bersih(r.noSuratJalan);
+      const k = kunci(item.id, tanggal, qty, noSuratJalan);
+      if (sudah.has(k)) { dilewati++; continue; }
+      sudah.add(k);
+      baru.push({ poId: po.id, itemId: item.id, tanggal, qty, noSuratJalan, catatan: bersih(r.catatan), upahKuli: bacaUpah(r.upahKuli) });
+    }
+    const dibuat = [];
+    for (const data of baru) dibuat.push(await prisma.poPengiriman.create({ data }));
+    for (const p of dibuat) if (p.upahKuli) await syncUpahKuliTx(po, po.items.find((i) => i.id === p.itemId), p);
+    res.status(201).json({ dibuat: dibuat.length, dilewati, po: await ringkasLengkap(await ambilPo(req, po.id)) });
   } catch (e) {
     next(e);
   }

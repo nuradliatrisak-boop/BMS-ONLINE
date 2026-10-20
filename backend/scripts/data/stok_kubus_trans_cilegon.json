@@ -1,0 +1,50 @@
+{
+ "sumber": "Gambar stok KUBUS MASIF - PT TRANS CILEGON - TANGGUL DERMAGA (total 11000)",
+ "customer": "PT. Trans Cilegon",
+ "divisi": "Kontraktor",
+ "proyek": "Tanggul Dermaga",
+ "po": "KUBUS MASIF/TRANS CILEGON-TANGGUL DERMAGA/X/2026",
+ "barang": {
+  "uraian": "Kubus Masif",
+  "satuan": "BH",
+  "qty": 11000
+ },
+ "pengiriman": [
+  {
+   "tanggal": "2026-10-15",
+   "noSuratJalan": "REAL-KRM/KRW-PCT/10-2026/2061",
+   "qty": 300,
+   "upahKuli": null
+  },
+  {
+   "tanggal": "2026-10-16",
+   "noSuratJalan": "REAL-KRM/CKR-PCT/10-2026/1784",
+   "qty": 300,
+   "upahKuli": null
+  },
+  {
+   "tanggal": "2026-10-16",
+   "noSuratJalan": "REAL-KRM/CBT-PCT/10-2026/2960",
+   "qty": 300,
+   "upahKuli": null
+  },
+  {
+   "tanggal": "2026-10-18",
+   "noSuratJalan": "REAL-KRM/KRW-PCT/10-2026/2067",
+   "qty": 300,
+   "upahKuli": null
+  },
+  {
+   "tanggal": "2026-10-17",
+   "noSuratJalan": "REAL-KRM/CKR-PCT/10-2026/1793",
+   "qty": 300,
+   "upahKuli": null
+  },
+  {
+   "tanggal": "2026-10-18",
+   "noSuratJalan": "REAL-KRM/CBT-PCT/10-2026/2973",
+   "qty": 300,
+   "upahKuli": null
+  }
+ ]
+}

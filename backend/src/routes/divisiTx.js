@@ -6,11 +6,12 @@ import { DIVISI_LIST, DIVISI_CONFIG, getMirrorTarget, MIRROR_SOURCE_PREFIX } fro
 // Baris pengeluaran yang dicerminkan otomatis dari menu "Proyek Kontraktor"
 // (lihat routes/proyek.js) -- diedit/dihapus dari menu Proyek, bukan di sini.
 const PROYEK_SUMBER_PREFIX = "AUTO_PROYEK:";
+const PO_KULI_SUMBER_PREFIX = "AUTO_PO_KULI:"; // upah kuli dari pengiriman PO (services/poUpahKuli.js)
 function isAutoProyek(tx) {
-  return !!tx?.sumber && tx.sumber.startsWith(PROYEK_SUMBER_PREFIX);
+  return !!tx?.sumber && (tx.sumber.startsWith(PROYEK_SUMBER_PREFIX) || tx.sumber.startsWith(PO_KULI_SUMBER_PREFIX));
 }
 const PESAN_AUTO_PROYEK =
-  "Transaksi ini otomatis dari menu Proyek Kontraktor. Ubah/hapus dari menu Proyek Kontraktor (bagian Pengeluaran proyek tsb).";
+  "Transaksi ini otomatis dari menu lain. Pengeluaran proyek: ubah/hapus dari menu Proyek Kontraktor. Upah kuli: ubah/hapus dari menu Purchase Order (riwayat pengiriman PO tsb).";
 
 const router = Router();
 

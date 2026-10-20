@@ -1,0 +1,131 @@
+{
+ "sumber": "Rekapan Invoice 002/INV-BMS/X/2026 (CV_SIMPINK2.pdf, 3 halaman)",
+ "customer": {
+  "nama": "CV. Simpink Pesona Nusantara",
+  "divisi": "Kontraktor"
+ },
+ "noRekap": "002/INV-BMS/X/2026",
+ "tanggalRekap": "2026-10-09",
+ "kertas": {
+  "tagihan": 240450000,
+  "dibayar": 134000000,
+  "sisa": 106450000
+ },
+ "proyek": [
+  {
+   "nama": "Pulau Sabira",
+   "lokasi": "Pulau Sabira",
+   "catatan": "Pengiriman kubus masif 40x40x40 ke Pulau Sabira (angkutan kapal).",
+   "invoice": {
+    "no": "BMS - SPN. 001",
+    "tanggal": "2026-10-09",
+    "totalKertas": 162450000,
+    "items": [
+     {
+      "keterangan": "Jasa Angkutan Kapal Pulau Sabira - BMS4 (SJ 202601)",
+      "tglPakai": "2026-08-27",
+      "qty": 325,
+      "satuan": "BH",
+      "hargaSatuan": 95000
+     },
+     {
+      "keterangan": "Jasa Angkutan Kapal Pulau Sabira - BMS4 (SJ 202602)",
+      "tglPakai": "2026-09-07",
+      "qty": 365,
+      "satuan": "BH",
+      "hargaSatuan": 95000
+     },
+     {
+      "keterangan": "Jasa Angkutan Kapal Pulau Sabira - BMS 20 (SJ 202607)",
+      "tglPakai": "2026-10-08",
+      "qty": 300,
+      "satuan": "BH",
+      "hargaSatuan": 95000
+     },
+     {
+      "keterangan": "Jasa Angkutan Kapal Pulau Sabira - BM2 (SJ 202608)",
+      "tglPakai": "2026-10-08",
+      "qty": 220,
+      "satuan": "BH",
+      "hargaSatuan": 95000
+     },
+     {
+      "keterangan": "Jasa Angkutan Kapal Pulau Sabira - BM2 (SJ 202610)",
+      "tglPakai": "2026-10-15",
+      "qty": 220,
+      "satuan": "BH",
+      "hargaSatuan": 95000
+     },
+     {
+      "keterangan": "Jasa Angkutan Kapal Pulau Sabira - BMS 20 (SJ 202611)",
+      "tglPakai": "2026-10-15",
+      "qty": 280,
+      "satuan": "BH",
+      "hargaSatuan": 95000
+     }
+    ],
+    "pembayaran": [
+     {
+      "tanggal": "2026-07-28",
+      "nominal": 100000000,
+      "metode": null
+     }
+    ]
+   }
+  },
+  {
+   "nama": "Pulau Kelapa Dua",
+   "lokasi": "Pulau Kelapa Dua",
+   "catatan": "Pengiriman kubus masif 40x40x40 ke Pulau Kelapa Dua (angkutan kapal).",
+   "invoice": {
+    "no": "BMS - SPN. 002",
+    "tanggal": "2026-10-09",
+    "totalKertas": 78000000,
+    "items": [
+     {
+      "keterangan": "Jasa Angkutan Kapal Pulau Kelapa Dua - BMS 20 (SJ 202603)",
+      "tglPakai": "2026-09-10",
+      "qty": 380,
+      "satuan": "BH",
+      "hargaSatuan": 65000
+     },
+     {
+      "keterangan": "Jasa Angkutan Kapal Pulau Kelapa Dua - BMS20 (SJ 202604)",
+      "tglPakai": "2026-09-16",
+      "qty": 150,
+      "satuan": "BH",
+      "hargaSatuan": 65000
+     },
+     {
+      "keterangan": "Jasa Angkutan Kapal Pulau Kelapa Dua - BM2 (SJ 202605)",
+      "tglPakai": "2026-09-29",
+      "qty": 335,
+      "satuan": "BH",
+      "hargaSatuan": 65000
+     },
+     {
+      "keterangan": "Jasa Angkutan Kapal Pulau Kelapa Dua - BM2 (SJ 202606)",
+      "tglPakai": "2026-09-29",
+      "qty": 250,
+      "satuan": "BH",
+      "hargaSatuan": 65000
+     },
+     {
+      "keterangan": "Jasa Angkutan Kapal Pulau Kelapa Dua - Mandala Wangi (SJ 202609)",
+      "tglPakai": "2026-10-13",
+      "qty": 85,
+      "satuan": "BH",
+      "hargaSatuan": 65000
+     }
+    ],
+    "pembayaran": [
+     {
+      "tanggal": "2026-07-29",
+      "nominal": 34000000,
+      "metode": null
+     }
+    ]
+   }
+  }
+ ]
+}

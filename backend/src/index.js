@@ -30,6 +30,9 @@ import laporanNetRoutes from "./routes/laporanNet.js";
 import scanRoutes from "./routes/scan.js";
 import poRoutes from "./routes/po.js";
 import proyekRoutes from "./routes/proyek.js";
+import laporanCustomerRoutes from "./routes/laporanCustomer.js";
+import imporRoutes from "./routes/impor.js";
+import aiAssistRoutes from "./routes/aiAssist.js";
 
 import { requireAuth, requireRole } from "./middleware/auth.js";
 
@@ -64,8 +67,11 @@ app.use(
 // Scan kamera mengirim foto (base64) -> butuh batas body lebih besar dari default
 // 100kb. HARUS dipasang SEBELUM express.json() global di bawah.
 app.use("/api/scan", requireAuth, express.json({ limit: "12mb" }), scanRoutes);
+// Menu Impor: foto/PDF halaman (base64) + blok rekapan Excel besar -> juga sebelum express.json() global
+app.use("/api/impor", requireAuth, express.json({ limit: "12mb" }), imporRoutes);
 
-app.use(express.json());
+// batas 8mb (bukan default 100kb) karena impor pengiriman PO bisa ribuan baris
+app.use(express.json({ limit: "8mb" }));
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
@@ -97,6 +103,8 @@ app.use("/api/uang-makan-alat", requireAuth, uangMakanAlatRoutes);
 app.use("/api/laporan-net", requireAuth, requireRole("ADMIN"), laporanNetRoutes);
 app.use("/api/po", requireAuth, poRoutes);
 app.use("/api/proyek", requireAuth, proyekRoutes);
+app.use("/api/laporan-customer", requireAuth, requireRole("ADMIN"), laporanCustomerRoutes);
+app.use("/api/ai", requireAuth, aiAssistRoutes);
 
 // Penanganan error terpusat
 app.use((err, req, res, next) => {

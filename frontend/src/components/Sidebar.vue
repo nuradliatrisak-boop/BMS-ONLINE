@@ -128,6 +128,16 @@ function doLogout() {
         <span>Purchase Order (PO)</span>
       </router-link>
 
+      <router-link to="/proyek" @click="closeSidebar">
+        <span class="ic">📐</span>
+        <span>Proyek Kontraktor</span>
+      </router-link>
+
+      <router-link to="/impor" @click="closeSidebar">
+        <span class="ic">📥</span>
+        <span>Impor Data</span>
+      </router-link>
+
       <router-link to="/surat-jalan" @click="closeSidebar">
         <span class="ic">📄</span>
         <span>Surat Jalan</span>
@@ -161,6 +171,15 @@ function doLogout() {
       <router-link to="/rekap-keseluruhan" @click="closeSidebar">
         <span class="ic">🗂️</span>
         <span>Rekap Keseluruhan</span>
+      </router-link>
+
+      <router-link
+        v-if="auth.isAdmin"
+        to="/laporan-customer"
+        @click="closeSidebar"
+      >
+        <span class="ic">👥</span>
+        <span>Laporan per Customer</span>
       </router-link>
 
       <router-link

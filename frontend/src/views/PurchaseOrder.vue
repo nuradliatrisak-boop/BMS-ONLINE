@@ -12,6 +12,7 @@ import { api } from "../services/api.js";
 import { toast } from "../services/toast.js";
 import { useAuthStore } from "../stores/auth.js";
 import MoneyInput from "../components/MoneyInput.vue";
+import { exportPoStokExcel, exportPoStokPdf } from "../utils/laporanExport.js";
 
 const auth = useAuthStore();
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
@@ -84,7 +85,7 @@ watch(
   () => muatPreview()
 );
 
-const emptyPeng = () => ({ itemId: "", tanggal: hariIni(), qty: "", noSuratJalan: "", catatan: "" });
+const emptyPeng = () => ({ itemId: "", tanggal: hariIni(), qty: "", noSuratJalan: "", catatan: "", upahKuli: "" });
 const peng = ref(emptyPeng());
 const pengSaving = ref(false);
 
@@ -287,6 +288,36 @@ async function catatPengiriman() {
     toast(e.message || "Gagal mencatat pengiriman");
   } finally {
     pengSaving.value = false;
+  }
+}
+
+// Isi / ubah UPAH KULI sebuah pengiriman yang sudah tercatat (otomatis ikut ke Laporan Divisi > Pengeluaran)
+const upahSaving = ref("");
+async function ubahUpahKuli(x) {
+  const p = detail.value;
+  if (!p || x.otomatis) return;
+  const isi = prompt(`Upah kuli untuk pengiriman ${fmtTgl(x.tanggal)}${x.noSuratJalan ? " (SJ " + x.noSuratJalan + ")" : ""} (Rp, kosongkan/0 untuk menghapus):`, x.upahKuli || "");
+  if (isi === null) return;
+  const angkaBersih = Number(String(isi).replace(/\./g, "").replace(/,/g, "."));
+  if (isi.trim() !== "" && !(angkaBersih >= 0)) return toast("Upah kuli harus berupa angka");
+  upahSaving.value = x.id;
+  try {
+    simpanKeList(await api.put(`/po/${p.id}/pengiriman/${x.id}`, { upahKuli: isi.trim() === "" ? 0 : angkaBersih }));
+    toast("Upah kuli disimpan");
+  } catch (e) {
+    toast(e.message || "Gagal menyimpan upah kuli");
+  } finally {
+    upahSaving.value = "";
+  }
+}
+async function cetakStok(jenis) {
+  const p = detail.value;
+  if (!p) return;
+  try {
+    if (jenis === "excel") exportPoStokExcel(p);
+    else await exportPoStokPdf(p);
+  } catch (e) {
+    toast(e.message || "Gagal mencetak");
   }
 }
 
@@ -508,6 +539,12 @@ onMounted(() => {
         <template v-if="detail.proyek"> • {{ detail.proyek }}</template>
       </div>
 
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0">
+        <button class="btn btn-sm" @click="cetakStok('excel')">⬇ Kartu Stok Excel</button>
+        <button class="btn btn-sm" @click="cetakStok('pdf')">⬇ Kartu Stok PDF</button>
+        <span v-if="detail.totalUpahKuli" class="po-sub" style="align-self: center">Total upah kuli: <b>{{ rupiah(detail.totalUpahKuli) }}</b></span>
+      </div>
+
       <div class="po-info">
         <div v-if="detail.lokasiProyek"><span>Lokasi</span>{{ detail.lokasiProyek }}</div>
         <div v-if="detail.kepalaProyek"><span>Kepala Proyek</span>{{ detail.kepalaProyek }}</div>
@@ -614,6 +651,10 @@ onMounted(() => {
             <label>Catatan (opsional)</label>
             <input v-model="peng.catatan" placeholder="Mis. permintaan lapangan, no. polisi" />
           </div>
+          <div class="field">
+            <label>Upah Kuli (Rp, opsional)</label>
+            <MoneyInput v-model="peng.upahKuli" placeholder="0" />
+          </div>
         </div>
         <button class="btn btn-primary btn-sm" :disabled="pengSaving" @click="catatPengiriman">
           {{ pengSaving ? "Menyimpan…" : "+ Catat Pengiriman" }}
@@ -631,6 +672,7 @@ onMounted(() => {
               <th class="num">Jumlah</th>
               <th>No. Surat Jalan</th>
               <th>Catatan</th>
+              <th class="num">Upah Kuli</th>
               <th></th>
             </tr>
           </thead>
@@ -646,6 +688,10 @@ onMounted(() => {
                 </span>
               </td>
               <td>{{ x.catatan || "-" }}</td>
+              <td class="num mono">
+                <template v-if="x.otomatis">-</template>
+                <a v-else href="#" :title="'Klik untuk isi / ubah upah kuli'" @click.prevent="ubahUpahKuli(x)">{{ x.upahKuli ? rupiah(x.upahKuli) : "+ isi" }}</a>
+              </td>
               <td style="text-align: right; white-space: nowrap">
                 <button v-if="x.otomatis" class="btn btn-sm btn-ghost" :disabled="sjSaving === x.sjId" @click="tolakSJ({ sjId: x.sjId, no: x.noSuratJalan }, true)">Lepas</button>
                 <button v-else class="btn btn-sm btn-danger" @click="hapusPengiriman(x.id)">Hapus</button>

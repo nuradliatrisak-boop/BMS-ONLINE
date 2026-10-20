@@ -5,6 +5,7 @@ import { useAuthStore } from "./stores/auth.js";
 import Sidebar from "./components/Sidebar.vue";
 import Toast from "./components/Toast.vue";
 import UtilBar from "./components/UtilBar.vue";
+import AiAssist from "./components/AiAssist.vue";
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -19,6 +20,7 @@ const showShell = computed(() => !route.meta.public && auth.isLoggedIn);
       <UtilBar />
       <router-view />
     </main>
+    <AiAssist />
   </div>
   <router-view v-else />
   <Toast />

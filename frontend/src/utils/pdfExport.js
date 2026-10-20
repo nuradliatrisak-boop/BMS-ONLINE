@@ -440,3 +440,6 @@ export async function exportSopirPdf({ sopir, periodeLabel, summary, rows, orien
   const slug = (v) => String(v || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   doc.save(`komisi-sopir-${slug(sopir.nama)}-${slug(periodeLabel) || "semua"}.pdf`);
 }
+
+// Dipakai juga oleh utils/laporanExport.js (kartu stok PO & laporan per customer)
+export { loadImageDataUrl, drawWatermark, drawKopSurat, KOP_SURAT_URL, LOGO_WATERMARK_URL };

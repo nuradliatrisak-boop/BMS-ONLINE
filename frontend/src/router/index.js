@@ -25,6 +25,9 @@ import AlatBeratUnit from "../views/AlatBeratUnit.vue";
 import RekapAlat from "../views/RekapAlat.vue";
 import LaporanNet from "../views/LaporanNet.vue";
 import PurchaseOrder from "../views/PurchaseOrder.vue";
+import Proyek from "../views/Proyek.vue";
+import LaporanCustomer from "../views/LaporanCustomer.vue";
+import Impor from "../views/Impor.vue";
 
 const routes = [
   { path: "/login", name: "login", component: Login, meta: { public: true } },
@@ -38,6 +41,9 @@ const routes = [
   { path: "/invoices", name: "invoices", component: Invoices },
   { path: "/invoices/:id", name: "invoice-detail", component: InvoiceDetail },
   { path: "/purchase-order", name: "purchase-order", component: PurchaseOrder },
+  { path: "/proyek", name: "proyek", component: Proyek },
+  { path: "/impor", name: "impor", component: Impor },
+  { path: "/laporan-customer", name: "laporan-customer", component: LaporanCustomer, meta: { adminOnly: true } },
   { path: "/surat-jalan", name: "surat-jalan", component: SuratJalan },
   { path: "/tensiv", name: "tensiv", component: Tensiv },
   { path: "/laporan-divisi", name: "laporan-divisi", component: DivisiLaporan },

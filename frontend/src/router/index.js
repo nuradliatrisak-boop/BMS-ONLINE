@@ -8,7 +8,7 @@ import Armada from "../views/Armada.vue";
 import Sopir from "../views/Sopir.vue";
 import ArmadaRekap from "../views/ArmadaRekap.vue";
 import AlatBerat from "../views/AlatBerat.vue";
-import Material from "../views/Material.vue";
+import Stok from "../views/Stok.vue";
 import Invoices from "../views/Invoices.vue";
 import InvoiceDetail from "../views/InvoiceDetail.vue";
 import SuratJalan from "../views/SuratJalan.vue";
@@ -18,6 +18,7 @@ import RekapKeseluruhan from "../views/RekapKeseluruhan.vue";
 import Users from "../views/Users.vue";
 import RekapPenjualan from "../views/RekapPenjualan.vue";
 import RekapRitase from "../views/RekapRitase.vue";
+import AbsensiSopir from "../views/AbsensiSopir.vue";
 import KalibrasiCetak from "../views/KalibrasiCetak.vue";
 import Settings from "../views/Settings.vue";
 import Kapal from "../views/Kapal.vue";
@@ -37,7 +38,9 @@ const routes = [
   { path: "/sopir", name: "sopir", component: Sopir },
   { path: "/armada-rekap", name: "armada-rekap", component: ArmadaRekap },
   { path: "/alat-berat", name: "alat-berat", component: AlatBerat },
-  { path: "/material", name: "material", component: Material },
+  // Menu Material sudah diganti jadi Stok (Material jadi tab "Daftar Material" di dalamnya)
+  { path: "/stok", name: "stok", component: Stok },
+  { path: "/material", redirect: "/stok?tab=material" },
   { path: "/invoices", name: "invoices", component: Invoices },
   { path: "/invoices/:id", name: "invoice-detail", component: InvoiceDetail },
   { path: "/purchase-order", name: "purchase-order", component: PurchaseOrder },
@@ -51,6 +54,7 @@ const routes = [
   { path: "/laporan-net", name: "laporan-net", component: LaporanNet, meta: { adminOnly: true } },
   { path: "/rekap-penjualan", name: "rekap-penjualan", component: RekapPenjualan },
   { path: "/rekap-ritase", name: "rekap-ritase", component: RekapRitase },
+  { path: "/absensi-sopir", name: "absensi-sopir", component: AbsensiSopir },
   { path: "/users", name: "users", component: Users, meta: { adminOnly: true } },
   { path: "/kalibrasi-cetak", name: "kalibrasi-cetak", component: KalibrasiCetak, meta: { adminOnly: true } },
   { path: "/pengaturan", name: "pengaturan", component: Settings, meta: { adminOnly: true } },

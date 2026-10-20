@@ -113,9 +113,9 @@ function doLogout() {
         <span>Kapal</span>
       </router-link>
 
-      <router-link to="/material" @click="closeSidebar">
+      <router-link to="/stok" @click="closeSidebar">
         <span class="ic">📦</span>
-        <span>Material</span>
+        <span>Stok</span>
       </router-link>
 
       <router-link to="/invoices" @click="closeSidebar">
@@ -161,6 +161,11 @@ function doLogout() {
       <router-link to="/rekap-ritase" @click="closeSidebar">
         <span class="ic">🚚</span>
         <span>Rekap Ritase</span>
+      </router-link>
+
+      <router-link to="/absensi-sopir" @click="closeSidebar">
+        <span class="ic">🗓</span>
+        <span>Absensi &amp; Upah Sopir</span>
       </router-link>
 
       <router-link to="/laporan-divisi" @click="closeSidebar">

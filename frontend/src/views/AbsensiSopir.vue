@@ -33,6 +33,7 @@ async function load() {
     draft.value = { sopir: data.value.sopir.map((s) => ({ ...s })), upahPerHari: String(data.value.upahPerHari || "") };
     if (!bayarForm.value.sopirId && data.value.sopir[0]) bayarForm.value.sopirId = data.value.sopir[0].id;
     await loadRitase();
+    await sinkron(true);
   } catch (e) {
     toast(e?.message || "Gagal memuat data absensi");
   } finally {
@@ -48,6 +49,39 @@ async function loadRitase() {
   } catch (e) {
     console.error(e);
     ritaseHari.value = {};
+  }
+}
+// Ambil sopir otomatis dari mobil yang ada di Rekap Ritase, nama sopirnya dari menu Armada/Sopir.
+// auto=true: jalan sendiri saat daftar sopir masih kosong. auto=false: tombol manual (hanya menambah yang belum ada).
+async function sinkron(auto = false) {
+  if (auto && data.value.sopir.length) return;
+  try {
+    const nopols = Object.keys(ritaseHari.value).filter((n) => n && !n.startsWith("("));
+    let armada = [];
+    try {
+      armada = await api.get("/armada");
+    } catch {
+      /* tanpa nama sopir pun tetap jalan */
+    }
+    const namaDari = new Map();
+    for (const a of Array.isArray(armada) ? armada : armada.rows || []) {
+      const n = String(a.nopol || "").toUpperCase().replace(/\s+/g, " ").trim();
+      const nama = a.sopirRef?.nama || a.sopir;
+      if (n && nama) namaDari.set(n, nama);
+    }
+    const ada = new Set(data.value.sopir.map((x) => x.noPolisi));
+    const baru = nopols.filter((n) => !ada.has(n)).map((n) => ({ id: "", nama: namaDari.get(n) || `Sopir ${n}`, noPolisi: n }));
+    if (!baru.length) {
+      if (!auto) toast("Tidak ada mobil baru dari Rekap Ritase");
+      return;
+    }
+    data.value = await api.put("/absensi-sopir/master", { sopir: [...data.value.sopir, ...baru], upahPerHari: data.value.upahPerHari });
+    draft.value = { sopir: data.value.sopir.map((x) => ({ ...x })), upahPerHari: String(data.value.upahPerHari || "") };
+    if (!bayarForm.value.sopirId && data.value.sopir[0]) bayarForm.value.sopirId = data.value.sopir[0].id;
+    toast(`${baru.length} sopir ditambahkan dari Rekap Ritase`);
+  } catch (e) {
+    console.error(e);
+    if (!auto) toast(e?.message || "Gagal mengambil data sopir");
   }
 }
 onMounted(load);
@@ -212,7 +246,7 @@ const warna = (st) => ({ Kerja: "#d9f2e1", Ritase: "#cfe8ff", Libur: "#eee", Izi
     </div>
 
     <div v-if="!data.sopir.length && !loading" class="card">
-      Belum ada sopir. Buka tab <b>Sopir &amp; Tarif</b>, tambahkan nama sopir + No. Polisi mobilnya (supaya hari berritase otomatis terhitung kerja).
+      Belum ada sopir. Sopir otomatis diambil dari mobil di Rekap Ritase; kalau belum ada ritase tahun ini, tambahkan manual di tab <b>Sopir &amp; Tarif</b>.
     </div>
 
     <!-- HARIAN -->
@@ -318,6 +352,7 @@ const warna = (st) => ({ Kerja: "#d9f2e1", Ritase: "#cfe8ff", Libur: "#eee", Izi
       </table>
       <div style="margin-top: 10px; display: flex; gap: 8px">
         <button class="btn btn-ghost" @click="tambahSopir">+ Tambah sopir</button>
+        <button class="btn btn-ghost" @click="sinkron(false)">↻ Ambil dari Rekap Ritase</button>
         <button class="btn btn-primary" @click="simpanMaster">Simpan</button>
       </div>
     </div>

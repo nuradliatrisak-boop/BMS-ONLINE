@@ -19,6 +19,7 @@ import Users from "../views/Users.vue";
 import RekapPenjualan from "../views/RekapPenjualan.vue";
 import RekapRitase from "../views/RekapRitase.vue";
 import AbsensiSopir from "../views/AbsensiSopir.vue";
+import BukuTronton from "../views/BukuTronton.vue";
 import KalibrasiCetak from "../views/KalibrasiCetak.vue";
 import Settings from "../views/Settings.vue";
 import Kapal from "../views/Kapal.vue";
@@ -55,6 +56,7 @@ const routes = [
   { path: "/rekap-penjualan", name: "rekap-penjualan", component: RekapPenjualan },
   { path: "/rekap-ritase", name: "rekap-ritase", component: RekapRitase },
   { path: "/absensi-sopir", name: "absensi-sopir", component: AbsensiSopir },
+  { path: "/buku-tronton", name: "buku-tronton", component: BukuTronton },
   { path: "/users", name: "users", component: Users, meta: { adminOnly: true } },
   { path: "/kalibrasi-cetak", name: "kalibrasi-cetak", component: KalibrasiCetak, meta: { adminOnly: true } },
   { path: "/pengaturan", name: "pengaturan", component: Settings, meta: { adminOnly: true } },

@@ -209,6 +209,7 @@ model Sopir {
 
   armada        Armada[]
   suratJalan    SuratJalan[]
+  trontonTrip   TrontonTrip[]
 
   @@index([tipe])
 }
@@ -787,6 +788,36 @@ model StokMutasi {
   createdAt DateTime   @default(now())
 
   @@index([stokId])
+}
+
+// ------------------------------------------------------------------
+// BUKU TRONTON -- mirror buku tulis tangan catatan uang jalan sopir tronton.
+// Satu baris = satu perjalanan (trip) sopir pada satu hari: nama sopir, uang
+// jalan yang dikeluarkan, material yang dibeli, uang beli material, tujuan.
+// sopirId opsional (kaitan ke master Sopir); kalau nama belum terdaftar,
+// sopirNama tetap tersimpan sebagai teks. Kalau masukLaporan = true, uang jalan
+// & uang beli material otomatis dicerminkan ke Laporan Divisi > Armada >
+// "Pengeluaran Operasional Sopir" (DivisiTx.sumber = "AUTO_TRONTON_UJ:<id>" /
+// "AUTO_TRONTON_BM:<id>"), lihat services/trontonDivisiTx.js.
+// ------------------------------------------------------------------
+model TrontonTrip {
+  id               String   @id @default(cuid())
+  tanggal          DateTime
+  sopirId          String?
+  sopirRef         Sopir?   @relation(fields: [sopirId], references: [id], onDelete: SetNull)
+  sopirNama        String
+  noPolisi         String?
+  uangJalan        Float    @default(0)
+  material         String?
+  uangBeliMaterial Float    @default(0)
+  tujuan           String?
+  catatan          String?
+  masukLaporan     Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([tanggal])
+  @@index([sopirId])
 }
 
 model PrintCalib {

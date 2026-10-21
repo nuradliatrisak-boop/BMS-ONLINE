@@ -93,6 +93,11 @@ function doLogout() {
         <span>Sopir</span>
       </router-link>
 
+      <router-link to="/buku-tronton" @click="closeSidebar">
+        <span class="ic">📒</span>
+        <span>Buku Tronton</span>
+      </router-link>
+
       <router-link to="/armada-rekap" @click="closeSidebar">
         <span class="ic">🧮</span>
         <span>Rekap Armada</span>

@@ -13,6 +13,7 @@ import { toast } from "../services/toast.js";
 import { useAuthStore } from "../stores/auth.js";
 import MoneyInput from "../components/MoneyInput.vue";
 import { exportPoStokExcel, exportPoStokPdf } from "../utils/laporanExport.js";
+import { kelompokProyekPo, susunRekapPo, exportRekapPoExcel, exportRekapPoPdf } from "../utils/rekapPoExport.js";
 
 const auth = useAuthStore();
 const DIVISI = ["Supplier", "Armada", "Alat Berat", "Kontraktor", "Kapal"];
@@ -321,6 +322,38 @@ async function cetakStok(jenis) {
   }
 }
 
+// ---------- Rekap PO per proyek (cetak seperti "Rekap PO Proyek ...") ----------
+const showRekap = ref(false);
+const rekapKey = ref("");
+const rekapCatatan = ref("");
+const rekapBusy = ref(false);
+const kelompokRekap = computed(() => kelompokProyekPo(list.value));
+function bukaRekap() {
+  if (!kelompokRekap.value.length) return toast("Belum ada PO material untuk direkap");
+  if (!kelompokRekap.value.some((g) => g.key === rekapKey.value)) rekapKey.value = kelompokRekap.value[0].key;
+  showRekap.value = true;
+}
+const rekapDipilih = computed(() => kelompokRekap.value.find((g) => g.key === rekapKey.value) || null);
+const rekapPratinjau = computed(() => {
+  const g = rekapDipilih.value;
+  if (!g) return null;
+  return susunRekapPo(list.value.filter((p) => g.ids.includes(p.id)), { catatanTambahan: rekapCatatan.value });
+});
+const fmtM3 = (n) => (Number(n) || 0).toLocaleString("id-ID", { maximumFractionDigits: 2 });
+async function cetakRekap(jenis) {
+  const r = rekapPratinjau.value;
+  if (!r) return;
+  rekapBusy.value = true;
+  try {
+    if (jenis === "excel") exportRekapPoExcel(r);
+    else await exportRekapPoPdf(r);
+  } catch (e) {
+    toast(e.message || "Gagal mencetak rekap");
+  } finally {
+    rekapBusy.value = false;
+  }
+}
+
 async function hapusPengiriman(pid) {
   const p = detail.value;
   if (!p || !confirm("Hapus catatan pengiriman ini? Sisa PO akan bertambah lagi.")) return;
@@ -428,7 +461,10 @@ onMounted(() => {
         Pesanan dari customer. Surat Jalan yang alamat &amp; barangnya cocok otomatis tercatat di PO, sisa yang belum dikirim dihitung sendiri.
       </div>
     </div>
-    <button class="btn btn-primary" @click="openForm">+ Input PO</button>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap">
+      <button class="btn" @click="bukaRekap">🖨 Rekap PO</button>
+      <button class="btn btn-primary" @click="openForm">+ Input PO</button>
+    </div>
   </div>
 
   <div class="content">
@@ -522,6 +558,40 @@ onMounted(() => {
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REKAP PO PER PROYEK (CETAK) ===== -->
+  <div v-if="showRekap" class="modal-bg" @click.self="showRekap = false">
+    <div class="modal" style="max-width: 760px">
+      <button class="modal-close" @click="showRekap = false">×</button>
+      <h2>Rekap PO Proyek</h2>
+      <div class="msub">PO masuk di kiri, pengiriman per invoice di kanan, sisa PO berjalan — siap dicetak seperti rekap PO proyek.</div>
+
+      <div class="field" style="margin-top: 10px">
+        <label>Pilih customer &amp; proyek</label>
+        <select v-model="rekapKey">
+          <option v-for="g in kelompokRekap" :key="g.key" :value="g.key">
+            {{ g.customer }} — {{ g.lokasi || "(tanpa lokasi)" }} ({{ g.jumlahPo }} PO)
+          </option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Catatan tambahan (opsional, ikut tercetak di bagian Catatan)</label>
+        <textarea v-model="rekapCatatan" rows="2" placeholder="mis. Pembagian tronton PO 48/51/56 perkiraan (invoice OA 090 digabung)."></textarea>
+      </div>
+
+      <div v-if="rekapPratinjau" class="po-info" style="margin-top: 12px">
+        <div><b>{{ rekapPratinjau.jumlahPo }}</b> PO • Jumlah PO <b>{{ fmtM3(rekapPratinjau.totalPo) }}</b> m³</div>
+        <div>Terkirim <b>{{ fmtM3(rekapPratinjau.totalKeluar) }}</b> m³ • Sisa <b>{{ fmtM3(rekapPratinjau.totalSisa) }}</b> m³</div>
+      </div>
+
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px">
+        <button class="btn btn-primary" :disabled="rekapBusy || !rekapPratinjau" @click="cetakRekap('pdf')">⬇ Cetak PDF</button>
+        <button class="btn" :disabled="rekapBusy || !rekapPratinjau" @click="cetakRekap('excel')">⬇ Excel</button>
+        <button class="btn btn-ghost" @click="showRekap = false">Tutup</button>
       </div>
     </div>
   </div>

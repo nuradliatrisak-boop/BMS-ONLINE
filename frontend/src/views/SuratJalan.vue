@@ -357,6 +357,7 @@ function openEdit(sj) {
   muatRiwayat(sj.customerId || "");
   jenisManual.value = !!sj.jenisBarang && !stockMasterList.value.some((x) => x.nama === sj.jenisBarang);
   form.value = {
+    no: sj.no,
     divisi: sj.divisi,
     customerId: sj.customerId || "",
     recipientId: "",
@@ -539,6 +540,7 @@ async function submit() {
   saving.value = true;
   try {
     const payload = {
+      ...(editingId.value ? { no: String(form.value.no || "").trim() } : {}),
       divisi: form.value.divisi,
       customerId: form.value.customerId,
       armadaId: form.value.armadaId || null,
@@ -899,6 +901,12 @@ const showScan = ref(false);
       <h2>{{ editingId ? "Edit Surat Jalan" : "Buat Surat Jalan" }}</h2>
       <div class="msub">
         Isi informasi pengiriman. Nomor surat jalan akan dibuat otomatis oleh sistem. Kalau pembeli kontan/tidak terdaftar, Customer boleh dikosongkan — isi Penerima & Tujuan manual saja.
+      </div>
+
+      <div v-if="editingId" class="field">
+        <label>Nomor Surat Jalan</label>
+        <input v-model="form.no" type="text" class="mono" placeholder="Nomor surat jalan" />
+        <div style="font-size: 12px; color: #6b7280; margin-top: 4px">Boleh diubah (harus unik). Tidak ikut berubah ke surat jalan lain dalam grup.</div>
       </div>
 
       <div class="row">

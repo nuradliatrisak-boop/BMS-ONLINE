@@ -391,8 +391,19 @@ router.put("/:id", async (req, res, next) => {
     // kalau mau dikoreksi, batalkan dulu status "diambil" di halaman Sopir.
     const lama = await prisma.suratJalan.findUnique({
       where: { id: req.params.id },
-      select: { komisiDiambil: true, uangKomisi: true, sopirId: true },
+      select: { komisiDiambil: true, uangKomisi: true, sopirId: true, no: true },
     });
+
+    // Ganti nomor surat jalan (opsional): harus terisi & belum dipakai SJ lain.
+    let noBaru;
+    if (req.body.no !== undefined && lama && String(req.body.no).trim() !== lama.no) {
+      noBaru = String(req.body.no).trim();
+      if (!noBaru) return res.status(400).json({ error: "Nomor surat jalan tidak boleh kosong." });
+      const dipakai = await prisma.suratJalan.findUnique({ where: { no: noBaru }, select: { id: true } });
+      if (dipakai && dipakai.id !== req.params.id) {
+        return res.status(409).json({ error: `Nomor surat jalan ${noBaru} sudah dipakai surat jalan lain.` });
+      }
+    }
     if (lama?.komisiDiambil) {
       const komisiBerubah =
         data.uangKomisi !== undefined && Number(data.uangKomisi) !== Number(lama.uangKomisi);
@@ -409,7 +420,7 @@ router.put("/:id", async (req, res, next) => {
       where: {
         id: req.params.id,
       },
-      data,
+      data: noBaru ? { ...data, no: noBaru } : data,
       include: includeRelasi,
     });
 

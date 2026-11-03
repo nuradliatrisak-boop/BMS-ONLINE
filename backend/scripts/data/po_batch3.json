@@ -1,0 +1,44 @@
+[
+ {
+  "no": "56/LTM-WADUK CIMANGGIS/X/2026",
+  "tanggal": "2026-10-14",
+  "namaCustomer": "PT Leotunggal Mandiri",
+  "divisi": "Supplier",
+  "proyek": "Peningkatan Sistem Pengairan,Inlet,Outlet di Waduk Cimanggis 1 dan 2",
+  "lokasiProyek": "Waduk Cimanggis 1 dan 2 Jakarta Timur",
+  "kepalaProyek": "Julius",
+  "penerimaBarang": "Umar 082260050495; Humam 081383573271",
+  "ppnPersen": 0,
+  "catatan": "Dari Rekap PO Waduk Cimanggis (posisi 28 Okt 2026). Harga dari sheet PO alexander.xls.",
+  "items": [
+   {
+    "uraian": "Makadam (Tronton)",
+    "satuan": "m3",
+    "qty": 25,
+    "hargaSatuan": 270000
+   }
+  ],
+  "totalKertas": 6750000
+ },
+ {
+  "no": "TANPA PO/LTM-WADUK CIMANGGIS/2026",
+  "tanggal": "2026-09-26",
+  "namaCustomer": "PT Leotunggal Mandiri",
+  "divisi": "Supplier",
+  "proyek": "Peningkatan Sistem Pengairan,Inlet,Outlet di Waduk Cimanggis 1 dan 2",
+  "lokasiProyek": "Waduk Cimanggis 1 dan 2 Jakarta Timur",
+  "kepalaProyek": "Julius",
+  "penerimaBarang": "Umar 082260050495; Humam 081383573271",
+  "ppnPersen": 0,
+  "catatan": "BUKAN PO ASLI. Penampung pengiriman Makadam (Tronton) tanpa PO (invoice OA 074, 26 Sep 2026, 73,26 m3) supaya ikut tampil di Rekap PO. Jumlah PO sengaja 0.",
+  "items": [
+   {
+    "uraian": "Makadam (Tronton)",
+    "satuan": "m3",
+    "qty": 0,
+    "hargaSatuan": 270000
+   }
+  ],
+  "totalKertas": 0
+ }
+]

@@ -23,6 +23,7 @@ import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { cariItem } from "./lib/cariItemProgres.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA = path.join(__dirname, "data");
@@ -81,7 +82,7 @@ async function main() {
   for (const r of prog) {
     const po = poByKey.get(key(r.poNo));
     if (!po) { lewat.push(`${r.poNo} (PO belum ada di database${dry ? " - normal saat dry run" : ""})`); continue; }
-    const item = po.items.find((i) => i.uraian === r.uraian);
+    const item = cariItem(po, r);
     if (!item) { lewat.push(`${r.poNo} | ${r.uraian} (barang tidak ketemu)`); continue; }
     inginkan.set(sig(po.id, item.id, r.tanggal, r.noSuratJalan, r.catatan), { po, item, r });
   }
